@@ -79,4 +79,19 @@ final class RegressionUITests: XCTestCase {
         let pills = inCard.matching(NSPredicate(format: "label == %@ AND value ENDSWITH %@", "Temperature", ", Normal"))
         XCTAssertEqual(pills.count, 0, "No pill is read apart from its gauge")
     }
+
+    /// At the largest text size the gallery used to open part-way down its first card with the top
+    /// out of reach: a lazy grid inside an eager page is sized from an estimate.
+    @MainActor
+    func testGalleryOpensAtItsTopAtTheLargestTextSize() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-dm-gallery", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        app.launch()
+
+        let heading = app.element(withIdentifier: "gallery-section-cards")
+        XCTAssertTrue(heading.waitForExistence(timeout: 20))
+        XCTAssertGreaterThan(heading.frame.height, 30, "The text size argument took effect")
+        XCTAssertGreaterThan(heading.frame.minY, 0, "The first heading is on screen when the gallery opens")
+        XCTAssertTrue(heading.isHittable, "The first heading is on screen when the gallery opens")
+    }
 }

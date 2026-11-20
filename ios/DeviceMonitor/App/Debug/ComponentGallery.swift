@@ -49,7 +49,7 @@ struct ComponentGallery: View {
             .task {
                 // The first section is where the gallery opens anyway.
                 guard let initialSection, initialSection != "cards" else { return }
-                // After the first layout pass; the adaptive grid has no final height before it.
+                // Once the push has settled; a scroll requested during it is dropped.
                 try? await Task.sleep(for: .milliseconds(400))
                 scroll.scrollTo(initialSection, anchor: .top)
             }
@@ -65,10 +65,7 @@ struct ComponentGallery: View {
     /// The device grid's rule: as many columns of at least 290 points as fit.
     private var cards: some View {
         section("Device cards", id: "cards") {
-            LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: Theme.Layout.cardMinWidth), spacing: Theme.Layout.gridSpacing, alignment: .top)],
-                spacing: Theme.Layout.gridSpacing
-            ) {
+            EagerCardGrid(minimumColumnWidth: Theme.Layout.cardMinWidth, spacing: Theme.Layout.gridSpacing) {
                 MockDeviceCard(device: .gamingPC, windowEnd: now)
                 MockDeviceCard(device: .dgxSpark, windowEnd: now, showsDetails: true)
                     .id("card-details")
@@ -405,6 +402,33 @@ struct ComponentGallery: View {
                 .accessibilityElement(children: .combine)
             }
         }
+    }
+}
+
+/// The device grid's columns, laid out eagerly: as many equal columns of at least
+/// `minimumColumnWidth` as fit, each row as tall as its tallest card.
+///
+/// The Dashboard uses a `LazyVGrid` for this, as the direct content of its scroll view. Here the grid
+/// is one section of a long eager page, and a lazy grid only estimates the height of cards it has not
+/// built yet: at the largest text sizes the page was sized from that estimate and opened part-way
+/// down, with its top out of reach.
+private struct EagerCardGrid: Layout {
+    var minimumColumnWidth: CGFloat
+    var spacing: CGFloat
+
+    private func columns(for width: CGFloat) -> EqualColumnsLayout {
+        // An unbounded proposal gets a single column; the cap keeps the division well inside Int.
+        let usable = width.isFinite ? min(width, 100_000) : minimumColumnWidth
+        let count = Int(((usable + spacing) / (minimumColumnWidth + spacing)).rounded(.down))
+        return EqualColumnsLayout(columns: max(1, count), columnSpacing: spacing, rowSpacing: spacing)
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        columns(for: proposal.width ?? minimumColumnWidth).sizeThatFits(proposal: proposal, subviews: subviews, cache: &cache)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        columns(for: bounds.width).placeSubviews(in: bounds, proposal: proposal, subviews: subviews, cache: &cache)
     }
 }
 
