@@ -51,4 +51,17 @@ text out of that file, ran it in Node (locale en-US; the time rows in three time
 recorded what it returned, so every expected value is JavaScript's own.
 
 Node writes a plain space before AM/PM and Apple's ICU a narrow no-break space; the tests compare
-those rows with white space normalised. Everything else is compared character for character.
+the rows whose text comes from ICU with those spaces folded. Everything else is compared character
+for character.
+
+## formatting-locales.json
+
+The same for the clock, money and energy formatters in eight other locales (de-DE, en-GB, fr-FR,
+es-ES, sv-SE, pt-BR, nl-NL, pl-PL), to hold the `locale:` parameter to what a browser in that locale
+shows.
+
+Weekday and date patterns are left out on purpose. Apple ships its own locale data, and for some
+locales it differs from Node's: German writes "Fr. 20. Nov." where Node has "Fr., 20. Nov.",
+Japanese puts the weekday first and uses the half-width yen sign, Indian English has "PM" for "pm",
+Chinese and Arabic differ in spacing and weekday form. Those are differences in data, not in the
+port, and the app shows what iOS shows everywhere else.
