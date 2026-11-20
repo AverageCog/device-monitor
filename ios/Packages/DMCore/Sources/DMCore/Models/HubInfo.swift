@@ -168,6 +168,15 @@ public struct InviteResponse: Codable, Sendable, Hashable {
     public var expiresDate: Date? { expires.map(Date.init(hubTime:)) }
 }
 
+// Printing, interpolating or dumping an invitation must not put its code into a log.
+extension InviteResponse: CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable {
+    public var description: String { "InviteResponse(origin: \(origin), code: <redacted>)" }
+    public var debugDescription: String { description }
+    public var customMirror: Mirror {
+        Mirror(self, children: ["origin": origin, "expires": expires as Any, "code": "<redacted>"])
+    }
+}
+
 /// One entry of `GET /api/mobile`: a phone or tablet enrolled on the hub.
 public struct MobileClient: Codable, Sendable, Hashable, Identifiable {
     public var id: String

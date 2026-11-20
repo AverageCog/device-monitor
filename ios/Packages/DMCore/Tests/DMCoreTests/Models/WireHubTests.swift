@@ -87,6 +87,18 @@ import Testing
         #expect(throws: DecodingError.self) { try HubJSON.decode(InviteResponse.self, from: Data(#"{"error":"Create this invitation on the hub."}"#.utf8)) }
     }
 
+    @Test func invitationCodeStaysOutOfLogs() throws {
+        let invite = InviteResponse(code: "s3cret-invitation-code-0000000000000000000A", origin: "https://hub.test", expires: 1_795_213_596_000)
+        var dumped = ""
+        dump(invite, to: &dumped)
+        for text in [String(describing: invite), String(reflecting: invite), "\(invite)", "\([invite])", "\(Optional(invite) as Any)", dumped] {
+            #expect(!text.contains("s3cret"), "\(text)")
+            #expect(text.contains("https://hub.test"))
+        }
+        // Encoding is how the code is meant to travel, and still carries it.
+        #expect(try HubJSON.decode(InviteResponse.self, from: try HubJSON.encode(invite)).code == invite.code)
+    }
+
     @Test func mobileClients() throws {
         // GET /api/mobile (section 5.1 of the architecture brief): lastSeen is null until the
         // phone has made a request since the hub started.
