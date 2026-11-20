@@ -10,12 +10,15 @@ import Testing
 ///
 ///     DM_HUB_E2E=/path/to/device-monitor swift test --filter TransportE2ETests
 ///
-/// The hub in this repository may not have the mobile routes yet, so pairing goes through the
-/// desktop endpoint (`/api/pair`, second secret `agent`), which has the same shape and the same
-/// proof key derivation.
+/// Against a hub with the mobile routes the suite pairs exactly as the app does
+/// (`/mobile#join=` invitation, `/api/mobile/pair`, second secret `proof`). A hub that predates
+/// them is paired through the desktop endpoint (`/api/pair`, second secret `agent`), which has
+/// the same shape and the same proof key derivation.
 @Suite(.enabled(if: E2EHub.repositoryRoot != nil, "set DM_HUB_E2E to the repository root"), .serialized, .timeLimit(.minutes(3)))
 final class TransportE2ETests: Sendable {
     static let proofPath = "/api/desktop/tls-proof"
+    /// A device for the hub to show; unrelated to the enrollment under test.
+    static let device = "e2e-device"
 
     let hub: E2EHub
 
@@ -29,9 +32,19 @@ final class TransportE2ETests: Sendable {
         return { PinnedSession(policy: $0, testingTrustAnchors: [anchor]) }
     }
 
+    var redeemPath: String { hub.supportsMobile ? HubPairing.redeemPath : "/api/pair" }
+
+    func redeem(_ code: String, name: String) async throws -> Enrollment {
+        guard hub.supportsMobile else {
+            return try await HubPairing.pair(invitation: Invitation(origin: hub.origin, code: code), name: name, redeemPath: "/api/pair", secondSecret: "agent", connect: connect)
+        }
+        // The text a person scans or pastes, and the production endpoint and field.
+        let invitation = try Invitation.parse("\(hub.origin)\(DMCore.invitationPath)#join=\(code)")
+        return try await HubPairing.pair(invitation: invitation, name: name, redeemPath: HubPairing.redeemPath, secondSecret: HubPairing.secondSecret, connect: connect)
+    }
+
     func enroll(name: String = "E2E iPhone") async throws -> Enrollment {
-        let invitation = try Invitation(origin: hub.origin, code: hub.invite())
-        return try await HubPairing.pair(invitation: invitation, name: name, redeemPath: "/api/pair", secondSecret: "agent", connect: connect)
+        try await redeem(hub.invite(), name: name)
     }
 
     func pair() async throws -> (enrollment: Enrollment, store: InMemoryCredentialStore, client: HubClient) {
@@ -76,31 +89,31 @@ final class TransportE2ETests: Sendable {
 
     @Test func pairsThenCallsThePinnedAPI() async throws {
         let code = try hub.invite()
-        let invitation = try Invitation(origin: hub.origin, code: code)
-        let enrollment = try await HubPairing.pair(invitation: invitation, name: "E2E iPhone", redeemPath: "/api/pair", secondSecret: "agent", connect: connect)
+        let enrollment = try await redeem(code, name: "E2E iPhone")
         #expect(enrollment.origin == hub.origin)
         #expect(enrollment.pin == hub.pins["a"])                    // SecTrust + SPKIPin agree with Node's publicKeyPin
         #expect(Enrollment.isValidID(enrollment.id))
+        #expect(enrollment.name == "E2E iPhone")
 
         let pairing = try hub.calls()
-        #expect(pairing.calls.map(\.path) == ["/api/info", "/api/pair"])
+        #expect(pairing.calls.map(\.path) == ["/api/info", redeemPath])
         #expect(pairing.calls[0].authorization == nil)
         #expect(pairing.calls[1].authorization == "Bearer " + code)
         #expect(pairing.calls[1].method == "POST" && pairing.calls[1].body == #"{"name":"E2E iPhone"}"#)
 
         // The invitation is single use, and the hub's own words reach the caller.
-        let spent = await hubError { _ = try await HubPairing.pair(invitation: invitation, name: "", redeemPath: "/api/pair", secondSecret: "agent", connect: self.connect) }
+        let spent = await hubError { _ = try await self.redeem(code, name: "") }
         #expect(spent == .http(status: 403, message: "Invitation is invalid, expired or already used."))
 
         let store = InMemoryCredentialStore(enrollment)
         let client = HubClient(enrollment: enrollment, store: store, connect: connect)
-        try hub.seed(id: enrollment.id, hostname: "paired-desktop")
+        try hub.seed(id: Self.device, hostname: "paired-desktop")
         let mark = try hub.calls().total
 
         let (data, response) = try await client.request(path: "/api/devices")
         #expect(response.statusCode == 200)
         let devices = try #require(try JSONSerialization.jsonObject(with: data) as? [[String: Any]])
-        #expect(devices.count == 1 && devices[0]["id"] as? String == enrollment.id && devices[0]["hostname"] as? String == "paired-desktop")
+        #expect(devices.count == 1 && devices[0]["id"] as? String == Self.device && devices[0]["hostname"] as? String == "paired-desktop")
 
         struct Info: Decodable, Sendable { let app: String; let canShare: Bool?; let canEnroll: Bool?; let locked: Bool?; let origin: String? }
         let info: Info = try await client.json(path: "/api/info")
@@ -108,11 +121,11 @@ final class TransportE2ETests: Sendable {
         #expect(info.origin == hub.origin.string)
 
         struct Done: Decodable, Sendable { let ok: Bool }
-        let reordered = try await client.json(Done.self, method: "PUT", path: "/api/order", encoding: ["ids": [enrollment.id]])
+        let reordered = try await client.json(Done.self, method: "PUT", path: "/api/order", encoding: ["ids": [Self.device]])
         #expect(reordered.ok)
 
         let (history, _) = try await client.request(
-            path: "/api/history/" + HubClient.pathComponent(enrollment.id),
+            path: "/api/history/" + HubClient.pathComponent(Self.device),
             query: [URLQueryItem(name: "range", value: "1h"), URLQueryItem(name: "points", value: "50")])
         #expect(try Self.object(history)["points"] is [Any])
 
@@ -120,7 +133,7 @@ final class TransportE2ETests: Sendable {
         #expect(await hubError { _ = try await client.request(path: "/api/energy", query: [URLQueryItem(name: "bounds", value: "3,2,1")]) } == .http(status: 400, message: "bad bounds"))
 
         let api = try hub.calls(since: mark).calls
-        #expect(api.map(\.path) == ["/api/devices", "/api/info", "/api/order", "/api/history/" + enrollment.id, "/api/nope", "/api/energy"])
+        #expect(api.map(\.path) == ["/api/devices", "/api/info", "/api/order", "/api/history/" + Self.device, "/api/nope", "/api/energy"])
         #expect(api.allSatisfy { $0.authorization == "Bearer " + enrollment.client && $0.cookie == nil })
         #expect(api[2].contentType == "application/json" && api[2].method == "PUT")
         #expect(api[3].query == "?range=1h&points=50" && api[5].query == "?bounds=3,2,1")
@@ -243,7 +256,7 @@ final class TransportE2ETests: Sendable {
 
     @Test func recoversWhenTheHubRotatesItsKey() async throws {
         let (enrollment, store, client) = try await pair()
-        try hub.seed(id: enrollment.id, hostname: "before-rotation")
+        try hub.seed(id: Self.device, hostname: "before-rotation")
         _ = try await client.request(path: "/api/devices")
         let pinB = try #require(hub.pins["b"])
         let mark = try hub.calls().total
@@ -287,11 +300,11 @@ final class TransportE2ETests: Sendable {
 
     @Test func streamsTheSnapshotThenLiveFrames() async throws {
         let (enrollment, _, client) = try await pair()
-        try hub.seed(id: enrollment.id, hostname: "first-report")
+        try hub.seed(id: Self.device, hostname: "first-report")
         let hub = hub
         let result = await Self.read(client.events()) { frames in
             // After the snapshot, cause a report; stop once it and a heartbeat have both arrived.
-            if frames.count == 1 { try? hub.seed(id: enrollment.id, hostname: "second-report") }
+            if frames.count == 1 { try? hub.seed(id: Self.device, hostname: "second-report") }
             let types = Set(frames.compactMap(Self.type))
             return types.isSuperset(of: ["report", "status"])
         }
@@ -299,12 +312,12 @@ final class TransportE2ETests: Sendable {
         let first = try Self.object(try #require(result.frames.first))
         #expect(first["type"] as? String == "snapshot")
         let devices = try #require(first["devices"] as? [[String: Any]])
-        #expect(devices.count == 1 && devices[0]["id"] as? String == enrollment.id)
+        #expect(devices.count == 1 && devices[0]["id"] as? String == Self.device)
         #expect((devices[0]["latest"] as? [String: Any])?["hostname"] as? String == "first-report")
         let report = try Self.object(try #require(result.frames.first { Self.type($0) == "report" }))
         #expect(((report["device"] as? [String: Any])?["latest"] as? [String: Any])?["hostname"] as? String == "second-report")
         let status = try Self.object(try #require(result.frames.first { Self.type($0) == "status" }))
-        #expect((status["online"] as? [String: Bool])?[enrollment.id] == true)
+        #expect((status["online"] as? [String: Bool])?[Self.device] == true)
 
         let stream = try #require(try hub.calls().calls.last { $0.path == "/api/stream" })
         #expect(stream.authorization == "Bearer " + enrollment.client && stream.method == "GET")
@@ -349,7 +362,7 @@ final class TransportE2ETests: Sendable {
 
     @Test func aRevokedEnrollmentIsReportedAsUnauthorized() async throws {
         let (enrollment, _, client) = try await pair()
-        try hub.seed(id: enrollment.id, hostname: "soon-revoked")
+        try hub.seed(id: Self.device, hostname: "soon-revoked")
         let hub = hub
         // The hub cuts an open stream of a revoked client.
         let open = await Self.read(client.events()) { frames in
@@ -368,6 +381,48 @@ final class TransportE2ETests: Sendable {
         struct Info: Decodable, Sendable { let app: String; let locked: Bool? }
         let info: Info = try await client.json(path: "/api/info")
         #expect(info.app == "device-monitor" && info.locked == true)
+        await client.close()
+    }
+
+    /// What only a mobile enrollment has: its own label, its entry in `GET /api/mobile`, and
+    /// "Disconnect" (`DELETE /api/mobile/<id>`). Nothing to check on a hub without those routes.
+    @Test func aMobileEnrollmentListsAndDisconnectsItself() async throws {
+        guard hub.supportsMobile else { return }
+        let enrollment = try await enroll(name: "  Zoë's iPhone 📱\n")
+        #expect(enrollment.name == "Zoë's iPhone 📱")              // as the hub stored it
+        let store = InMemoryCredentialStore(enrollment)
+        let client = HubClient(enrollment: enrollment, store: store, connect: connect)
+
+        struct Phone: Decodable, Sendable { let id: String; let name: String; let created: Double? }
+        let phones: [Phone] = try await client.json(path: "/api/mobile")
+        #expect(phones.map(\.id) == [enrollment.id] && phones.first?.name == enrollment.name)
+
+        // The same rights as a paired desktop: it may share a browser link, not enroll devices.
+        struct Invite: Decodable, Sendable { let code: String }
+        let link = try await client.json(Invite.self, method: "POST", path: "/api/invites", encoding: ["kind": "browser", "origin": hub.origin.string])
+        #expect(HubIdentity.isValidSecret(link.code))
+        let desktop = await hubError { _ = try await client.json(Invite.self, method: "POST", path: "/api/invites", encoding: ["kind": "desktop", "origin": self.hub.origin.string]) }
+        // A refusal of one operation, not of the enrollment: the app must not offer to pair again.
+        #expect(desktop == .http(status: 403, message: "Create this invitation on the hub."))
+        #expect(desktop?.isUnauthorized == false)
+
+        // The proof secret is never a credential.
+        let other = try Enrollment(origin: enrollment.origin, id: enrollment.id, client: enrollment.proof, proof: enrollment.client,
+                                   pin: enrollment.pin, name: "", pairedAt: Date())
+        let swapped = HubClient(enrollment: other, store: InMemoryCredentialStore(other), connect: connect)
+        #expect(await hubError { _ = try await swapped.request(path: "/api/devices") }?.httpStatus == 401)
+        await swapped.close()
+
+        // The rotation proof is keyed by the phone's own two secrets.
+        try hub.present("b", proxy: "b")
+        _ = try await client.request(path: "/api/devices")
+        #expect(try store.load()?.pin == hub.pins["b"])
+
+        struct Done: Decodable, Sendable { let ok: Bool }
+        #expect(try await client.json(Done.self, method: "DELETE", path: "/api/mobile/" + HubClient.pathComponent(client.enrollmentID)).ok)
+        let refused = HubError.unauthorized(status: 401, message: "Open a fresh dashboard invitation.")
+        #expect(await hubError { _ = try await client.request(path: "/api/devices") } == refused)
+        #expect(await Self.read(client.events()) { _ in false }.failure == refused)
         await client.close()
     }
 
@@ -415,6 +470,60 @@ final class TransportE2ETests: Sendable {
         _ = try await client.request(path: "/api/devices")
         #expect(try store.load()?.pin == pinA)
         await client.close()
+    }
+
+    /// Over HTTP/2 (what tailscale serve speaks) every request shares one connection, so one
+    /// handshake stands for many requests. Each of them must still learn why it was refused.
+    @Test func concurrentRequestsOverHTTP2AllSeeTheVerdictOfTheirHandshake() async throws {
+        let pinA = try #require(hub.pins["a"]), pinB = try #require(hub.pins["b"])
+        let origin = hub.multiplexedOrigin
+        let anchor = hub.anchor
+        /// Six requests at once; half of them take a while, so they overlap on the connection.
+        @Sendable func burst(_ session: PinnedSession) async -> [Result<Int, HubError>] {
+            await withTaskGroup(of: Result<Int, HubError>.self) { group in
+                for index in 0..<6 {
+                    group.addTask {
+                        guard let url = origin.url(path: index % 2 == 0 ? "/api/info" : "/e2e/slow") else { return .failure(.invalidRequest) }
+                        do {
+                            return .success(try await session.data(for: URLRequest(url: url), timeout: 10, maxResponseBytes: 65536).response.statusCode)
+                        } catch {
+                            return .failure(error as? HubError ?? .invalidResponse)
+                        }
+                    }
+                }
+                return await group.reduce(into: []) { $0.append($1) }
+            }
+        }
+
+        let right = PinnedSession(policy: .require(pin: pinA), testingTrustAnchors: [anchor])
+        #expect(await burst(right) == Array(repeating: .success(200), count: 6))
+        #expect(await burst(right) == Array(repeating: .success(200), count: 6))
+        let calls = try hub.calls().calls
+        #expect(calls.count == 12 && calls.allSatisfy { $0.http == "2.0" })
+
+        // The live stream and requests share the connection without disturbing each other.
+        let enrollment = try Enrollment(
+            origin: origin, id: "h2-test", client: String(repeating: "c", count: 43), proof: String(repeating: "p", count: 43),
+            pin: pinA, name: "", pairedAt: Date())
+        let client = HubClient(enrollment: enrollment, store: InMemoryCredentialStore(enrollment), connect: connect)
+        async let live = Self.read(client.events()) { $0.count == 5 }
+        for _ in 0..<5 { _ = try await client.request(path: "/api/info") }
+        let frames = await live
+        #expect(frames.failure == nil && frames.frames.compactMap(Self.type) == ["snapshot", "status", "status", "status", "status"])
+        #expect(try await eventually { try self.hub.openStreams() == 0 })
+        await client.close()
+
+        // The wrong key: every one of the six is told so, and none of them was sent.
+        var mark = try hub.calls().total
+        let wrong = PinnedSession(policy: .require(pin: pinB), testingTrustAnchors: [anchor])
+        #expect(await burst(wrong) == Array(repeating: .failure(.pinMismatch(peerPin: pinA)), count: 6))
+        #expect(try hub.calls(since: mark).calls.isEmpty)
+
+        // A key that changes under an established connection pool.
+        try hub.presentMultiplexed("b")
+        mark = try hub.calls().total
+        #expect(await burst(right) == Array(repeating: .failure(.pinMismatch(peerPin: pinB)), count: 6))
+        #expect(try hub.calls(since: mark).calls.isEmpty)
     }
 
     // MARK: Limits
@@ -510,10 +619,12 @@ final class E2EHub: @unchecked Sendable {
         let resumed: Bool
         /// Which TCP connection carried it.
         let connection: Int
+        /// "1.1" or "2.0".
+        let http: String
     }
 
     struct Calls: Decodable { let total: Int; let calls: [ServerCall] }
-    private struct Ready: Decodable { let origin: String; let pins: [String: String]; let ca: String }
+    private struct Ready: Decodable { let origin: String; let multiplexedOrigin: String; let mobile: Bool; let pins: [String: String]; let ca: String }
     private struct Invite: Decodable { let code: String }
     private struct Streams: Decodable { let open: Int }
     private struct Empty: Decodable {}
@@ -525,6 +636,10 @@ final class E2EHub: @unchecked Sendable {
     }
 
     let origin: HubOrigin
+    /// An HTTP/2 stand-in under the same certificates (the hub itself speaks HTTP/1.1).
+    let multiplexedOrigin: HubOrigin
+    /// Whether this hub has the mobile enrollment routes (`POST /api/mobile/pair` and friends).
+    let supportsMobile: Bool
     let pins: [String: String]
     /// DER of the throwaway CA the helper's certificates chain to.
     let anchor: Data
@@ -551,6 +666,8 @@ final class E2EHub: @unchecked Sendable {
             guard let anchor = Data(base64Encoded: ready.ca) else { throw Failure(description: "the helper sent no CA") }
             self.anchor = anchor
             origin = try HubOrigin(ready.origin)
+            multiplexedOrigin = try HubOrigin(ready.multiplexedOrigin)
+            supportsMobile = ready.mobile
         } catch {
             process.terminate()
             throw error
@@ -600,7 +717,7 @@ final class E2EHub: @unchecked Sendable {
         }
     }
 
-    /// A fresh desktop invitation code for this hub.
+    /// A fresh invitation code: a mobile one where the hub issues them, else a desktop one.
     func invite() throws -> String { try send("invite", as: Invite.self).code }
     /// Makes a device with this id report once.
     func seed(id: String, hostname: String) throws { _ = try send("seed", ["id": id, "hostname": hostname], as: Empty.self) }
@@ -611,6 +728,7 @@ final class E2EHub: @unchecked Sendable {
         if let proxy { arguments["proxy"] = proxy }
         _ = try send("present", arguments, as: Empty.self)
     }
+    func presentMultiplexed(_ certificate: String) throws { _ = try send("presentMultiplexed", ["certificate": certificate], as: Empty.self) }
     func mode(_ mode: String, bytes: Int = 0) throws { _ = try send("mode", ["mode": mode, "bytes": bytes], as: Empty.self) }
     /// Every request that got through TLS to the front, from index `since`.
     func calls(since: Int = 0) throws -> Calls { try send("calls", ["since": since]) }
