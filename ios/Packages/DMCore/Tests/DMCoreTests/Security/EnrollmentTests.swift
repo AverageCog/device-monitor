@@ -190,4 +190,34 @@ import Testing
     @Test func keychainStoreIdentity() {
         #expect(KeychainCredentialStore.defaultService == "com.devicemonitor.ios.enrollment")
     }
+
+    /// An unsigned `swift test` has no Keychain access group, so the data-protection keychain
+    /// refuses to add an item (errSecMissingEntitlement). Where it is available (an app-hosted
+    /// run on a simulator or device) this exercises the real item; either way the calls must
+    /// fail cleanly.
+    @Test func keychainRoundTripWhereTheKeychainIsAvailable() throws {
+        let store = KeychainCredentialStore(service: "com.devicemonitor.ios.enrollment.tests." + UUID().uuidString, account: "test")
+        let enrollment = try Self.make()
+        do {
+            try store.save(enrollment)
+        } catch let error as CredentialStoreError {
+            guard case .keychain(let status) = error else {
+                Issue.record("unexpected store error \(error)")
+                return
+            }
+            #expect(status != 0)                        // -34018 from `swift test` on macOS
+            // Nothing was stored, and asking again reports that or the same failure.
+            #expect((try? store.load()) == nil)
+            #expect(throws: Never.self) { try? store.clear() }
+            return
+        }
+        defer { try? store.clear() }
+        #expect(try store.load() == enrollment)
+        let rotated = try enrollment.withPin("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
+        try store.save(rotated)                         // replaces in place
+        #expect(try store.load() == rotated)
+        try store.clear()
+        #expect(try store.load() == nil)
+        try store.clear()                               // clearing nothing is not an error
+    }
 }

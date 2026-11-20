@@ -95,6 +95,13 @@ extension HubError {
     /// not used: they can quote the URL and vary with the system language in ways tests cannot pin.
     static func transport(_ error: any Error) -> HubError {
         let code = (error as NSError).domain == NSURLErrorDomain ? (error as NSError).code : 0
+        // iOS reports a hub on the LAN as "offline" when the user has not allowed local network
+        // access; the path it attaches to the error says so.
+        if code == NSURLErrorNotConnectedToInternet,
+           let path = (error as NSError).userInfo["_NSURLErrorNWPathKey"],
+           String(describing: path).localizedCaseInsensitiveContains("local network prohibited") {
+            return .unreachable(Reason.localNetworkDenied)
+        }
         return switch code {
         case NSURLErrorCancelled: .cancelled
         case NSURLErrorTimedOut: .unreachable(Reason.timedOut)
@@ -116,6 +123,7 @@ extension HubError {
     enum Reason {
         static let timedOut = "The hub did not answer in time."
         static let unverified = "The hub's TLS identity was not verified."
+        static let localNetworkDenied = "Device Monitor is not allowed to use the local network. Allow it in Settings → Privacy & Security → Local Network."
     }
 
     /// The error for a non-2xx answer, as `hubJson()` in `transport.js` words it: the hub's own
