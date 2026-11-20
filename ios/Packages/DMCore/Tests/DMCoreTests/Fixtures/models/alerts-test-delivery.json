@@ -1,0 +1,11 @@
+{
+  "ntfy": {
+    "ok": false,
+    "error": "Blocked alert destination"
+  },
+  "webhook": {
+    "ok": false,
+    "error": "ERR_INVALID_URL"
+  },
+  "note": "Each value is what alerts.js post() returns; a delivered alert is { \"ok\": true }."
+}

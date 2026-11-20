@@ -1,0 +1,295 @@
+{
+  "bounds": [
+    1794643200000,
+    1794729600000,
+    1794816000000,
+    1794902400000,
+    1794988800000,
+    1795075200000,
+    1795161600000,
+    1795248000000
+  ],
+  "settings": null,
+  "devices": [
+    {
+      "id": "a3f1c9d2-7b64-4e0a-9c1d-2f5e8b7a6c40",
+      "wh": 12802,
+      "buckets": [
+        0,
+        0,
+        0,
+        0,
+        2932.9,
+        6305.5,
+        3563.5
+      ],
+      "cost": null,
+      "costBuckets": null,
+      "minutes": 3000,
+      "estimatedMinutes": 0,
+      "stats": {
+        "power": {
+          "avg": 256,
+          "peak": 581.2
+        },
+        "cpu": {
+          "avg": 36.1,
+          "peak": 83.9
+        },
+        "gpu": {
+          "avg": 33.7,
+          "peak": 100
+        },
+        "mem": {
+          "avg": 43.9,
+          "peak": 47
+        },
+        "cpuTemp": {
+          "avg": 54.7,
+          "peak": 70.7
+        },
+        "gpuTemp": {
+          "avg": 51.8,
+          "peak": 81.1
+        }
+      },
+      "bytes": {
+        "rx": 57572781491,
+        "tx": 9584007600,
+        "dr": 359478549136,
+        "dw": 218295157353
+      },
+      "firstData": 1795033860000
+    },
+    {
+      "id": "4c2f9a7e1b3d4f6a8c0e2d4b6f8a1c3e",
+      "wh": 131122,
+      "buckets": [
+        0,
+        0,
+        0,
+        0,
+        32046.6,
+        66979.9,
+        32095.8
+      ],
+      "cost": null,
+      "costBuckets": null,
+      "minutes": 2820,
+      "estimatedMinutes": 0,
+      "stats": {
+        "power": {
+          "avg": 2789.8,
+          "peak": 2990
+        },
+        "cpu": {
+          "avg": 24,
+          "peak": 39
+        },
+        "gpu": {
+          "avg": 95.6,
+          "peak": 100
+        },
+        "mem": {
+          "avg": 72.5,
+          "peak": 74
+        },
+        "cpuTemp": {
+          "avg": 59.2,
+          "peak": 65
+        },
+        "gpuTemp": {
+          "avg": 72.5,
+          "peak": 74.9
+        }
+      },
+      "bytes": {
+        "rx": 844059327600,
+        "tx": 126895698180,
+        "dr": 7632059230920,
+        "dw": 3394495637100
+      },
+      "firstData": 1795033860000
+    },
+    {
+      "id": "5B8E2A11-93C4-5D7F-A012-6E4C9D3B7F21",
+      "wh": 797,
+      "buckets": [
+        0,
+        0,
+        0,
+        0,
+        178.2,
+        375.6,
+        243.3
+      ],
+      "cost": null,
+      "costBuckets": null,
+      "minutes": 3000,
+      "estimatedMinutes": 1801,
+      "stats": {
+        "power": {
+          "avg": 15.9,
+          "peak": 30.6
+        },
+        "cpu": {
+          "avg": 16,
+          "peak": 50
+        },
+        "gpu": {
+          "avg": 7.5,
+          "peak": 26
+        },
+        "mem": {
+          "avg": 65,
+          "peak": 67
+        },
+        "cpuTemp": {
+          "avg": 52,
+          "peak": 61.5
+        }
+      },
+      "bytes": {
+        "rx": 18000201960,
+        "tx": 3584767980,
+        "dr": 91352045880,
+        "dw": 72295875240
+      },
+      "firstData": 1795033860000
+    },
+    {
+      "id": "nas-01",
+      "wh": 2200,
+      "buckets": [
+        0,
+        0,
+        0,
+        0,
+        505.2,
+        1055.6,
+        639.1
+      ],
+      "cost": null,
+      "costBuckets": null,
+      "minutes": 3000,
+      "estimatedMinutes": 2999,
+      "stats": {
+        "power": {
+          "avg": 44,
+          "peak": 45.6
+        },
+        "cpu": {
+          "avg": 4.5,
+          "peak": 7
+        },
+        "mem": {
+          "avg": 23,
+          "peak": 24
+        }
+      },
+      "bytes": {
+        "rx": 2725322820,
+        "tx": 81346788180,
+        "dr": 543639001920,
+        "dw": 18217332960
+      },
+      "firstData": 1795033860000
+    },
+    {
+      "id": "f0e1d2c3-b4a5-4697-8879-6a5b4c3d2e1f",
+      "wh": 4,
+      "buckets": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        3.7
+      ],
+      "cost": null,
+      "costBuckets": null,
+      "minutes": 1,
+      "estimatedMinutes": 0,
+      "stats": {
+        "power": {
+          "avg": 221,
+          "peak": 239.8
+        },
+        "cpu": {
+          "avg": 61.4,
+          "peak": 72.9
+        },
+        "gpu": {
+          "avg": 81.6,
+          "peak": 89.2
+        },
+        "mem": {
+          "avg": 75.9,
+          "peak": 75.9
+        },
+        "cpuTemp": {
+          "avg": 61,
+          "peak": 61
+        },
+        "gpuTemp": {
+          "avg": 77,
+          "peak": 77
+        }
+      },
+      "bytes": {
+        "rx": 0,
+        "tx": 0,
+        "dr": 0,
+        "dw": 0
+      },
+      "firstData": 1795213860000
+    },
+    {
+      "id": "old-htpc",
+      "wh": 708,
+      "buckets": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        707.7
+      ],
+      "cost": null,
+      "costBuckets": null,
+      "minutes": 602,
+      "estimatedMinutes": 0,
+      "stats": {
+        "power": {
+          "avg": 70.5,
+          "peak": 106
+        },
+        "cpu": {
+          "avg": 16,
+          "peak": 59.9
+        },
+        "gpu": {
+          "avg": 15,
+          "peak": 30
+        },
+        "mem": {
+          "avg": 37.5,
+          "peak": 40
+        },
+        "cpuTemp": {
+          "avg": 51,
+          "peak": 54
+        }
+      },
+      "bytes": {
+        "rx": 30720,
+        "tx": 15360,
+        "dr": 0,
+        "dw": 0
+      },
+      "firstData": 1795170660000
+    }
+  ]
+}

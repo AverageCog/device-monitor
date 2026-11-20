@@ -1,0 +1,17 @@
+{
+  "notPublished": {
+    "error": "no update published"
+  },
+  "published": {
+    "platform": "windows",
+    "version": "1.2.33",
+    "file": "Device Monitor Setup 1.2.33.exe",
+    "size": 4096,
+    "sha256": "1ee85e4c8f1ede0c586b41cd2e8592df68f732de501c5329be61d57069121b49",
+    "released": "2026-11-20T22:32:33.000Z",
+    "signature": "kQhhVddcUHeNr97jYN2J6TTSFqB2Rc2WrMeyZG6UjKb7NFnsXrV2VBHd2cxww8s9cIjPNhg5c5JB+VhWPRDWAA=="
+  },
+  "otherPlatform": {
+    "error": "no update published"
+  }
+}

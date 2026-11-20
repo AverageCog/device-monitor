@@ -1,0 +1,263 @@
+{
+  "settings": {
+    "rules": [
+      {
+        "id": "138ac9e65858",
+        "type": "offline",
+        "device": "old-htpc",
+        "threshold": null,
+        "minutes": 1,
+        "enabled": true
+      },
+      {
+        "id": "b0b0b0b0b0b1",
+        "type": "offline",
+        "device": "nas-01",
+        "threshold": null,
+        "minutes": 1,
+        "enabled": true
+      },
+      {
+        "id": "5021aa0cccc6",
+        "type": "cpuTemp",
+        "device": "*",
+        "threshold": 90,
+        "minutes": 2,
+        "enabled": true
+      },
+      {
+        "id": "37192e83f0c5",
+        "type": "gpuTemp",
+        "device": "*",
+        "threshold": 85,
+        "minutes": 2,
+        "enabled": false
+      },
+      {
+        "id": "32b4c55dfa3c",
+        "type": "disk",
+        "device": "*",
+        "threshold": 90,
+        "minutes": 0,
+        "enabled": true
+      },
+      {
+        "id": "c0ffee123456",
+        "type": "cpu",
+        "device": "a3f1c9d2-7b64-4e0a-9c1d-2f5e8b7a6c40",
+        "threshold": 90,
+        "minutes": 0,
+        "enabled": true
+      },
+      {
+        "id": "feedfacecafe",
+        "type": "power",
+        "device": "*",
+        "threshold": 1000,
+        "minutes": 0,
+        "enabled": true
+      },
+      {
+        "id": "deadbeef0001",
+        "type": "dailyCost",
+        "device": "*",
+        "threshold": 0.01,
+        "minutes": 0,
+        "enabled": true
+      },
+      {
+        "id": "abcdef012345",
+        "type": "mem",
+        "device": "*",
+        "threshold": 97.5,
+        "minutes": 5,
+        "enabled": true
+      }
+    ],
+    "channels": {
+      "desktop": true,
+      "ntfy": {
+        "enabled": true,
+        "server": "https://ntfy.sh",
+        "topic": "dm-fixture-topic",
+        "email": "alerts@example.com"
+      },
+      "webhook": {
+        "enabled": true,
+        "url": "",
+        "keepUrl": true
+      }
+    },
+    "notifyResolved": false,
+    "tempUnit": "F"
+  },
+  "active": [
+    {
+      "ruleId": "deadbeef0001",
+      "type": "dailyCost",
+      "device": "*",
+      "deviceName": "All devices",
+      "since": 1795214167000,
+      "value": 6.7677000000000005,
+      "threshold": 0.01,
+      "title": "All devices: electricity today is €6.77",
+      "message": "Over your €0.01 daily limit."
+    },
+    {
+      "ruleId": "138ac9e65858",
+      "type": "offline",
+      "device": "old-htpc",
+      "deviceName": "htpc",
+      "since": 1795213927000,
+      "value": null,
+      "threshold": null,
+      "title": "htpc is offline",
+      "message": "No reports since 2:36 PM."
+    },
+    {
+      "ruleId": "feedfacecafe",
+      "type": "power",
+      "device": "4c2f9a7e1b3d4f6a8c0e2d4b6f8a1c3e",
+      "deviceName": "dgx-station",
+      "since": 1795213889000,
+      "value": 1260.9,
+      "threshold": 1000,
+      "title": "dgx-station: Power draw 1.26 kW",
+      "message": "Above 1.00 kW."
+    },
+    {
+      "ruleId": "32b4c55dfa3c",
+      "type": "disk",
+      "device": "f0e1d2c3-b4a5-4697-8879-6a5b4c3d2e1f",
+      "deviceName": "Lab PC",
+      "since": 1795213867000,
+      "value": 95.18065420935258,
+      "threshold": 90,
+      "title": "Lab PC: disk C: is 95% full",
+      "message": "Over your 90% limit · 12.3 GB free."
+    }
+  ],
+  "events": [
+    {
+      "id": "50a357f38e02",
+      "t": 1795214169000,
+      "ruleId": "b0b0b0b0b0b1",
+      "type": "offline",
+      "device": "nas-01",
+      "deviceName": "nas",
+      "state": "resolved",
+      "value": null,
+      "title": "nas is back online",
+      "message": "It was offline since 2:32 PM."
+    },
+    {
+      "id": "f32790f355c1",
+      "t": 1795214167000,
+      "ruleId": "deadbeef0001",
+      "type": "dailyCost",
+      "device": "*",
+      "deviceName": "All devices",
+      "state": "firing",
+      "value": 6.7677000000000005,
+      "title": "All devices: electricity today is €6.77",
+      "message": "Over your €0.01 daily limit."
+    },
+    {
+      "id": "cd3c8d079a36",
+      "t": 1795214167000,
+      "ruleId": "b0b0b0b0b0b1",
+      "type": "offline",
+      "device": "nas-01",
+      "deviceName": "nas",
+      "state": "firing",
+      "value": null,
+      "title": "nas is offline",
+      "message": "No reports since 2:32 PM."
+    },
+    {
+      "id": "a3c6e0cfeb16",
+      "t": 1795213949000,
+      "ruleId": "b0b0b0b0b0b1",
+      "type": "offline",
+      "device": "nas-01",
+      "deviceName": "nas",
+      "state": "resolved",
+      "value": null,
+      "title": "nas is back online",
+      "message": "It was offline since 2:31 PM."
+    },
+    {
+      "id": "4b26e1060b39",
+      "t": 1795213947000,
+      "ruleId": "b0b0b0b0b0b1",
+      "type": "offline",
+      "device": "nas-01",
+      "deviceName": "nas",
+      "state": "firing",
+      "value": null,
+      "title": "nas is offline",
+      "message": "No reports since 2:31 PM."
+    },
+    {
+      "id": "33a0c5598368",
+      "t": 1795213927000,
+      "ruleId": "138ac9e65858",
+      "type": "offline",
+      "device": "old-htpc",
+      "deviceName": "htpc",
+      "state": "firing",
+      "value": null,
+      "title": "htpc is offline",
+      "message": "No reports since 2:31 PM."
+    },
+    {
+      "id": "54eafba603c0",
+      "t": 1795213897000,
+      "ruleId": "c0ffee123456",
+      "type": "cpu",
+      "device": "a3f1c9d2-7b64-4e0a-9c1d-2f5e8b7a6c40",
+      "deviceName": "DESKTOP-7QK2M1P",
+      "state": "resolved",
+      "value": 33.4,
+      "title": "DESKTOP-7QK2M1P: CPU load back to normal",
+      "message": "Now 33% (limit 90%)."
+    },
+    {
+      "id": "6c4f538a06bb",
+      "t": 1795213889000,
+      "ruleId": "feedfacecafe",
+      "type": "power",
+      "device": "4c2f9a7e1b3d4f6a8c0e2d4b6f8a1c3e",
+      "deviceName": "dgx-station",
+      "state": "firing",
+      "value": 1271.8,
+      "title": "dgx-station: Power draw 1.27 kW",
+      "message": "Above 1.00 kW."
+    },
+    {
+      "id": "29c7b24da904",
+      "t": 1795213889000,
+      "ruleId": "c0ffee123456",
+      "type": "cpu",
+      "device": "a3f1c9d2-7b64-4e0a-9c1d-2f5e8b7a6c40",
+      "deviceName": "DESKTOP-7QK2M1P",
+      "state": "firing",
+      "value": 97.4,
+      "title": "DESKTOP-7QK2M1P: CPU load 97%",
+      "message": "Above 90%."
+    },
+    {
+      "id": "457d693fa8d4",
+      "t": 1795213867000,
+      "ruleId": "32b4c55dfa3c",
+      "type": "disk",
+      "device": "f0e1d2c3-b4a5-4697-8879-6a5b4c3d2e1f",
+      "deviceName": "LAB-PC-03",
+      "state": "firing",
+      "value": 95.18065420935258,
+      "title": "LAB-PC-03: disk C: is 95% full",
+      "message": "Over your 90% limit · 12.3 GB free."
+    }
+  ],
+  "priceSet": true
+}
