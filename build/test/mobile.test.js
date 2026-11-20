@@ -569,6 +569,26 @@ function dialog(t, hubFetch) {
     clickPhone:id=>element('phoneList').listeners.click({target:{closest:()=>id==null?null:{dataset:{id},disabled:false}}}),
   };
 }
+// A hubFetch that can hold one answer back, so a test can act while the page still waits for it.
+// `busy` counts what the page is waiting for. Between two macrotasks every continuation of the page
+// has run, so that is where the count is read: 0 there means nothing is left to arrive or to act on.
+function held(fetch) {
+  const holds=new Set(); let busy=0;
+  const track=async work=>{busy++;try{return await work;}finally{busy--;}};
+  const between=probe=>new Promise(ok=>setImmediate(ok)).then(()=>until(probe));
+  return {
+    fetch:(resource,options={})=>track((async()=>{
+      const res=await fetch(resource,options), request=(options.method||'GET')+' '+resource+' '+(options.body||'');
+      for(const hold of holds) if(hold.request.test(request)){holds.delete(hold);hold.waiting=true;await hold.released;break;}
+      const json=res.json.bind(res);res.json=()=>track(json());   // reading an answer is part of taking it in
+      return res;
+    })()),
+    // Holds the next answer to a matching request until release().
+    hold(request){const hold={request,waiting:false};hold.released=new Promise(ok=>hold.release=ok);holds.add(hold);return hold;},
+    parked:hold=>between(()=>hold.waiting&&busy===1),   // the held answer is all the page still waits for
+    settled:()=>between(()=>busy===0),
+  };
+}
 test('the add-device dialog pairs a phone by QR code, lists it and removes it',async t=>{
   const {h,call,status,phone,desktop}=await fixture(t);
   const fetchAs=(key,remote)=>(resource,options={})=>call(resource,{key,remote,method:options.method,raw:options.body});
@@ -617,7 +637,7 @@ test('the add-device dialog pairs a phone by QR code, lists it and removes it',a
   const second=await until(()=>element('mobileCode').textContent);
   assert.notEqual(second,link);await ui.poll();assert.equal(element('mobileRow').hidden,false);
   assert.match(element('phoneList').innerHTML,/Earlier<\/div><div class="set-v hint">Paired [^<]* · not seen since the hub started</);
-  // Leaving the tab mid-request must not let the late answer paint a code into another tab.
+  // Changing tabs at once leaves only the tab chosen last on screen (the next test leaves mid-request).
   ui.choose('mobile');ui.choose('app');
   assert.match(await until(()=>element('pairCode').textContent),/^https:\/\/hub\.test\/pair#join=/);
   await new Promise(ok=>setTimeout(ok,50));
@@ -637,6 +657,31 @@ test('the add-device dialog pairs a phone by QR code, lists it and removes it',a
   assert.equal(guest.element('mobileRow').hidden,true);assert.equal(guest.element('phoneList').hidden,true);assert.equal(guest.element('mobileCode').textContent,'');
   assert.match(guest.element('viewUrl').textContent,/^https:\/\/hub\.test\/unlock#join=/);assert.equal(guest.timers.size,0);
   void earlier;
+});
+test('an answer that arrives after the phone tab was left changes nothing on screen',async t=>{
+  const {h,call}=await fixture(t);
+  const gate=held((resource,options={})=>call(resource,{key:h.localKey,method:options.method,raw:options.body})), ui=dialog(t,gate.fetch), {element}=ui;
+  const shown=due=>[due,...['viewUrl','pairCode','pairHint','mobileCode','cmd','cmdHint'].map(id=>element(id).textContent),
+    ...['mobileRow','phoneList','pairRow','enrollRow'].map(id=>element(id).hidden),element('phoneList').innerHTML,element('cmdRow').style.display,ui.drawn.length,ui.timers.size];
+  await ui.open();
+  // The phone tab waits for the hub three times. Whichever answer is still due when the tab is left, the
+  // rest of that request must neither paint into the tab chosen since nor keep the phone list refreshing.
+  for(const [due,request] of [['browser link',/^POST \/api\/invites .*"kind":"browser"/],['paired list',/^GET \/api\/mobile /],['phone invitation',/^POST \/api\/invites .*"kind":"mobile"/]]){
+    await gate.settled();
+    const hold=gate.hold(request);
+    ui.choose('mobile');await gate.parked(hold);
+    ui.choose('app');
+    assert.match(await until(()=>element('pairCode').textContent),/^https:\/\/hub\.test\/pair#join=[A-Za-z0-9_-]{43}$/);
+    const before=shown(due);
+    hold.release();await gate.settled();
+    assert.equal(element('mobileRow').hidden,true,due);assert.equal(element('mobileCode').textContent,'',due);assert.equal(element('phoneList').hidden,true,due);
+    assert.equal(ui.drawn.length,0,due);assert.equal(ui.timers.size,0,due);
+    assert.deepEqual(shown(due),before);
+  }
+  // Left alone, the same request does show its code, so the checks above were not passing on a dead page.
+  ui.choose('mobile');
+  assert.match(await until(()=>element('mobileCode').textContent),/^https:\/\/hub\.test\/mobile#join=[A-Za-z0-9_-]{43}$/);
+  assert.equal(element('mobileRow').hidden,false);assert.ok(ui.drawn.length>1);assert.equal(ui.timers.size,1);
 });
 test('without an HTTPS address the phone tab explains what to enable first',async t=>{
   const {h,call}=await fixture(t,{publicUrl:null});
