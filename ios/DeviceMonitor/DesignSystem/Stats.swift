@@ -22,23 +22,21 @@ struct MeterBar: View {
         self.label = accessibilityLabel
     }
 
-    private var fraction: Double {
-        percent.isFinite ? min(100, max(0, percent)) / 100 : 0
-    }
-
     var body: some View {
+        // One clamped value for the fill and for VoiceOver, so both state what the bar shows.
+        let shown = Theme.clampedPercent(percent)
         GeometryReader { proxy in
             RoundedRectangle(cornerRadius: Theme.Radius.bar)
                 .fill(color)
-                .frame(width: proxy.size.width * fraction)
-                .animation(reduceMotion ? nil : .easeInOut(duration: 0.4), value: fraction)
+                .frame(width: proxy.size.width * shown / 100)
+                .animation(reduceMotion ? nil : .easeInOut(duration: 0.4), value: shown)
         }
         .frame(height: height)
         .background(Theme.grid)
         .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.bar))
         .accessibilityElement()
         .accessibilityLabel(label ?? "")
-        .accessibilityValue(Theme.percentText(percent))
+        .accessibilityValue(Theme.percentText(shown))
         .accessibilityHidden(label == nil)
     }
 }
@@ -52,7 +50,7 @@ struct StatCell: View {
     private let barColor: Color
 
     /// - Parameters:
-    ///   - percent: Shows a bar filled to this percentage when given.
+    ///   - percent: Shows a bar filled to this percentage when given (0–100; clamped).
     ///   - barColor: The dashboard uses the GPU colour for VRAM and the default for drives.
     init(_ key: String, value: String, percent: Double? = nil, barColor: Color = Theme.textSecondary) {
         self.key = key
@@ -80,7 +78,7 @@ struct StatCell: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(key)
-        .accessibilityValue(percent.map { "\(value), \(Theme.percentText($0))" } ?? value)
+        .accessibilityValue(percent.map { "\(value), \(Theme.percentText(Theme.clampedPercent($0)))" } ?? value)
     }
 }
 

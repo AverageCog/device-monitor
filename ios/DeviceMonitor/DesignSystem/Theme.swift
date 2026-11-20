@@ -131,7 +131,17 @@ nonisolated extension Theme {
     static func percentText(_ value: Double?) -> String {
         guard let value, value.isFinite else { return "–" }
         // Math.round rounds halves up, which differs from Swift's default for negative numbers.
-        return "\(Int((value + 0.5).rounded(.down)))%"
+        let rounded = (value + 0.5).rounded(.down)
+        // The hub relays any finite number, and used / total with a tiny total is far beyond what
+        // Int holds. Int(_:) traps there; print the number as it is instead ("1e+23%", which is
+        // also what the dashboard shows).
+        guard let whole = Int(exactly: rounded) else { return "\(rounded)%" }
+        return "\(whole)%"
+    }
+
+    /// A percentage as a bar or an arc can show it: 0–100, and 0 when it is not a number.
+    static func clampedPercent(_ value: Double) -> Double {
+        value.isFinite ? min(100, max(0, value)) : 0
     }
 }
 

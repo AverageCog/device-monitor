@@ -39,6 +39,27 @@ final class RegressionUITests: XCTestCase {
         XCTAssertEqual(field.value as? String, "abc")
     }
 
+    /// The hub relays any finite number, and a ratio such as used / total can be far outside 0–100.
+    /// The components show such a reading; formatting it used to trap.
+    @MainActor
+    func testOutOfRangeReadingsRender() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-dm-gallery", "extremes"]
+        app.launch()
+
+        let high = app.element(withIdentifier: "extreme-gauge-high")
+        XCTAssertTrue(high.waitForExistence(timeout: 20), "The gallery renders readings far outside 0–100")
+        XCTAssertEqual(high.value as? String, "1e+23%, 59°C, Normal")
+        XCTAssertEqual(app.element(withIdentifier: "extreme-gauge-low").value as? String, "-1e+23%, no sensor")
+        XCTAssertEqual(app.element(withIdentifier: "extreme-gauge-infinite").value as? String, "No reading, 1 EB / 1 KB")
+        // Bars state what they draw: clamped to 0–100.
+        XCTAssertEqual(app.element(withIdentifier: "extreme-stat-high").value as? String, "1 EB / 1 KB, 100%")
+        XCTAssertEqual(app.element(withIdentifier: "extreme-stat-nan").value as? String, "0 B / 0 B, 0%")
+        XCTAssertEqual(app.element(withIdentifier: "extreme-meter-low").value as? String, "0%")
+        XCTAssertEqual(app.element(withIdentifier: "extreme-chart").value as? String, "CPU 1e+23%")
+        XCTAssertEqual(app.state, .runningForeground)
+    }
+
     /// VoiceOver reads a gauge and its caption as one element. On their own, two pills both read
     /// "Temperature" and the memory figure had no label at all.
     @MainActor

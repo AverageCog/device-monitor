@@ -5,7 +5,7 @@ import SwiftUI
 /// docs/screenshots/*.png. Debug builds only.
 struct ComponentGallery: View {
     /// Where to scroll when the gallery opens (`-dm-gallery <id>`). Sections: cards, gauges, pills,
-    /// chart, stats, kv, tiles, buttons, selection, banners, empty, settings, colours, type.
+    /// chart, stats, kv, tiles, buttons, selection, banners, empty, settings, colours, type, extremes.
     /// Single cards: card-details, card-offline.
     var initialSection: String?
 
@@ -40,6 +40,7 @@ struct ComponentGallery: View {
                     settings
                     colours
                     textStyles
+                    outOfRange
                 }
                 .frame(maxWidth: Theme.Layout.maxContentWidth, alignment: .leading)
                 .padding(Theme.Layout.screenPadding(for: horizontalSizeClass))
@@ -332,6 +333,45 @@ struct ComponentGallery: View {
                         .foregroundStyle(Theme.textPrimary)
                         .lineLimit(1)
                 }
+            }
+        }
+    }
+
+    /// Readings no healthy agent sends. The hub relays any finite number and a ratio such as
+    /// used / total can land far outside 0–100, so none of this may trap or break the layout.
+    private var outOfRange: some View {
+        section("Out-of-range values", id: "extremes") {
+            DMCard {
+                GaugeRow {
+                    GaugeColumn(value: 1e23, label: "CPU", color: Theme.cpu, caption: .temperature("59°C", .normal))
+                        .accessibilityIdentifier("extreme-gauge-high")
+                    GaugeColumn(value: -1e23, label: "GPU", color: Theme.gpu, caption: .hint("no sensor"))
+                        .accessibilityIdentifier("extreme-gauge-low")
+                    GaugeColumn(value: .infinity, label: "Memory", color: Theme.mem, caption: .text("1 EB / 1 KB"))
+                        .accessibilityIdentifier("extreme-gauge-infinite")
+                }
+                StatsGrid {
+                    StatCell("VRAM", value: "1 EB / 1 KB", percent: 1e23, barColor: Theme.gpu)
+                        .accessibilityIdentifier("extreme-stat-high")
+                    StatCell("Disk C:", value: "0 B / 0 B", percent: .nan)
+                        .accessibilityIdentifier("extreme-stat-nan")
+                }
+                MeterBar(percent: -1e23, color: Theme.cpu, height: 6, accessibilityLabel: "Share of energy")
+                    .frame(width: 60)
+                    .accessibilityIdentifier("extreme-meter-low")
+                MiniChart(
+                    series: [MiniChartSeries(id: "cpu", label: "CPU", color: Theme.cpu, points: [
+                        MiniChartPoint(t: now - 40 * 60_000, value: 40),
+                        MiniChartPoint(t: now - 30 * 60_000, value: -1e23),
+                        MiniChartPoint(t: now - 20 * 60_000, value: 250),
+                        MiniChartPoint(t: now - 10 * 60_000, value: 1e23),
+                    ])],
+                    windowEnd: now,
+                    windowSpan: 60 * 60_000,
+                    gapInterval: 15 * 60_000,
+                    accessibilityLabel: "Out-of-range usage"
+                )
+                .accessibilityIdentifier("extreme-chart")
             }
         }
     }

@@ -24,8 +24,7 @@ struct GaugeView: View {
     }
 
     private var fraction: Double {
-        guard let value, value.isFinite else { return 0 }
-        return min(100, max(0, value)) / 100
+        Theme.clampedPercent(value ?? 0) / 100
     }
 
     /// What VoiceOver reads for a gauge showing `value`.
