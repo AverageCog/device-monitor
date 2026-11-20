@@ -5,7 +5,10 @@ dashboard shows; it never reports the phone's own stats.
 
 ## Requirements
 
-- macOS with Xcode 16 or later (the project uses file-system-synchronized groups, project format 77).
+- macOS with Xcode 26 or later. The app target is built with default main-actor isolation and
+  approachable concurrency (see [Concurrency settings](#concurrency-settings)), build settings that
+  Xcode 26 introduced. Xcode 16 can open the project (file-system-synchronized groups, project
+  format 77) but does not know those settings, and the app does not compile without them.
   Developed with Xcode 27 / Swift 6.4.
 - iOS 17.0 or later on the device or simulator.
 - No third-party dependencies and no package downloads: the only package is the local `Packages/DMCore`.
@@ -91,6 +94,11 @@ control, chips, banners, empty states, settings rows). Every component has a `#P
 Debug builds have a **component gallery** with all of them and three mock device cards: Devices tab →
 Debug → Component gallery, or launch straight into it (below).
 
+The device grid's `LazyVGrid` belongs directly in the Dashboard's `ScrollView`. Nested in an eager
+`VStack`, a lazy grid of tall cards is sized from an estimate of the cards it has not built yet, and
+at the largest text sizes that left the page opening part-way down with its top out of reach. The
+gallery is one long eager page, so it lays its three cards out with an eager layout instead.
+
 ### Debug launch arguments
 
 Debug builds understand:
@@ -100,7 +108,8 @@ Debug builds understand:
 | `-dm-phase <onboarding\|connecting\|live\|unreachable\|revoked>` | start in that phase |
 | `-dm-tab <devices\|history\|advanced\|alerts\|settings>` | start on that tab |
 | `-dm-history <device id>` | open the History tab for that device, through the router |
-| `-dm-gallery [section]` | open the component gallery, optionally scrolled to a section (`cards`, `gauges`, `pills`, `chart`, `stats`, `kv`, `tiles`, `buttons`, `selection`, `banners`, `empty`, `settings`, `colours`, `type`) |
+| `-dm-gallery [section]` | open the component gallery, optionally scrolled to a section (`cards`, `gauges`, `pills`, `chart`, `stats`, `kv`, `tiles`, `buttons`, `selection`, `banners`, `empty`, `settings`, `colours`, `type`, `extremes`) |
+| `-dm-probe phase-container` | open the check that a phase screen keeps its state when it starts scrolling |
 
 ## Tests
 
@@ -118,4 +127,7 @@ xcodebuild -project ios/DeviceMonitor.xcodeproj -scheme DeviceMonitor \
 ```
 
 To add a UI test, add a Swift file to `DeviceMonitorUITests/`; nothing else is needed. Test methods
-that touch `XCUIApplication` are marked `@MainActor`.
+that touch `XCUIApplication` are marked `@MainActor`. `SmokeUITests` covers the wiring of the shell;
+`RegressionUITests` pins things that broke once (state kept by a phase screen, out-of-range readings,
+VoiceOver grouping of the gauges, the gallery at the largest text size). A test can ask for a text
+size with `-UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL`.
