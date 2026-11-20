@@ -1,0 +1,934 @@
+{
+ "origins": [
+  {
+   "input": "https://hub.example",
+   "origin": "https://hub.example"
+  },
+  {
+   "input": "https://hub.example/",
+   "origin": "https://hub.example"
+  },
+  {
+   "input": "https://hub.example:8443",
+   "origin": "https://hub.example:8443"
+  },
+  {
+   "input": "https://hub.example:8443/",
+   "origin": "https://hub.example:8443"
+  },
+  {
+   "input": "https://hub.example:443",
+   "origin": "https://hub.example"
+  },
+  {
+   "input": "https://hub.example:443/",
+   "origin": "https://hub.example"
+  },
+  {
+   "input": "HTTPS://HUB.EXAMPLE",
+   "origin": "https://hub.example"
+  },
+  {
+   "input": "Https://Hub.Example:7777/",
+   "origin": "https://hub.example:7777"
+  },
+  {
+   "input": "https://HUB.example:8443",
+   "origin": "https://hub.example:8443"
+  },
+  {
+   "input": "https://127.0.0.1:7443",
+   "origin": "https://127.0.0.1:7443"
+  },
+  {
+   "input": "https://192.168.1.20",
+   "origin": "https://192.168.1.20"
+  },
+  {
+   "input": "https://[::1]",
+   "origin": "https://[::1]"
+  },
+  {
+   "input": "https://[::1]:8443",
+   "origin": "https://[::1]:8443"
+  },
+  {
+   "input": "https://[::1]:443",
+   "origin": "https://[::1]"
+  },
+  {
+   "input": "https://[0:0:0:0:0:0:0:1]",
+   "origin": "https://[::1]"
+  },
+  {
+   "input": "https://[2001:DB8::1]",
+   "origin": "https://[2001:db8::1]"
+  },
+  {
+   "input": "https://[2001:db8:0:0:1:0:0:1]",
+   "origin": "https://[2001:db8::1:0:0:1]"
+  },
+  {
+   "input": "https://[2001:0db8:0000:0000:0000:0000:0000:0001]",
+   "origin": "https://[2001:db8::1]"
+  },
+  {
+   "input": "https://[::ffff:192.168.1.5]",
+   "origin": "https://[::ffff:c0a8:105]"
+  },
+  {
+   "input": "https://[::]",
+   "origin": "https://[::]"
+  },
+  {
+   "input": "https://[1::]",
+   "origin": "https://[1::]"
+  },
+  {
+   "input": "https://[1:0:0:2:0:0:0:3]",
+   "origin": "https://[1:0:0:2::3]"
+  },
+  {
+   "input": "https://[1:2:3:4:5:6:7:8]",
+   "origin": "https://[1:2:3:4:5:6:7:8]"
+  },
+  {
+   "input": "https://[fe80::1%25en0]",
+   "origin": null
+  },
+  {
+   "input": "https://[fe80::1%en0]",
+   "origin": null
+  },
+  {
+   "input": "https://my-pc.tailnet-1234.ts.net",
+   "origin": "https://my-pc.tailnet-1234.ts.net"
+  },
+  {
+   "input": "https://xn--bcher-kva.example",
+   "origin": "https://xn--bcher-kva.example"
+  },
+  {
+   "input": "https://bücher.example",
+   "origin": "https://xn--bcher-kva.example"
+  },
+  {
+   "input": "https://例え.テスト",
+   "origin": "https://xn--r8jz45g.xn--zckzah"
+  },
+  {
+   "input": "https://ＨＵＢ.example",
+   "origin": "https://hub.example"
+  },
+  {
+   "input": "https://hub。example",
+   "origin": "https://hub.example"
+  },
+  {
+   "input": "https://hub.example​",
+   "origin": "https://hub.example"
+  },
+  {
+   "input": "https://ⓗub.example",
+   "origin": "https://hub.example"
+  },
+  {
+   "input": "http://hub.example",
+   "origin": null
+  },
+  {
+   "input": "http://127.0.0.1:7777",
+   "origin": null
+  },
+  {
+   "input": "http://localhost:7777",
+   "origin": null
+  },
+  {
+   "input": "ftp://hub.example",
+   "origin": null
+  },
+  {
+   "input": "wss://hub.example",
+   "origin": null
+  },
+  {
+   "input": "https://user@hub.example",
+   "origin": null
+  },
+  {
+   "input": "https://user:pw@hub.example",
+   "origin": null
+  },
+  {
+   "input": "https://:pw@hub.example",
+   "origin": null
+  },
+  {
+   "input": "https://@hub.example",
+   "origin": "https://hub.example"
+  },
+  {
+   "input": "https://hub.example/path",
+   "origin": null
+  },
+  {
+   "input": "https://hub.example//",
+   "origin": null
+  },
+  {
+   "input": "https://hub.example/?",
+   "origin": "https://hub.example"
+  },
+  {
+   "input": "https://hub.example/?q=1",
+   "origin": null
+  },
+  {
+   "input": "https://hub.example/#",
+   "origin": "https://hub.example"
+  },
+  {
+   "input": "https://hub.example/#frag",
+   "origin": null
+  },
+  {
+   "input": "https://hub.example?x",
+   "origin": null
+  },
+  {
+   "input": "https://hub.example#x",
+   "origin": null
+  },
+  {
+   "input": "https://",
+   "origin": null
+  },
+  {
+   "input": "https:///",
+   "origin": null
+  },
+  {
+   "input": "https://:443",
+   "origin": null
+  },
+  {
+   "input": "https://hub.example:",
+   "origin": "https://hub.example"
+  },
+  {
+   "input": "https://hub.example:0",
+   "origin": "https://hub.example:0"
+  },
+  {
+   "input": "https://hub.example:1",
+   "origin": "https://hub.example:1"
+  },
+  {
+   "input": "https://hub.example:65535",
+   "origin": "https://hub.example:65535"
+  },
+  {
+   "input": "https://hub.example:65536",
+   "origin": null
+  },
+  {
+   "input": "https://hub.example:080",
+   "origin": "https://hub.example:80"
+  },
+  {
+   "input": "https://hub.example:8443x",
+   "origin": null
+  },
+  {
+   "input": "https://hub.example:-1",
+   "origin": null
+  },
+  {
+   "input": "https://hub.example:+80",
+   "origin": null
+  },
+  {
+   "input": "https://hub.example:443:443",
+   "origin": null
+  },
+  {
+   "input": "https://hub_example",
+   "origin": null
+  },
+  {
+   "input": "https://hub.example.",
+   "origin": "https://hub.example."
+  },
+  {
+   "input": "https://hub..example",
+   "origin": "https://hub..example"
+  },
+  {
+   "input": "https://.hub.example",
+   "origin": "https://.hub.example"
+  },
+  {
+   "input": "https://-hub.example",
+   "origin": "https://-hub.example"
+  },
+  {
+   "input": "https://hub-.example",
+   "origin": "https://hub-.example"
+  },
+  {
+   "input": "https://1.2.3",
+   "origin": "https://1.2.0.3"
+  },
+  {
+   "input": "https://1.2.3.4.5",
+   "origin": null
+  },
+  {
+   "input": "https://0x7f.0.0.1",
+   "origin": "https://127.0.0.1"
+  },
+  {
+   "input": "https://017.0.0.1",
+   "origin": "https://15.0.0.1"
+  },
+  {
+   "input": "https://256.1.1.1",
+   "origin": null
+  },
+  {
+   "input": "https://127.1",
+   "origin": "https://127.0.0.1"
+  },
+  {
+   "input": "https://2130706433",
+   "origin": "https://127.0.0.1"
+  },
+  {
+   "input": "https://1.2.3.04",
+   "origin": "https://1.2.3.4"
+  },
+  {
+   "input": "https://127.0.0.1.",
+   "origin": "https://127.0.0.1"
+  },
+  {
+   "input": "https://1.1.1.1.example",
+   "origin": "https://1.1.1.1.example"
+  },
+  {
+   "input": "https://0x.example",
+   "origin": "https://0x.example"
+  },
+  {
+   "input": "https://example.0x10",
+   "origin": null
+  },
+  {
+   "input": "https://example.1",
+   "origin": null
+  },
+  {
+   "input": "https://1e3.example",
+   "origin": "https://1e3.example"
+  },
+  {
+   "input": "https://hub.example\\@evil.example",
+   "origin": null
+  },
+  {
+   "input": "https://evil.example\\.hub.example",
+   "origin": null
+  },
+  {
+   "input": "https://hub.example\\",
+   "origin": "https://hub.example"
+  },
+  {
+   "input": "https://hub.example%2f",
+   "origin": null
+  },
+  {
+   "input": "https://hub%2eexample",
+   "origin": "https://hub.example"
+  },
+  {
+   "input": "https://hub.example%00",
+   "origin": null
+  },
+  {
+   "input": "https://hub .example",
+   "origin": null
+  },
+  {
+   "input": " https://hub.example",
+   "origin": "https://hub.example"
+  },
+  {
+   "input": "https://hub.example ",
+   "origin": "https://hub.example"
+  },
+  {
+   "input": "https://hub.example\n",
+   "origin": "https://hub.example"
+  },
+  {
+   "input": "https://hub\t.example",
+   "origin": "https://hub.example"
+  },
+  {
+   "input": "https://hub\n.example",
+   "origin": "https://hub.example"
+  },
+  {
+   "input": "https:hub.example",
+   "origin": "https://hub.example"
+  },
+  {
+   "input": "https:/hub.example",
+   "origin": "https://hub.example"
+  },
+  {
+   "input": "https:\\\\hub.example",
+   "origin": "https://hub.example"
+  },
+  {
+   "input": "//hub.example",
+   "origin": null
+  },
+  {
+   "input": "hub.example",
+   "origin": null
+  },
+  {
+   "input": "",
+   "origin": null
+  },
+  {
+   "input": "https://[::1",
+   "origin": null
+  },
+  {
+   "input": "https://::1",
+   "origin": null
+  },
+  {
+   "input": "https://[::1]]",
+   "origin": null
+  },
+  {
+   "input": "https://[:::1]",
+   "origin": null
+  },
+  {
+   "input": "https://[1::2::3]",
+   "origin": null
+  },
+  {
+   "input": "https://[12345::1]",
+   "origin": null
+  },
+  {
+   "input": "https://[::1]:",
+   "origin": "https://[::1]"
+  },
+  {
+   "input": "https://[::1]x",
+   "origin": null
+  },
+  {
+   "input": "https://[::g]",
+   "origin": null
+  },
+  {
+   "input": "https://[1.2.3.4]",
+   "origin": null
+  },
+  {
+   "input": "https://[]",
+   "origin": null
+  },
+  {
+   "input": "https://[:]",
+   "origin": null
+  },
+  {
+   "input": "https://[::ffff:192.168.01.5]",
+   "origin": null
+  },
+  {
+   "input": "https://[1:2:3:4:5:6:7::]",
+   "origin": "https://[1:2:3:4:5:6:7:0]"
+  },
+  {
+   "input": "https://[::1.2.3.4]",
+   "origin": "https://[::102:304]"
+  },
+  {
+   "input": "https://[0:0:0:0:0:0:0:0:1]",
+   "origin": null
+  },
+  {
+   "input": "https://[::1%lo0]",
+   "origin": null
+  },
+  {
+   "input": "https://xn--",
+   "origin": "https://xn--"
+  },
+  {
+   "input": "https://xn--a",
+   "origin": "https://xn--a"
+  },
+  {
+   "input": "https://xn--a.example",
+   "origin": "https://xn--a.example"
+  },
+  {
+   "input": "https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.example",
+   "origin": "https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.example"
+  },
+  {
+   "input": "https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.example",
+   "origin": "https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.example"
+  },
+  {
+   "input": "https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.example",
+   "origin": "https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.example"
+  },
+  {
+   "input": "https://a",
+   "origin": "https://a"
+  },
+  {
+   "input": "https://A",
+   "origin": "https://a"
+  },
+  {
+   "input": "https://localhost",
+   "origin": "https://localhost"
+  },
+  {
+   "input": "https://localhost:7443",
+   "origin": "https://localhost:7443"
+  },
+  {
+   "input": "javascript:alert(1)",
+   "origin": null
+  },
+  {
+   "input": "data:text/plain,https://hub.example",
+   "origin": null
+  }
+ ],
+ "invitations": [
+  {
+   "input": "https://hub.example/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": {
+    "origin": "https://hub.example",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4"
+   }
+  },
+  {
+   "input": "https://hub.example:8443/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": {
+    "origin": "https://hub.example:8443",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4"
+   }
+  },
+  {
+   "input": "https://[::1]:7443/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": {
+    "origin": "https://[::1]:7443",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4"
+   }
+  },
+  {
+   "input": "https://127.0.0.1:7443/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": {
+    "origin": "https://127.0.0.1:7443",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4"
+   }
+  },
+  {
+   "input": "HTTPS://HUB.EXAMPLE/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": {
+    "origin": "https://hub.example",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4"
+   }
+  },
+  {
+   "input": "https://hub.example:443/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": {
+    "origin": "https://hub.example",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4"
+   }
+  },
+  {
+   "input": "  https://hub.example/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4\n",
+   "parsed": {
+    "origin": "https://hub.example",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4"
+   }
+  },
+  {
+   "input": "\n\thttps://hub.example/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4  \r\n",
+   "parsed": {
+    "origin": "https://hub.example",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4"
+   }
+  },
+  {
+   "input": "https://hub.example/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4 ",
+   "parsed": {
+    "origin": "https://hub.example",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4"
+   }
+  },
+  {
+   "input": "https://hub.example/pair#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/unlock#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "http://127.0.0.1:7777/unlock#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "http://hub.example/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobile/#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example//mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobile?x=1#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobile?#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": {
+    "origin": "https://hub.example",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4"
+   }
+  },
+  {
+   "input": "https://hub.example/Mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/MOBILE#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobile#JOIN=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobile#join=QZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4A",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p+",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p/",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p=",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p%2D",
+   "parsed": {
+    "origin": "https://hub.example",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p-"
+   }
+  },
+  {
+   "input": "https://hub.example/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p%5F",
+   "parsed": {
+    "origin": "https://hub.example",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p_"
+   }
+  },
+  {
+   "input": "https://hub.example/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p%",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p%zz",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobile#x=1&join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": {
+    "origin": "https://hub.example",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4"
+   }
+  },
+  {
+   "input": "https://hub.example/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4&x=1",
+   "parsed": {
+    "origin": "https://hub.example",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4"
+   }
+  },
+  {
+   "input": "https://hub.example/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4&join=Zi1rnAedabKtJSm02ndsWm0tmCF60F7wDAwE46fWCJ0",
+   "parsed": {
+    "origin": "https://hub.example",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4"
+   }
+  },
+  {
+   "input": "https://hub.example/mobile#join=bad&join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobile#&&join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": {
+    "origin": "https://hub.example",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4"
+   }
+  },
+  {
+   "input": "https://hub.example/mobile#?join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": {
+    "origin": "https://hub.example",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4"
+   }
+  },
+  {
+   "input": "https://hub.example/mobile#join%3DvQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobile#jo%69n=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": {
+    "origin": "https://hub.example",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4"
+   }
+  },
+  {
+   "input": "https://hub.example/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4#extra",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobile##join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobile",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobile#",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobile#join",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobile#join=",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobile#=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "user@hub.example/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "https://user@hub.example/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "https://user:pw@hub.example/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "hub.example/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobile;x#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/./mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": {
+    "origin": "https://hub.example",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4"
+   }
+  },
+  {
+   "input": "https://hub.example/x/../mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": {
+    "origin": "https://hub.example",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4"
+   }
+  },
+  {
+   "input": "https://hub.example/%6Dobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example\\mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": {
+    "origin": "https://hub.example",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4"
+   }
+  },
+  {
+   "input": "https://hub.example/mo\tbile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": {
+    "origin": "https://hub.example",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4"
+   }
+  },
+  {
+   "input": "https://hub.example/mobile#jo\nin=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": {
+    "origin": "https://hub.example",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4"
+   }
+  },
+  {
+   "input": "https://hub.example/mobile #join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobile# join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobile#join= vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "https://bücher.example/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": {
+    "origin": "https://xn--bcher-kva.example",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4"
+   }
+  },
+  {
+   "input": "https://xn--bcher-kva.example/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": {
+    "origin": "https://xn--bcher-kva.example",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4"
+   }
+  },
+  {
+   "input": "https://hub.example/mobile​#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4​",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example./mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": {
+    "origin": "https://hub.example.",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4"
+   }
+  },
+  {
+   "input": "https://017.0.0.1/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": {
+    "origin": "https://15.0.0.1",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4"
+   }
+  },
+  {
+   "input": "https://hub.example/mobile#join=ééééééééééééééééééééééééééééééééééééééééééé",
+   "parsed": null
+  },
+  {
+   "input": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "",
+   "parsed": null
+  },
+  {
+   "input": "   ",
+   "parsed": null
+  },
+  {
+   "input": "hello",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4\nhttps://hub.example/mobile#join=Zi1rnAedabKtJSm02ndsWm0tmCF60F7wDAwE46fWCJ0",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4&",
+   "parsed": {
+    "origin": "https://hub.example",
+    "code": "vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4"
+   }
+  },
+  {
+   "input": "https://hub.example/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4;x=1",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/mobilex#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/xmobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/a/mobile#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example:8443/pair#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4",
+   "parsed": null
+  },
+  {
+   "input": "https://hub.example/unlock#join=vQZQ-sH2nBEYHfiE0uy58cZyG76jJ790eLJVZBZ-0p4&x=1",
+   "parsed": null
+  }
+ ]
+}
