@@ -1,0 +1,33 @@
+#if DEBUG
+import Foundation
+
+/// Launch arguments understood by DEBUG builds, so UI tests and screenshots can start anywhere
+/// without tapping their way there:
+///
+///     -dm-phase <onboarding|connecting|live|unreachable|revoked>   initial phase (default onboarding)
+///     -dm-tab <devices|history|advanced|alerts|settings>           initial tab
+///     -dm-gallery [section]                                        open the component gallery,
+///                                                                  optionally scrolled to a section
+nonisolated struct DebugLaunchOptions: Sendable {
+    var phase: AppPhase?
+    var tab: AppTab?
+    var showsGallery = false
+    var gallerySection: String?
+
+    static let current = DebugLaunchOptions(arguments: ProcessInfo.processInfo.arguments)
+
+    init(arguments: [String]) {
+        func value(after flag: String) -> String? {
+            guard let index = arguments.firstIndex(of: flag), arguments.indices.contains(index + 1) else { return nil }
+            let next = arguments[index + 1]
+            return next.hasPrefix("-") ? nil : next
+        }
+        phase = value(after: "-dm-phase").flatMap(AppPhase.init(rawValue:))
+        tab = value(after: "-dm-tab").flatMap(AppTab.init(rawValue:))
+        showsGallery = arguments.contains("-dm-gallery")
+        gallerySection = value(after: "-dm-gallery")
+        // The gallery lives behind the tabs.
+        if showsGallery, phase == nil { phase = .live }
+    }
+}
+#endif
