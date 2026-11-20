@@ -9,9 +9,10 @@ struct DeviceMonitorApp: App {
     init() {
         let router = AppRouter()
         #if DEBUG
-        // `-dm-phase` / `-dm-tab` start the app somewhere else; see DebugLaunchOptions.
+        // Launch arguments can start the app somewhere else; see DebugLaunchOptions.
         let options = DebugLaunchOptions.current
         if let tab = options.tab { router.selectedTab = tab }
+        if let deviceID = options.historyDeviceID { router.openHistory(for: deviceID) }
         let phase = options.phase ?? .onboarding
         #else
         let phase = AppPhase.onboarding

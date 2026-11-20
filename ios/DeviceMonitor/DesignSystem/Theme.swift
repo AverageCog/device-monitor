@@ -134,3 +134,30 @@ nonisolated extension Theme {
         return "\(Int((value + 0.5).rounded(.down)))%"
     }
 }
+
+#Preview("Colours") {
+    let rows: [[(String, Color)]] = [
+        [("page", Theme.page), ("surface1", Theme.surface1), ("surface2", Theme.surface2), ("grid", Theme.grid), ("axis", Theme.axis)],
+        [("cpu", Theme.cpu), ("gpu", Theme.gpu), ("mem", Theme.mem), ("accent", Theme.accent), ("danger", Theme.dangerText)],
+        [("good", Theme.good), ("warning", Theme.warning), ("serious", Theme.serious), ("critical", Theme.critical)],
+    ]
+    VStack(spacing: Theme.Spacing.m) {
+        ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+            HStack(spacing: Theme.Spacing.s) {
+                ForEach(row, id: \.0) { name, color in
+                    VStack(spacing: Theme.Spacing.xs) {
+                        RoundedRectangle(cornerRadius: Theme.Radius.small)
+                            .fill(color)
+                            .frame(height: 32)
+                            .overlay { RoundedRectangle(cornerRadius: Theme.Radius.small).strokeBorder(Theme.border) }
+                        Text(name).font(.caption2).foregroundStyle(Theme.textMuted)
+                    }
+                }
+            }
+        }
+    }
+    .padding()
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .background(Theme.surface1)
+    .preferredColorScheme(.dark)
+}

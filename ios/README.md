@@ -93,6 +93,7 @@ Debug builds understand:
 |---|---|
 | `-dm-phase <onboarding\|connecting\|live\|unreachable\|revoked>` | start in that phase |
 | `-dm-tab <devices\|history\|advanced\|alerts\|settings>` | start on that tab |
+| `-dm-history <device id>` | open the History tab for that device, through the router |
 | `-dm-gallery [section]` | open the component gallery, optionally scrolled to a section (`cards`, `gauges`, `pills`, `chart`, `stats`, `kv`, `tiles`, `buttons`, `selection`, `banners`, `empty`, `settings`, `colours`, `type`) |
 
 ## Tests

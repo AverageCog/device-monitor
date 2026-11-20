@@ -89,8 +89,22 @@ struct MiniChart: View {
         .accessibilityLabel(label)
         .accessibilityValue(latestSummary)
         .accessibilityChartDescriptor(MiniChartDescriptor(title: label, series: series, windowStart: windowEnd - windowSpan, windowEnd: windowEnd))
-        .accessibilityAddTraits(onTap == nil ? [] : .isButton)
-        .accessibilityAction { onTap?() }
+        .modifier(ActivationModifier(action: onTap))
+    }
+
+    /// Makes the chart a button for assistive technologies only when a tap does something.
+    private struct ActivationModifier: ViewModifier {
+        let action: (() -> Void)?
+
+        func body(content: Content) -> some View {
+            if let action {
+                content
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityAction(.default, action)
+            } else {
+                content
+            }
+        }
     }
 
     /// "CPU 28%, GPU 81%, Memory 46%": the most recent reading of each line.
@@ -287,7 +301,7 @@ struct ChartTooltip: View {
                     Rectangle()
                         .fill(row.color)
                         .frame(width: 8, height: 2)
-                    Text("\(row.label) ") + Text(row.value).fontWeight(.semibold) + Text(row.detail.map { " · \($0)" } ?? "")
+                    Text("\(row.label) \(Text(row.value).fontWeight(.semibold))\(row.detail.map { " · \($0)" } ?? "")")
                 }
                 .foregroundStyle(Theme.textPrimary)
             }
