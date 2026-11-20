@@ -101,6 +101,7 @@ function dashboardProtocol() {
       return new Response(html.body, { headers: { ...sec.BASE_HEADERS, ...html.headers, 'Content-Type':'text/html; charset=utf-8' } });
     }
     if (request.method === 'GET' && u.pathname === '/session.js') return new Response(fs.readFileSync(path.join(__dirname,'public','session.js')), { headers: { 'Content-Type':'text/javascript; charset=utf-8' } });
+    if (request.method === 'GET' && u.pathname === '/qr.js') return new Response(fs.readFileSync(path.join(__dirname,'public','qr.js')), { headers: { 'Content-Type':'text/javascript; charset=utf-8' } });
     const e = endpoint();
     if (!u.pathname.startsWith('/api/') || !e) return new Response(null, { status: 403 });
     try {

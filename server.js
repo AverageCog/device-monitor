@@ -31,6 +31,7 @@ const PROCS_WATCH_MS = 20e3;  // devices send their process list while a dashboa
 const STATIC = {
   '/session.js': ['session.js', 'text/javascript; charset=utf-8'],
   '/login.js': ['login.js', 'text/javascript; charset=utf-8'],
+  '/qr.js': ['qr.js', 'text/javascript; charset=utf-8'],
   '/manifest.webmanifest': ['manifest.webmanifest', 'application/manifest+json'],
   '/sw.js': ['sw.js', 'text/javascript; charset=utf-8'],
   '/icon-192.png': ['icon-192.png', 'image/png'],
@@ -165,10 +166,13 @@ async function snapshotChunk(res, data) {
     res.once('drain', drain); res.once('close', close);
   });
 }
-async function streamDashboard(req, res) {
+// A revoked credential loses its stream now, not at the next broadcast.
+function dropRevokedStreams() { for (const [res, client] of clients) if (!client.permitted()) res.destroy(); }
+async function streamDashboard(req, res, who) {
   if (clients.size >= MAX_STREAMS) return send(res, 503, { error: 'too many connections' });
-  const client = { permitted: () => isDashboard(principal(req)), queue: [], bytes: 0 };
-  clients.set(res, client); res.once('close', () => clients.delete(res));
+  const client = { permitted: () => isDashboard(principal(req)), queue: [], bytes: 0, mobile: who.mobile ? who.id : null };
+  clients.set(res, client);
+  res.once('close', () => { clients.delete(res); if (mobileSeen.has(client.mobile)) mobileSeen.set(client.mobile, Date.now()); });
   res.setTimeout(15000, () => res.destroy());
   res.writeHead(200, { ...sec.BASE_HEADERS, 'Content-Type':'text/event-stream', 'Cache-Control':'no-store', Connection:'keep-alive' });
   // Preserve the existing snapshot event without materializing a whole fleet per socket.
@@ -298,6 +302,14 @@ async function servedTlsPin(req, dest) {
 }
 const principal = req => access.principal(bearer(req), directLocal(req));
 const isDashboard = who => who && ['root', 'operator', 'client', 'browser'].includes(who.role);
+// Phones and tablets: when each was last heard from during this run (memory only). An open
+// stream is one long request, so it counts as active now.
+const mobileSeen = new Map();
+function mobileView(m) {
+  let lastSeen = mobileSeen.get(m.id) ?? null;
+  for (const client of clients.values()) if (client.mobile === m.id) lastSeen = Date.now();
+  return { ...m, lastSeen };
+}
 const lastReport = new Map();
 const downloadsByPeer = new Map();
 const peerAddress = req => LOOPBACK.has(req.socket.remoteAddress) && net.isIP(req.headers['x-forwarded-for'] || '') ?
@@ -477,8 +489,10 @@ const handler = async (req, res) => {
         !(directLocal(req) && req.headers.origin === 'http://' + req.headers.host)) return send(res, 403, { error: 'cross-site request refused' });
     const who = principal(req);
     if (!who && !rateOk(req)) return send(res, 429, { error: 'too many requests' });
+    if (who?.mobile) mobileSeen.set(who.id, Date.now());
     if (req.method === 'GET' && (p === '/' || p === '/index.html')) return sendHtml(res, 'index.html');
     if (req.method === 'GET' && p === '/pair') return send(res, 200, 'Paste this complete invitation into Device Monitor → Connect on the computer you want to enroll.', 'text/plain; charset=utf-8');
+    if (req.method === 'GET' && p === '/mobile') return send(res, 200, 'This invitation pairs the Device Monitor app for iPhone and iPad. Open the app, choose Scan invitation and point the camera at the code on the hub, or paste this complete invitation there.', 'text/plain; charset=utf-8');
     if (req.method === 'GET' && p === '/unlock') return sendHtml(res, 'locked.html');
     if (req.method === 'POST' && p === '/api/desktop/tls-proof') {
       if (!routeOrigin.startsWith('https:')) return send(res, 403, {error:'HTTPS required'});
@@ -496,6 +510,15 @@ const handler = async (req, res) => {
       if (!member) return send(res, 403, { error: 'Invitation is invalid, expired or already used.' });
       return send(res, 200, member);
     }
+    if (req.method === 'POST' && p === '/api/mobile/pair') {
+      if (!routeOrigin.startsWith('https:')) return send(res, 403, { error: 'HTTPS required' });
+      const code = bearer(req), refused = () => send(res, 403, { error: 'Invitation is invalid, expired or already used.' });
+      // The label has to arrive before the single-use code is spent, and only a live invitation earns a body read.
+      if (!access.invited(code, 'mobile', routeOrigin)) return refused();
+      const b = await readBody(req, 1024);
+      const member = access.redeem(code, 'mobile', routeOrigin, { name: b?.name });   // cleaned (sec.cleanText, 60) where it is stored
+      return member ? send(res, 200, member) : refused();
+    }
     if (req.method === 'POST' && p === '/api/invites') {
       if (!isDashboard(who)) return send(res, 401, { error: 'Sign in on the hub first.' });
       const b = await readBody(req);
@@ -504,6 +527,7 @@ const handler = async (req, res) => {
       const dest = transport.origin(b.origin, true);
       if (!dest || (dest !== publicOrigin() && !(directLocal(req) && dest === localOrigin()))) return send(res, 400, { error: 'Configure a trusted HTTPS hub address for remote devices.' });
       if (b.kind !== 'browser' && !dest.startsWith('https:')) return send(res, 400, { error: 'Remote enrollment requires HTTPS.' });
+      if (b.kind === 'mobile' && b.id != null) return send(res, 400, { error: 'A phone or tablet always pairs as a new device.' });
       if (b.id != null && (!sec.isValidId(b.id) || !registry[b.id])) return send(res, 400, { error: 'Choose an existing device or leave it blank.' });
       const code = access.issue(b.kind, dest, b.id, issuer.id);
       return send(res, 200, { code, origin: dest, expires: Date.now() + 600000 });
@@ -580,10 +604,25 @@ const handler = async (req, res) => {
       if (!directLocal(req) || !['root','operator'].includes(who.role)) return send(res, 403, { error:'Use the hub app to revoke all browser sessions.' });
       access.clearSessions(); return send(res, 200, {ok:true});
     }
+    // Paired phones and tablets. The hub operator sees and removes any; a phone sees and removes only itself.
+    const operator = ['root','operator'].includes(who.role);
+    if (req.method === 'GET' && p === '/api/mobile') {
+      if (!operator && !who.mobile) return send(res, 403, { error: 'Manage phones and tablets on the hub.' });
+      return send(res, 200, access.mobiles().filter(m => operator || m.id === who.id).map(mobileView));
+    }
+    const mm = p.match(/^\/api\/mobile\/([^/]+)$/);
+    if (req.method === 'DELETE' && mm) {
+      let mid; try { mid = decodeURIComponent(mm[1]); } catch { mid = null; }
+      // Refused before the lookup, so nobody else learns which enrollments exist.
+      if (!operator && !(who.mobile && who.id === mid)) return send(res, 403, { error: 'Manage phones and tablets on the hub.' });
+      if (!sec.isValidId(mid) || !access.isMobile(mid)) return send(res, 404, { error: 'not found' });
+      access.revoke(mid); mobileSeen.delete(mid); dropRevokedStreams();
+      return send(res, 200, { ok: true });
+    }
     if (req.method === 'GET' && p === '/api/devices') {
       return send(res, 200, Object.keys(registry).map(deviceView));
     }
-    if (req.method === 'GET' && p === '/api/stream') return await streamDashboard(req, res);
+    if (req.method === 'GET' && p === '/api/stream') return await streamDashboard(req, res, who);
     if (req.method === 'GET' && p === '/api/energy') {
       const bounds = String(url.searchParams.get('bounds') || '').split(',').map(Number);
       const ok = bounds.length >= 2 && bounds.length <= 800 && bounds.every((v, i) => Number.isFinite(v) && (i === 0 || v > bounds[i - 1]))
@@ -714,7 +753,8 @@ return (async () => {
     if (secureServer) await listen(secureServer, Number(new URL(configuredOrigin).port) || 443, fixture ? '127.0.0.1' : '::');
     if (headlessInvites) access.openOperatorMailbox(PORT);
     return { port: PORT, localKey: access.config.localKey, agentToken: access.localAgent, publicOrigin, addresses: lanAddresses(), close,
-      ...(fixture ? { seedReport: b => handleReport(b, access.localAgent), browserLink: () => localOrigin() + '/unlock#join=' + access.issue('browser', localOrigin()) } : {}) };
+      ...(fixture ? { seedReport: b => handleReport(b, access.localAgent), browserLink: () => localOrigin() + '/unlock#join=' + access.issue('browser', localOrigin()),
+        setSecureContext: options => secureServer.setSecureContext(options) } : {}) };
   } catch (e) { close(); throw e; }
 })();
 }
