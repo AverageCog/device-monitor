@@ -1,7 +1,8 @@
 #if DEBUG
 import SwiftUI
 
-/// Debug-only entry points: the component gallery, a routing check and a phase switcher.
+/// Debug-only entry points: the component gallery, a routing check, the PhaseContainer check and a
+/// phase switcher.
 /// Lives on the placeholder Devices tab; whoever replaces that screen should keep it reachable
 /// in DEBUG builds (the Settings screen is a good home).
 struct DebugTools: View {
@@ -10,6 +11,8 @@ struct DebugTools: View {
 
     /// `-dm-gallery` opens the gallery straight away.
     @State private var showsGallery = DebugLaunchOptions.current.showsGallery
+    /// `-dm-probe phase-container` opens the PhaseContainer check straight away.
+    @State private var showsPhaseProbe = DebugLaunchOptions.current.probe == "phase-container"
 
     var body: some View {
         SettingsSection("Debug", footer: "Only in DEBUG builds.") {
@@ -33,6 +36,15 @@ struct DebugTools: View {
                 Button("Open") { router.openHistory(for: "demo-device") }
                     .buttonStyle(.dm(size: .small))
                     .accessibilityIdentifier("debug-open-history")
+            }
+
+            SettingsRow("Phase container", description: "Checks that a phase screen keeps its state when it starts scrolling.") {
+                Button("Open") { showsPhaseProbe = true }
+                    .buttonStyle(.dm(size: .small))
+                    .accessibilityIdentifier("debug-open-phase-probe")
+            }
+            .fullScreenCover(isPresented: $showsPhaseProbe) {
+                PhaseContainerProbe()
             }
 
             SettingsRow("App phase", description: "Switches RootView to another phase.") {

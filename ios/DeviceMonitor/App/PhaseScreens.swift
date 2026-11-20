@@ -10,13 +10,15 @@ struct PhaseContainer<Content: View>: View {
     }
 
     var body: some View {
-        ViewThatFits(in: .vertical) {
-            content
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // One copy of the content, in a scroll view at least as tall as the screen. Picking between
+        // a centred and a scrolling copy (ViewThatFits) rebuilds the content each time the keyboard,
+        // a rotation or the text size tips it over, and its state and keyboard focus go with it.
+        GeometryReader { proxy in
             ScrollView {
                 content
-                    .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity, minHeight: proxy.size.height)
             }
+            .scrollBounceBehavior(.basedOnSize)
         }
         .background(Theme.page.ignoresSafeArea())
     }

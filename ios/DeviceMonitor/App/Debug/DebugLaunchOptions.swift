@@ -9,12 +9,14 @@ import Foundation
 ///     -dm-history <device id>                                      open History for that device
 ///     -dm-gallery [section]                                        open the component gallery,
 ///                                                                  optionally scrolled to a section
+///     -dm-probe phase-container                                    open the PhaseContainer check
 nonisolated struct DebugLaunchOptions: Sendable {
     var phase: AppPhase?
     var tab: AppTab?
     var historyDeviceID: String?
     var showsGallery = false
     var gallerySection: String?
+    var probe: String?
 
     static let current = DebugLaunchOptions(arguments: ProcessInfo.processInfo.arguments)
 
@@ -29,8 +31,9 @@ nonisolated struct DebugLaunchOptions: Sendable {
         historyDeviceID = value(after: "-dm-history")
         showsGallery = arguments.contains("-dm-gallery")
         gallerySection = value(after: "-dm-gallery")
-        // The gallery and History live behind the tabs.
-        if showsGallery || historyDeviceID != nil, phase == nil { phase = .live }
+        probe = value(after: "-dm-probe")
+        // The gallery, the probes and History live behind the tabs.
+        if showsGallery || historyDeviceID != nil || probe != nil, phase == nil { phase = .live }
     }
 }
 #endif
