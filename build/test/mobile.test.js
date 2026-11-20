@@ -8,6 +8,7 @@ const os = require('node:os');
 const path = require('node:path');
 const http = require('node:http');
 const https = require('node:https');
+const net = require('node:net');
 const crypto = require('node:crypto');
 const vm = require('node:vm');
 const { spawn, execFile: execFileCallback } = require('node:child_process');
@@ -28,8 +29,8 @@ const until = async (probe, ms = 4000) => { for (const end = Date.now() + ms; Da
 
 function temp(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dm-mobile-test-')), closers = [];
-  t.after(() => {
-    for (const close of closers.splice(0)) close();
+  t.after(async () => {
+    for (const close of closers.splice(0)) await close();
     if (path.dirname(dir) !== path.resolve(os.tmpdir()) || !path.basename(dir).startsWith('dm-mobile-test-')) throw Error('Unsafe test directory');
     fs.rmSync(dir, {recursive:true,force:true,maxRetries:3});
   });
@@ -646,6 +647,116 @@ test('without an HTTPS address the phone tab explains what to enable first',asyn
   assert.equal(element('enableHttps').hidden,false);assert.equal(element('mobileRow').hidden,true);assert.equal(element('mobileCode').textContent,'');
   assert.equal(element('phoneList').hidden,false);assert.match(element('phoneList').innerHTML,/No phone or tablet is paired yet/);
   assert.equal((await call('/api/invites',{method:'POST',key:h.localKey,body:{kind:'mobile',origin:'http://127.0.0.1:'+h.port}})).status,400);
+});
+
+// ---- build/test/mobile-hub.js, the hub the iOS Simulator tests run against ----
+test('the simulator fixture hub pairs over real TLS, proves a rotated key and obeys its control port',async t=>{
+  const tmp=temp(t), reservation=net.createServer();
+  await new Promise(ok=>reservation.listen(0,'127.0.0.1',ok));
+  const port=reservation.address().port;await new Promise(ok=>reservation.close(ok));
+  const child=spawn(process.execPath,[path.join(__dirname,'mobile-hub.js'),'--port',String(port),'--control','0','--dir',tmp.dir,'--interval','100'],{stdio:['ignore','pipe','pipe'],windowsHide:true});
+  tmp.closers.push(()=>child.exitCode!==null||new Promise(ok=>{child.once('exit',ok);child.kill();}));
+  let out='', err='';
+  child.stderr.on('data',c=>{err+=c;});
+  const line=await new Promise((ok,no)=>{
+    child.stdout.on('data',c=>{out+=c;if(out.includes('\n'))ok(out.slice(0,out.indexOf('\n')));});
+    child.once('exit',code=>no(Error('The fixture hub exited with '+code+': '+err)));
+  });
+  const ready=JSON.parse(line), origin='https://localhost:'+port, control='http://127.0.0.1:'+ready.controlPort;
+  assert.deepEqual(Object.keys(ready).sort(),['ca','controlPort','dataDir','invitation','origin','pin']);
+  assert.equal(ready.origin,origin);assert.equal(ready.ca,path.join(tmp.dir,'ca.pem'));
+  assert.match(ready.invitation,new RegExp('^https://localhost:'+port+'/mobile#join=[A-Za-z0-9_-]{43}$'));
+  const caPem=fs.readFileSync(ready.ca), authority=new crypto.X509Certificate(caPem);
+  assert.equal(authority.ca,true);
+  if(process.platform!=='win32') assert.equal(fs.statSync(path.join(tmp.dir,'ca.key')).mode & 0o777,0o600);
+  const tls=(resource,{method='GET',key,body}={})=>new Promise((resolve,reject)=>{
+    const data=body===undefined?undefined:JSON.stringify(body);
+    const req=https.request(origin+resource,{method,agent:false,ca:caPem,headers:{...(key?{Authorization:'Bearer '+key}:{}),...(data?{'Content-Type':'application/json'}:{})}},async res=>{
+      try{
+        const served=res.socket.getPeerX509Certificate(), text=(await transport.readBytes(res,8e6)).toString();
+        resolve({status:res.statusCode,served,pin:transport.publicKeyPin(served),json:/json/.test(res.headers['content-type'])?JSON.parse(text):text});
+      }catch(e){reject(e);}
+    });
+    req.on('error',reject);req.end(data);
+  });
+  const ctl=(resource,method='POST',headers={})=>new Promise((resolve,reject)=>{
+    http.request(control+resource,{method,agent:false,headers},res=>{let s='';res.on('data',c=>{s+=c;}).on('end',()=>resolve({status:res.statusCode,body:/json/.test(res.headers['content-type'])?JSON.parse(s):s}));}).on('error',reject).end();
+  });
+  // A certificate the Simulator accepts once ca.pem is trusted: issued by that CA for localhost, serverAuth, under 398 days.
+  const probe=await tls('/api/info'), leaf=probe.served;
+  assert.deepEqual(probe.json,{app:'device-monitor',locked:true});assert.equal(probe.pin,ready.pin);
+  assert.equal(leaf.checkIssued(authority),true);assert.equal(leaf.verify(authority.publicKey),true);assert.equal(leaf.ca,false);
+  assert.equal(leaf.checkHost('localhost'),'localhost');assert.equal(leaf.checkIP('127.0.0.1'),'127.0.0.1');
+  assert.ok(leaf.keyUsage.includes('1.3.6.1.5.5.7.3.1'));assert.ok(Date.parse(leaf.validTo)-Date.parse(leaf.validFrom)<398*86400e3);
+  assert.equal(leaf.publicKey.asymmetricKeyType,'ec');
+  await assert.rejects(new Promise((ok,no)=>https.get(origin+'/api/info',{agent:false},ok).on('error',no)),/certificate|issuer/i);
+  assert.match((await tls('/mobile')).json,/Device Monitor app/);
+  // The app's side of pairing, then everything it shows.
+  const paired=await tls('/api/mobile/pair',{method:'POST',key:new URL(ready.invitation).hash.slice(6),body:{name:'Simulator'}});
+  assert.equal(paired.status,200);assert.deepEqual(Object.keys(paired.json).sort(),['client','id','name','proof']);
+  const key=paired.json.client, devices=(await tls('/api/devices',{key})).json, by=Object.fromEntries(devices.map(d=>[d.id,d]));
+  assert.deepEqual(devices.map(d=>d.id).sort(),['gaming','htpc','mbp','nas','server','spark','studio']);
+  assert.deepEqual(devices.filter(d=>!d.online).map(d=>d.id),['htpc']);assert.equal(by.htpc.latest,null);assert.equal(by.htpc.macs.length,1);
+  assert.deepEqual([...devices].sort((a,b)=>a.order-b.order).map(d=>d.id),['gaming','spark','mbp','server','studio','nas','htpc']);
+  assert.equal(by.gaming.latest.platform,'windows');assert.equal(by.gaming.latest.gpus.length,1);assert.equal(by.gaming.latest.gpus[0].vendor,'nvidia');
+  assert.ok(by.gaming.latest.temps.length>=4 && by.gaming.latest.fans.length>=4 && by.gaming.latest.gpus[0].fan>0);assert.deepEqual(by.gaming.latest.ai,[]);
+  assert.match(by.gaming.latest.appVersion,/^\d+\.\d+\.\d+$/);assert.equal(by.studio.latest.appVersion,'1.2.30');assert.equal(by.spark.latest.appVersion,null);
+  assert.ok(by.spark.latest.ai.length===2 && by.spark.latest.ai[0].models.length===3);assert.ok(by.spark.latest.power.cpu>0);assert.equal(by.spark.latest.powerEst.cpuMeasured,true);
+  assert.equal(by.mbp.latest.formFactor,'laptop');assert.equal(by.mbp.latest.gpus[0].temp,null);assert.equal(by.mbp.latest.platform,'macos');
+  assert.deepEqual(by.server.latest.gpus,[]);assert.equal(by.server.latest.platform,'linux');
+  assert.equal(by.studio.latest.gpus.length,2);assert.ok(by.studio.latest.gpus[0].memTotal>by.studio.latest.gpus[1].memTotal);
+  assert.equal(by.nas.macs.length,1);
+  const alerts=(await tls('/api/alerts',{key})).json;
+  assert.equal(alerts.priceSet,true);assert.ok(alerts.events.some(e=>e.state==='firing' && e.type==='disk' && e.device==='server'));
+  assert.deepEqual(alerts.active.map(a=>[a.type,a.device]).sort(),[['disk','server'],['offline','htpc']]);
+  assert.deepEqual((await tls('/api/energy/settings',{key})).json,{region:'US-CA',rate:0.316,currency:'USD'});
+  const week=(await tls('/api/history/spark?range=7d&points=600',{key})).json.points;
+  assert.ok(week.length>400);assert.equal(week.filter((p,i)=>i && p.t-week[i-1].t>2*3600e3).length,1,'one offline gap');
+  assert.ok((await tls('/api/energy?bounds='+(Date.now()-7*86400e3)+','+Date.now(),{key})).json.devices.every(d=>d.wh>0 && d.cost>0));
+  // The control port: reports stop and resume, an alert fires and resolves, and web pages are refused.
+  assert.equal((await until(async()=>{const s=(await ctl('/state','GET')).body;return s.devices.nas==='paused' && s;})).pin,ready.pin);
+  const nasSeen=async()=>(await tls('/api/devices',{key})).json.find(d=>d.id==='nas').lastSeen, stopped=await nasSeen();
+  await new Promise(ok=>setTimeout(ok,300));assert.equal(await nasSeen(),stopped);
+  assert.deepEqual((await ctl('/device/nas/online')).body,{id:'nas',state:'reporting'});
+  await until(async()=>await nasSeen()>stopped);
+  assert.deepEqual((await ctl('/device/gaming/offline')).body,{id:'gaming',state:'paused'});
+  assert.equal((await ctl('/alert')).status,409);assert.equal((await ctl('/device/htpc/online')).status,404);
+  assert.deepEqual((await ctl('/device/gaming/online')).body,{id:'gaming',state:'reporting'});
+  assert.deepEqual((await ctl('/alert?seconds=1')).body,{ok:true,device:'gaming',seconds:1});
+  const log=async()=>(await tls('/api/alerts',{key})).json.events.filter(e=>e.device==='gaming' && e.type==='disk').map(e=>e.state);
+  assert.deepEqual(await until(async()=>{const states=await log();return states.length===1 && states;}),['firing']);
+  assert.deepEqual(await until(async()=>{const states=await log();return states.length===2 && states;}),['resolved','firing']);
+  const invitation=(await ctl('/invite','GET')).body;
+  assert.match(invitation,new RegExp('^https://localhost:'+port+'/mobile#join=[A-Za-z0-9_-]{43}$'));assert.notEqual(invitation,ready.invitation);
+  for(const headers of [{Origin:'https://example.test'},{Host:'example.test'}]) assert.equal((await ctl('/revoke-mobile','POST',headers)).status,403);
+  assert.equal((await ctl('/nothing')).status,404);
+  // Rotation, end to end, through the reference client the app mirrors (transport.js desktopTrust): the
+  // phone's proof secret stands where a desktop's agent credential does. Real CA and hostname checks apply.
+  const client=[
+    "const t=require(process.argv[1]),assert=require('node:assert/strict'),http=require('node:http');",
+    "const {origin,control,invitation}=JSON.parse(process.env.DM_FIXTURE);",
+    "const post=path=>new Promise((ok,no)=>http.request(control+path,{method:'POST'},res=>{let s='';res.on('data',c=>{s+=c;}).on('end',()=>ok(JSON.parse(s)));}).on('error',no).end());",
+    "(async()=>{",
+    "  const {pin}=await t.hubJson(origin,'/api/info');",
+    "  const {json:e}=await t.hubJson(origin,'/api/mobile/pair',{method:'POST',pin,token:new URL(invitation).hash.slice(6),body:JSON.stringify({name:'Reference client'})});",
+    "  const enrollment={pin,client:e.client,agent:e.proof};let saves=0;",
+    "  const trust=t.desktopTrust(origin,enrollment,()=>{saves++;}), devices=()=>t.hubJson(origin,'/api/devices',{trust,token:e.client});",
+    "  assert.equal((await devices()).json.length,7);",
+    "  for(const key of ['rsa','ec','ec']){",
+    "    const rotated=await post('/rotate-tls?key='+key);assert.equal(rotated.previous,enrollment.pin);assert.notEqual(rotated.pin,rotated.previous);assert.equal(rotated.key,key);",
+    "    assert.equal((await devices()).json.length,7);assert.equal(enrollment.pin,rotated.pin);",
+    "  }",
+    "  assert.equal(saves,3);",
+    "  const impostor=t.desktopTrust(origin,{pin:pin,client:e.client,agent:e.client},()=>assert.fail('accepted without the proof secret'));",
+    "  await assert.rejects(t.hubJson(origin,'/api/devices',{trust:impostor,token:e.client}),/Desktop proof refused/);impostor.close();",
+    "  assert.deepEqual(await post('/revoke-mobile'),{revoked:2});",
+    "  await assert.rejects(devices(),/fresh dashboard invitation/);trust.close();",
+    "})().catch(e=>{console.error(e.stack);process.exitCode=1;});",
+  ].join('\n');
+  await execFile(process.execPath,['-e',client,path.join(root,'transport.js')],{env:{...process.env,NODE_EXTRA_CA_CERTS:ready.ca,DM_FIXTURE:JSON.stringify({origin,control,invitation})},windowsHide:true,timeout:30000});
+  const after=await tls('/api/devices',{key});
+  assert.equal(after.status,401);assert.notEqual(after.pin,ready.pin);assert.equal(after.pin,(await ctl('/state','GET')).body.pin);
+  assert.deepEqual((await ctl('/state','GET')).body.phones,[]);
 });
 
 // ---- QR encoder ----

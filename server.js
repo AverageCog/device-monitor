@@ -754,7 +754,8 @@ return (async () => {
     if (headlessInvites) access.openOperatorMailbox(PORT);
     return { port: PORT, localKey: access.config.localKey, agentToken: access.localAgent, publicOrigin, addresses: lanAddresses(), close,
       ...(fixture ? { seedReport: b => handleReport(b, access.localAgent), browserLink: () => localOrigin() + '/unlock#join=' + access.issue('browser', localOrigin()),
-        setSecureContext: options => secureServer.setSecureContext(options) } : {}) };
+        // Certificate renewal for rotation tests; `drop` also ends open connections, so every client handshakes again.
+        setSecureContext: (options, drop) => { secureServer.setSecureContext(options); if (drop) secureServer.closeAllConnections(); } } : {}) };
   } catch (e) { close(); throw e; }
 })();
 }
