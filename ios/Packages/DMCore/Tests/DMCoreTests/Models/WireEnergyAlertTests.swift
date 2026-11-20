@@ -96,6 +96,9 @@ import Testing
         let tou = EnergySettings(region: "custom", rate: 0.25, currency: "EUR", tou: [TouPeriod(from: 0, to: 6.5, rate: 0.1235), TouPeriod(from: 16, to: 21, rate: 0.42)])
         #expect(stages["putTou"] == tou)
         #expect(stages["get"] == tou)
+        // The body of GET /api/energy/settings on a hub without a price is the bare word `null`.
+        #expect(try HubJSON.decode(EnergySettings?.self, from: Data("null".utf8)) == nil)
+        #expect(try HubJSON.decode(EnergySettings?.self, from: try HubJSON.encode(tou)) == tou)
     }
 
     // MARK: Alerts
