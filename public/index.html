@@ -244,9 +244,8 @@
   .pair { display: flex; align-items: baseline; gap: 12px; margin-top: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; }
   .pair b { font-size: 22px; letter-spacing: .12em; font-variant-numeric: tabular-nums; }
   .pair[hidden], .mobile[hidden] { display: none; }
-  /* Four ways to add a device: the tab strip wraps instead of squeezing on a phone. */
-  #osTabs { flex-wrap: wrap; }
-  #osTabs button { flex: 1 1 auto; }
+  /* Four ways to add a device do not fit one row, even on a wide screen: two rows of two. */
+  #osTabs { display: grid; grid-template-columns: 1fr 1fr; }
   /* iPhone / iPad invitation: the QR code is always dark on white, with the text beside or below it. */
   .mobile { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 14px 16px; margin-top: 12px; }
   .mobile canvas { flex: none; border-radius: 8px; }
