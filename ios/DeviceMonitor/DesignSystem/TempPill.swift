@@ -45,6 +45,12 @@ struct TempPill: View {
         self.note = note
     }
 
+    /// "75°C, Warm": what VoiceOver reads for a pill. The level is spoken even when it is normal,
+    /// because the dot's colour is the only place the pill shows it.
+    nonisolated static func spokenValue(_ text: String, level: TempLevel, note: String? = nil) -> String {
+        [text, level.name, note].compactMap { $0 }.joined(separator: ", ")
+    }
+
     var body: some View {
         HStack(spacing: 5) {
             Circle()
@@ -65,7 +71,7 @@ struct TempPill: View {
         .background(Theme.surface2, in: Capsule())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Temperature")
-        .accessibilityValue([text, level.name, note].compactMap { $0 }.joined(separator: ", "))
+        .accessibilityValue(Self.spokenValue(text, level: level, note: note))
     }
 }
 

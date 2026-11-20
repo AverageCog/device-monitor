@@ -38,4 +38,24 @@ final class RegressionUITests: XCTestCase {
         XCTAssertEqual(counter.label, "Count: 2", "State survives the switch back to centred")
         XCTAssertEqual(field.value as? String, "abc")
     }
+
+    /// VoiceOver reads a gauge and its caption as one element. On their own, two pills both read
+    /// "Temperature" and the memory figure had no label at all.
+    @MainActor
+    func testGaugeColumnsReadAsOneElement() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-dm-gallery"]
+        app.launch()
+
+        let card = app.element(withIdentifier: "device-card-gaming-pc")
+        XCTAssertTrue(card.waitForExistence(timeout: 20))
+        let inCard = card.descendants(matching: .any)
+        for (label, value) in [("CPU", "28%, 59°C, Normal"), ("GPU", "81%, 66°C, Normal"), ("Memory", "46%, 27.6 / 60 GB")] {
+            let gauge = inCard.matching(NSPredicate(format: "label == %@ AND value == %@", label, value)).firstMatch
+            XCTAssertTrue(gauge.exists, "\(label) gauge reads as \"\(label), \(value)\"")
+        }
+        // A pill on its own reads "Temperature, 59°C, Normal".
+        let pills = inCard.matching(NSPredicate(format: "label == %@ AND value ENDSWITH %@", "Temperature", ", Normal"))
+        XCTAssertEqual(pills.count, 0, "No pill is read apart from its gauge")
+    }
 }

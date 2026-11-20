@@ -28,6 +28,12 @@ struct GaugeView: View {
         return min(100, max(0, value)) / 100
     }
 
+    /// What VoiceOver reads for a gauge showing `value`.
+    nonisolated static func spokenValue(for value: Double?) -> String {
+        guard let value, value.isFinite else { return "No reading" }
+        return Theme.percentText(value)
+    }
+
     var body: some View {
         Color.clear
             .aspectRatio(100.0 / 98.0, contentMode: .fit)
@@ -64,7 +70,7 @@ struct GaugeView: View {
             .frame(maxWidth: maxDiameter)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(label)
-            .accessibilityValue(value == nil ? "No reading" : Theme.percentText(value))
+            .accessibilityValue(Self.spokenValue(for: value))
     }
 }
 
@@ -101,9 +107,21 @@ nonisolated enum GaugeCaption: Equatable, Sendable {
     case text(String)
     /// Nothing, keeping the row's height.
     case none
+
+    /// What VoiceOver reads for the caption, after the gauge's own reading.
+    var spokenText: String? {
+        switch self {
+        case let .temperature(text, level): TempPill.spokenValue(text, level: level)
+        case let .hint(text), let .text(text): text
+        case .none: nil
+        }
+    }
 }
 
 /// A gauge with its caption underneath: one column of a card's gauge row (`.gauge`).
+///
+/// VoiceOver gets the column as one element, "CPU, 28%, 59°C, Normal": read on its own, a caption
+/// does not say which gauge it belongs to.
 struct GaugeColumn: View {
     private let value: Double?
     private let label: String
@@ -141,6 +159,9 @@ struct GaugeColumn: View {
             .frame(minHeight: captionMinHeight)
         }
         .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+        .accessibilityValue([GaugeView.spokenValue(for: value), caption.spokenText].compactMap { $0 }.joined(separator: ", "))
     }
 }
 
