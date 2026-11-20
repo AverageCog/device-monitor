@@ -54,9 +54,15 @@ app folder that must not be copied into the app.
 
 Most keys are generated from `INFOPLIST_KEY_*` build settings of the app target (display name, usage
 descriptions, orientations, dark interface style, export compliance). `DeviceMonitor/Info.plist`
-holds only what has no such setting: `UILaunchScreen`, `UIBackgroundModes` and
-`BGTaskSchedulerPermittedIdentifiers`. The two are merged at build time. There are no App Transport
-Security exceptions.
+holds only what has no such setting: `UILaunchScreen`, `UIBackgroundModes`,
+`BGTaskSchedulerPermittedIdentifiers` and `UIApplicationSceneManifest`. The two are merged at build
+time. There are no App Transport Security exceptions.
+
+The app has **one window**. The scene manifest is written out with
+`UIApplicationSupportsMultipleScenes` off (the generated manifest always allows several windows on
+iPad) because `AppRouter` and the hub session are app-wide state: two windows would mirror each
+other's tab and present every sheet twice. Supporting several windows means giving each window its
+own router first.
 
 ### Concurrency settings
 

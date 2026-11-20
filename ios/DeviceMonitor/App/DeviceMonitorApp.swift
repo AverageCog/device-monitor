@@ -2,6 +2,8 @@ import SwiftUI
 
 @main
 struct DeviceMonitorApp: App {
+    // App-wide, not per window: Info.plist turns multiple scenes off, so there is one window to
+    // route. Supporting several windows on iPad means giving each its own router first.
     @State private var router: AppRouter
     // PLACEHOLDER — the next wave swaps this for the DMCore-backed store (see AppPhase.swift).
     @State private var session: PlaceholderSession

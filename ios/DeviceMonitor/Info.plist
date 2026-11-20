@@ -4,6 +4,10 @@
   Only the keys that have no INFOPLIST_KEY_ build setting. Everything else (display name, usage
   descriptions, orientations, UIUserInterfaceStyle, ITSAppUsesNonExemptEncryption) is generated from
   the target's build settings and merged with this file at build time.
+
+  UIApplicationSceneManifest is written out here because the generated one always allows several
+  windows on iPad. The app has one window: its router and hub session are app-wide state, and two
+  windows would mirror each other's tab and present every sheet twice.
 -->
 <plist version="1.0">
 <dict>
@@ -11,6 +15,13 @@
 	<array>
 		<string>com.devicemonitor.ios.refresh</string>
 	</array>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+		<key>UISceneConfigurations</key>
+		<dict/>
+	</dict>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>
