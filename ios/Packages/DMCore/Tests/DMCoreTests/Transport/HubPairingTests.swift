@@ -26,11 +26,13 @@ import Testing
         return hub
     }
 
-    static func pair(_ hub: FakeHub, name: String = "  Matt's iPhone\n", path: String = "/api/mobile/pair", secret: String = "proof") async throws -> Enrollment {
+    /// By default exactly what the public `HubPairing.pair(invitation:name:)` does, on the fake's transports.
+    static func pair(_ hub: FakeHub, name: String = "  Matt's iPhone\n", path: String = HubPairing.redeemPath, secret: String = HubPairing.secondSecret) async throws -> Enrollment {
         try await HubPairing.pair(invitation: invitation(), name: name, redeemPath: path, secondSecret: secret, now: now, connect: hub.connect)
     }
 
     @Test func probesThenRedeemsOnThePinnedConnection() async throws {
+        #expect(HubPairing.redeemPath == "/api/mobile/pair" && HubPairing.secondSecret == "proof")
         let hub = Self.hub()
         let enrollment = try await Self.pair(hub)
         #expect(enrollment == (try Enrollment(

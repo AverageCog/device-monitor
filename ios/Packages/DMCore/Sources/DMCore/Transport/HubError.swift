@@ -26,10 +26,11 @@ public enum HubError: Error, Equatable, Sendable {
     case responseTooLarge
     /// A successful response that is not the JSON the caller asked for.
     case invalidResponse
-    /// A non-2xx answer other than 401/403, with the hub's own `{ error }` text when it sent one.
+    /// A non-2xx answer, with the hub's own `{ error }` text when it sent one. This includes a 403
+    /// to an API call: the hub refusing one operation to a credential it otherwise accepts.
     case http(status: Int, message: String)
-    /// 401 or 403 for the enrolled credential: the hub no longer accepts it, or refuses this
-    /// operation to it. The stream reporting this is the signal for the repair screen.
+    /// The verified hub no longer accepts this enrollment: 401 to any request, or 401/403 to the
+    /// live stream. This is the signal for the repair screen ("pair again").
     case unauthorized(status: Int, message: String)
     /// The address answered, but not as a Device Monitor hub.
     case notDeviceMonitorHub
@@ -126,9 +127,22 @@ extension HubError {
         static let localNetworkDenied = "Device Monitor is not allowed to use the local network. Allow it in Settings → Privacy & Security → Local Network."
     }
 
+    /// Who received a non-2xx answer, which decides whether it means "this enrollment is refused".
+    enum Refused {
+        /// Pairing: there is no enrollment yet, so nothing is ever `.unauthorized`.
+        case pairing
+        /// An API call: 401 is the hub not knowing the credential. A 403 here is the hub refusing
+        /// that one operation to a credential it accepts ("Create this invitation on the hub."),
+        /// so it stays an ordinary `.http` error, as it is for the web dashboard.
+        case request
+        /// The live stream: 401 and 403 both send the desktop app to its repair page
+        /// (`dashboardProtocol()` in `main.js`).
+        case stream
+    }
+
     /// The error for a non-2xx answer, as `hubJson()` in `transport.js` words it: the hub's own
     /// `{ error }` string cut to 240 UTF-16 units, else `HTTP <status>`.
-    static func status(_ status: Int, body: Data, enrolled: Bool) -> HubError {
+    static func status(_ status: Int, body: Data, to receiver: Refused) -> HubError {
         var message = "HTTP \(status)"
         if let object = try? JSONSerialization.jsonObject(with: body) as? [String: Any], let text = object["error"] as? String {
             var cleaned = String.UnicodeScalarView()
@@ -137,6 +151,11 @@ extension HubError {
             while cut.utf16.count > 240 { cut.unicodeScalars.removeLast() }
             if !cut.isEmpty { message = cut }
         }
-        return enrolled && (status == 401 || status == 403) ? .unauthorized(status: status, message: message) : .http(status: status, message: message)
+        let unauthorized = switch receiver {
+        case .pairing: false
+        case .request: status == 401
+        case .stream: status == 401 || status == 403
+        }
+        return unauthorized ? .unauthorized(status: status, message: message) : .http(status: status, message: message)
     }
 }

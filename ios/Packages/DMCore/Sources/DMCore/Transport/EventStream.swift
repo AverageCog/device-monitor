@@ -118,7 +118,7 @@ public struct EventStream: Sendable {
             }
         }
         if let head, !(200..<300).contains(head.statusCode) {
-            throw HubError.status(head.statusCode, body: refusal, enrolled: true)
+            throw HubError.status(head.statusCode, body: refusal, to: .stream)
         }
     }
 }

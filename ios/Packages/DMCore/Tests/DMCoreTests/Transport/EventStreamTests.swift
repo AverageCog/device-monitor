@@ -74,6 +74,7 @@ import Testing
             return result.failure
         }
         #expect(await refusal(401, [#"{"error":"Open a fresh "#, #"dashboard invitation."}"#]) == .unauthorized(status: 401, message: "Open a fresh dashboard invitation."))
+        // For the stream a 403 counts too, as it does for the desktop app (dashboardProtocol() in main.js).
         #expect(await refusal(403, [#"{"error":"Use the configured HTTPS hub address."}"#]) == .unauthorized(status: 403, message: "Use the configured HTTPS hub address."))
         #expect(await refusal(401, []) == .unauthorized(status: 401, message: "HTTP 401"))
         #expect(await refusal(503, [#"{"error":"too many connections"}"#]) == .http(status: 503, message: "too many connections"))

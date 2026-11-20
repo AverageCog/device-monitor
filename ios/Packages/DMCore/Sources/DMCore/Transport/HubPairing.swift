@@ -15,8 +15,12 @@ public enum HubPairing {
     /// example "Invitation is invalid, expired or already used."), `.invalidEnrollmentResponse`,
     /// or a connectivity error.
     public static func pair(invitation: Invitation, name: String) async throws -> Enrollment {
-        try await pair(invitation: invitation, name: name, redeemPath: "/api/mobile/pair", secondSecret: "proof") { PinnedSession(policy: $0) }
+        try await pair(invitation: invitation, name: name, redeemPath: redeemPath, secondSecret: secondSecret) { PinnedSession(policy: $0) }
     }
+
+    static let redeemPath = "/api/mobile/pair"
+    /// The answer's field that holds the second secret.
+    static let secondSecret = "proof"
 
     /// The same exchange against any redeem endpoint that answers `{ id, client, <secondSecret> }`.
     /// The desktop endpoint (`/api/pair`, `agent`) has that shape and derives the proof key the
@@ -35,7 +39,7 @@ public enum HubPairing {
         guard (200..<300).contains(info.response.statusCode) else {
             // A hub explains itself in JSON; anything else at this address is not one.
             guard described?["error"] is String else { throw HubError.notDeviceMonitorHub }
-            throw HubError.status(info.response.statusCode, body: info.data, enrolled: false)
+            throw HubError.status(info.response.statusCode, body: info.data, to: .pairing)
         }
         guard described?["app"] as? String == "device-monitor", let pin = info.peerPin, SPKIPin.isValid(pin) else {
             throw HubError.notDeviceMonitorHub
@@ -49,7 +53,7 @@ public enum HubPairing {
             for: try HubClient.makeRequest(origin: origin, method: "POST", path: redeemPath, query: [], bearer: invitation.code, body: body),
             timeout: HubClient.defaultTimeout, maxResponseBytes: HubClient.smallResponseLimit)
         guard (200..<300).contains(reply.response.statusCode) else {
-            throw HubError.status(reply.response.statusCode, body: reply.data, enrolled: false)
+            throw HubError.status(reply.response.statusCode, body: reply.data, to: .pairing)
         }
         guard let member = try? JSONSerialization.jsonObject(with: reply.data) as? [String: Any],
               let id = member["id"] as? String, let client = member["client"] as? String, let proof = member[secondSecret] as? String else {

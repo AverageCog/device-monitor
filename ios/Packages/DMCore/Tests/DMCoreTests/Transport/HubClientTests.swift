@@ -124,12 +124,16 @@ import Testing
         #expect(await failure(500, #"{"error":""}"#) == .http(status: 500, message: "HTTP 500"))
         #expect(await failure(199, "{}") == .http(status: 199, message: "HTTP 199"))
 
-        // The repair screen's signal.
+        // The repair screen's signal: the hub does not know this credential any more.
         let revoked = await failure(401, #"{"error":"Open a fresh dashboard invitation."}"#)
         #expect(revoked == .unauthorized(status: 401, message: "Open a fresh dashboard invitation."))
         #expect(revoked?.isUnauthorized == true && revoked?.httpStatus == 401)
-        #expect(await failure(403, #"{"error":"Use the configured HTTPS hub address."}"#) == .unauthorized(status: 403, message: "Use the configured HTTPS hub address."))
         #expect(await failure(401, "") == .unauthorized(status: 401, message: "HTTP 401"))
+        // A 403 to an API call is the hub refusing that operation to a credential it accepts,
+        // which must not send a healthy enrollment to the repair screen.
+        let forbidden = await failure(403, #"{"error":"Create this invitation on the hub."}"#)
+        #expect(forbidden == .http(status: 403, message: "Create this invitation on the hub."))
+        #expect(forbidden?.isUnauthorized == false && forbidden?.httpStatus == 403)
         #expect(await failure(404, "{}")?.isUnauthorized == false)
 
         // The hub's text is cut to 240 UTF-16 units and stripped of control characters.

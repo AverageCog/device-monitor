@@ -132,6 +132,9 @@ public final class PinnedSession: Sendable {
         configuration.urlCredentialStorage = nil
         configuration.waitsForConnectivity = false
         configuration.tlsMinimumSupportedProtocolVersion = .TLSv12
+        // The live stream holds one HTTP/1.1 connection for as long as the app is open; leave a
+        // browser's worth for requests so a burst of them is not queued behind it into a timeout.
+        configuration.httpMaximumConnectionsPerHost = 6
         return configuration
     }
 

@@ -57,10 +57,10 @@ public actor HubClient {
     /// - `timeout` bounds the whole exchange. `maxResponseBytes` defaults to 32 MiB, or 64 KiB for
     ///   `/api/info` and `/api/update/*`.
     ///
-    /// Throws `HubError`: `.unauthorized` for 401/403, `.http` for any other non-2xx status,
-    /// `.unreachable` and friends when the hub cannot be reached or verified. A request is sent at
-    /// most once, except that a refused TLS handshake (key rotation) is followed by the identity
-    /// proof and one retry.
+    /// Throws `HubError`: `.unauthorized` for 401 (the hub no longer knows this enrollment),
+    /// `.http` for any other non-2xx status, `.unreachable` and friends when the hub cannot be
+    /// reached or verified. A request is sent at most once, except that a refused TLS handshake
+    /// (key rotation) is followed by the identity proof and one retry.
     public func request(
         method: String = "GET", path: String, query: [URLQueryItem] = [], body: Data? = nil,
         timeout: TimeInterval = HubClient.defaultTimeout, maxResponseBytes: Int? = nil
@@ -68,7 +68,7 @@ public actor HubClient {
         let request = try Self.makeRequest(origin: origin, method: method, path: path, query: query, bearer: enrollment.client, body: body)
         let reply = try await send(request, timeout: timeout, limit: maxResponseBytes ?? Self.responseLimit(for: path))
         guard (200..<300).contains(reply.response.statusCode) else {
-            throw HubError.status(reply.response.statusCode, body: reply.data, enrolled: true)
+            throw HubError.status(reply.response.statusCode, body: reply.data, to: .request)
         }
         return (reply.data, reply.response)
     }
