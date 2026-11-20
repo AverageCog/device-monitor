@@ -93,16 +93,14 @@ extension LegendRow where Accessory == EmptyView {
     }
 }
 
-/// One row of `KeyValueRows`.
-nonisolated struct KeyValueItem: Identifiable, Hashable, Sendable {
-    let id: String
+/// One row of `KeyValueRows`. Labels may repeat (two sensors can share a name).
+nonisolated struct KeyValueItem: Hashable, Sendable {
     var label: String
     /// A quiet annotation after the label, e.g. a model's kind ("unet").
     var detail: String?
     var value: String
 
-    init(_ label: String, _ value: String, detail: String? = nil, id: String? = nil) {
-        self.id = id ?? label
+    init(_ label: String, _ value: String, detail: String? = nil) {
         self.label = label
         self.detail = detail
         self.value = value
@@ -130,7 +128,7 @@ struct KeyValueRows: View {
 
     var body: some View {
         VStack(spacing: Theme.Spacing.xs) {
-            ForEach(items) { item in
+            ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                 HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.m) {
                     label(for: item)
                     Spacer(minLength: 0)

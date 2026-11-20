@@ -129,7 +129,7 @@ struct MiniChart: View {
             line.addLine(to: CGPoint(x: geometry.size.width - geometry.padTrailing, y: y))
             context.stroke(line, with: .color(level == 0 ? Theme.axis : Theme.grid), lineWidth: 1)
             context.draw(
-                Text("\(Int(level))%").font(.system(size: axisFontSize)).foregroundStyle(Theme.textMuted),
+                Text(verbatim: "\(Int(level))%").font(.system(size: axisFontSize)).foregroundStyle(Theme.textMuted),
                 at: CGPoint(x: geometry.padLeading - 6, y: geometry.y(level)),
                 anchor: .trailing
             )
