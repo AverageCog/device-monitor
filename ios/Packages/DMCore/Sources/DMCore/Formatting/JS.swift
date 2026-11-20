@@ -23,12 +23,35 @@ public enum JS {
     public static func toFixed(_ x: Double, _ digits: Int) -> String {
         if x.isNaN { return "NaN" }
         if abs(x) >= 1e21 { return string(x) }
-        // -0 prints without a sign; a negative that rounds to zero keeps it ("-0.00").
-        var value = x == 0 ? 0 : x
-        // printf rounds the exact value correctly too, but sends an exact half to the even digit.
-        // "If there are two such n, pick the larger n": nudge a tie over the edge first.
-        if isExactHalf(abs(value), at: digits) { value = value < 0 ? value.nextDown : value.nextUp }
-        return String(format: "%.\(max(0, digits))f", value)
+        let places = max(0, digits)
+        // printf rounds the exact value correctly too, but sends an exact half to the even digit,
+        // where toFixed says "if there are two such n, pick the larger n".
+        guard isExactHalf(abs(x), at: places) else {
+            // -0 prints without a sign; a negative that rounds to zero keeps it ("-0.00").
+            return String(format: "%.\(places)f", x == 0 ? 0 : x)
+        }
+        // With one more place a tie prints exactly and ends in 5, so it is rounded as text. Moving
+        // the double to its neighbour and letting printf round would be shorter, but prints the
+        // wrong digit once an ulp is as large as the last place: 2^46 + 0.125 at two places would
+        // come out as .14, not .13.
+        var magnitude = String(format: "%.\(places + 1)f", abs(x))
+        magnitude.removeLast()
+        if magnitude.hasSuffix(".") { magnitude.removeLast() }
+        return (x < 0 ? "-" : "") + addingOneInTheLastPlace(magnitude)
+    }
+
+    /// An unsigned decimal with one more unit in its last place: "12.34" → "12.35", "9.9" → "10.0",
+    /// "99" → "100".
+    private static func addingOneInTheLastPlace(_ decimal: String) -> String {
+        var text = Array(decimal.utf8)
+        for index in text.indices.reversed() where text[index] != UInt8(ascii: ".") {
+            if text[index] != UInt8(ascii: "9") {
+                text[index] += 1
+                return String(decoding: text, as: UTF8.self)
+            }
+            text[index] = UInt8(ascii: "0")
+        }
+        return "1" + String(decoding: text, as: UTF8.self)
     }
 
     /// Whether `x × 10^digits` ends in exactly .5. With x = m × 2^e (m odd) that product times two

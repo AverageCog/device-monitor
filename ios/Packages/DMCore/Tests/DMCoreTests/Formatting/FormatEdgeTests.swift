@@ -41,6 +41,23 @@ import Testing
         #expect(JS.toFixed(.nan, 2) == "NaN")
     }
 
+    @Test func toFixedRoundsAHalfWhoseNeighboursAreFarApart() {
+        // 2^46 + 1/8: the doubles on either side are 1/64 away, more than the 0.01 being printed,
+        // so the half has to be rounded as it stands.
+        #expect(JS.toFixed(70368744177664.125, 2) == "70368744177664.13")
+        #expect(JS.toFixed(-70368744177664.125, 2) == "-70368744177664.13")
+        #expect(JS.toFixed(70368744177664.140625, 2) == "70368744177664.14")   // the next double up
+        #expect(JS.toFixed(35184372088832.125, 2) == "35184372088832.13")      // 2^45: neighbours 1/128 away
+        #expect(JS.toFixed(562949953421312.25, 1) == "562949953421312.3")
+        #expect(JS.toFixed(8796093022208.0625, 3) == "8796093022208.063")
+        #expect(JS.toFixed(0.5000004768371582, 20) == "0.50000047683715820313")
+        #expect(JS.toFixed(0x1p-49 + 0x1p-101, 100) == "0.0000000000000017763568394002508591082632794512152058642826413931148366032175545115023851394653320313")
+        // A half that carries through every digit.
+        #expect(JS.toFixed(-9.5, 0) == "-10")
+        #expect(JS.toFixed(999_999_999_999_999.5, 0) == "1000000000000000")
+        #expect(JS.toFixed(4_503_599_627_370_495.5, 0) == "4503599627370496")  // the largest double that ends in .5
+    }
+
     @Test func numbersPrintAsJavaScriptPrintsThem() {
         #expect(JS.string(100) == "100")
         #expect(JS.string(-0.0) == "0")
