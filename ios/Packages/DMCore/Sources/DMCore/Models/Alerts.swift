@@ -360,7 +360,7 @@ public struct ActiveAlert: Codable, Sendable, Hashable, Identifiable {
     public var message: String
 
     public init(
-        ruleId: String, type: AlertRule.Kind, device: String, deviceName: String? = nil, since: Double,
+        ruleId: String, type: AlertRule.Kind, device: String, deviceName: String? = nil, since: Double = 0,
         value: Double? = nil, threshold: Double? = nil, title: String = "", message: String = ""
     ) {
         self.ruleId = ruleId

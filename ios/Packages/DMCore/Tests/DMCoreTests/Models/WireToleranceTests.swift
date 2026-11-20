@@ -152,7 +152,9 @@ import Testing
          "events":[{"id":"e1","t":1,"state":"acknowledged","type":"snow"},{"t":2},{"id":"e3"},{"id":"e4","t":4,"state":"resolved","value":"x","test":"no"}],
          "priceSet":"yes"}
         """#)
-        #expect(a.active == [ActiveAlert(ruleId: "r", type: .cpu, device: "d", since: 0), ActiveAlert(ruleId: "r", type: .other("snow"), device: "*", since: 5)])
+        // An alert built from its three required fields is the one that decodes from them.
+        #expect(a.active == [ActiveAlert(ruleId: "r", type: .cpu, device: "d"), ActiveAlert(ruleId: "r", type: .other("snow"), device: "*", since: 5)])
+        #expect(a.active[0].since == 0 && a.active[0].sinceDate == Date(timeIntervalSince1970: 0))
         #expect(a.active.map(\.id) == ["r|d", "r|*"])
         #expect(a.events == [
             AlertEvent(id: "e1", t: 1, type: .other("snow"), state: .other("acknowledged")),
