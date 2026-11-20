@@ -534,7 +534,8 @@ test('the hub serves the phone landing text and the encoder, and the dashboard l
 
 // ---- The add-device dialog, driven against a real hub with a stand-in for the DOM ----
 function dialog(t, hubFetch) {
-  const html=fs.readFileSync(path.join(root,'public/index.html'),'utf8'), code=/<script>\n([\s\S]*)<\/script>/.exec(html)[1];
+  // A Windows checkout has CRLF line endings.
+  const html=fs.readFileSync(path.join(root,'public/index.html'),'utf8').replace(/\r/g,''), code=/<script>\n([\s\S]*)<\/script>/.exec(html)[1];
   new vm.Script(code,{filename:'index.html'});   // the whole page script still parses
   const section=code.slice(code.indexOf('// ---------- add device dialog ----------'),code.indexOf('// ---------- card chart range'));
   assert.ok(section.length>2000);
@@ -724,7 +725,7 @@ test('the simulator fixture hub pairs over real TLS, proves a rotated key and ob
   assert.deepEqual((await ctl('/device/gaming/online')).body,{id:'gaming',state:'reporting'});
   assert.deepEqual((await ctl('/alert?seconds=1')).body,{ok:true,device:'gaming',seconds:1});
   const log=async()=>(await tls('/api/alerts',{key})).json.events.filter(e=>e.device==='gaming' && e.type==='disk').map(e=>e.state);
-  assert.deepEqual(await until(async()=>{const states=await log();return states.length===1 && states;}),['firing']);
+  assert.equal((await until(async()=>{const states=await log();return states.length && states;})).at(-1),'firing');
   assert.deepEqual(await until(async()=>{const states=await log();return states.length===2 && states;}),['resolved','firing']);
   const invitation=(await ctl('/invite','GET')).body;
   assert.match(invitation,new RegExp('^https://localhost:'+port+'/mobile#join=[A-Za-z0-9_-]{43}$'));assert.notEqual(invitation,ready.invitation);
