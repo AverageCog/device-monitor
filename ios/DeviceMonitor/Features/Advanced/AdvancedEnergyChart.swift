@@ -127,6 +127,9 @@ struct AdvancedEnergyChart: View {
     let chart: AdvancedChartModel
     @Binding var selection: Int?
 
+    /// The bar a pointer picked out by being over it, for as long as the selection is still the
+    /// pointer's doing: nil once a touch has chosen a bar, and when no pointer is over one.
+    @State private var hovered: Int?
     @ScaledMetric(relativeTo: .caption2) private var scaledAxis: CGFloat = DMTextStyle.axis.size
     @Environment(\.displayScale) private var displayScale
 
@@ -163,11 +166,14 @@ struct AdvancedEnergyChart: View {
                 }
             }
             .onContinuousHover { phase in
-                // A pointer picks out the bar under it, and lets go when it leaves (pointermove, pointerleave).
+                // A pointer picks out the bar under it, and lets go when it leaves (pointermove,
+                // pointerleave). A bar that a touch chose is not the pointer's to move or let go.
+                guard selection == nil || selection == hovered else { return }
                 switch phase {
-                case .active(let point): selection = bucket(at: point.x, canvasWidth: width)
-                case .ended: selection = nil
+                case .active(let point): hovered = bucket(at: point.x, canvasWidth: width)
+                case .ended: hovered = nil
                 }
+                selection = hovered
             }
         }
         .frame(height: Self.height(axisSize: scaledAxis))
@@ -191,20 +197,26 @@ struct AdvancedEnergyChart: View {
 
     private func touch(at x: CGFloat, canvasWidth: CGFloat) {
         let index = bucket(at: x, canvasWidth: canvasWidth)
-        selection = index == selection ? nil : index
+        // A second touch lets go of the bar the first one chose. The bar under a pointer is
+        // picked out before the click comes: that click is its first touch, and keeps it.
+        let isSecondTouch = index == selection && index != hovered
+        hovered = nil
+        selection = isSecondTouch ? nil : index
     }
 
     /// A finger that slides past either end of the plot keeps the nearest bucket.
     private func drag(to x: CGFloat, canvasWidth: CGFloat) {
         let width = Double(canvasWidth / zoom)
         let inside = min(max(Double(x / zoom), Plot.left), max(Plot.left, width - Plot.right - 0.01))
-        guard let index = chart.bucketIndex(atX: inside, canvasWidth: width), index != selection else { return }
-        selection = index
+        guard let index = chart.bucketIndex(atX: inside, canvasWidth: width) else { return }
+        hovered = nil
+        if index != selection { selection = index }
     }
 
     /// VoiceOver's swipe up and down walks through the buckets.
     private func step(_ direction: AccessibilityAdjustmentDirection) {
         guard let last = chart.buckets.indices.last else { return }
+        hovered = nil
         guard let current = selection else {
             selection = last
             return

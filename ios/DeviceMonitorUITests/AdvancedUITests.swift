@@ -281,6 +281,29 @@ final class AdvancedUITests: XCTestCase {
         XCTAssertTrue(value(of: chart).contains("(so far)"), "The chart speaks the bucket that is picked out: \(value(of: chart))")
     }
 
+    /// Only where there is a pointer, which is an iPad: the bar under it is picked out before the
+    /// click comes, and the click must keep it rather than let go of it.
+    @MainActor
+    func testAClickKeepsTheBarUnderThePointer() throws {
+        try XCTSkipUnless(XCUIDevice.shared.supportsPointerInteraction, "This device has no pointer")
+        let app = launch()
+        waitForTotals(in: app)
+        let chart = app.element(withIdentifier: AdvancedID.chart)
+        reveal(chart, in: app)
+        let tooltip = app.element(withIdentifier: AdvancedID.tooltip)
+        XCTAssertFalse(tooltip.exists, "Nothing is picked out until the pointer is over a bar")
+
+        let bar = chart.coordinate(withNormalizedOffset: CGVector(dx: 0.58, dy: 0.6))
+        bar.hover()
+        XCTAssertTrue(tooltip.waitForExistence(timeout: 5), "The pointer picks out the bar under it")
+        bar.click()
+        XCTAssertFalse(wait(upTo: 2) { !tooltip.exists }, "A click on the bar under the pointer keeps it")
+
+        // What a click chose stays when the pointer leaves the chart.
+        app.navigationBars.firstMatch.hover()
+        XCTAssertFalse(wait(upTo: 2) { !tooltip.exists }, "The bar a click chose stays when the pointer moves away")
+    }
+
     // MARK: Power breakdown
 
     @MainActor
