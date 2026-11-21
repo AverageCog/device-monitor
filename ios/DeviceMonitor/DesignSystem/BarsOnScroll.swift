@@ -70,8 +70,9 @@ private struct HidesBarsOnScroll: ViewModifier {
                 }
                 .toolbarVisibility(isHidden ? .hidden : .automatic, for: .navigationBar, .tabBar)
                 // Left to itself, the edge effect keeps the navigation bar's height once the bar is
-                // gone: a frosted band with nothing in it. Asked for, it covers the status bar alone.
-                .scrollEdgeEffectStyle(isHidden ? .hard : nil, for: .top)
+                // gone: a frosted band with nothing in it. The soft one lets the page run up under
+                // the status bar, with just enough of a fade there to keep the clock legible.
+                .scrollEdgeEffectStyle(isHidden ? .soft : nil, for: .top)
                 .onChange(of: keepsBars) { _, keeps in
                     if keeps { show(animated: true) }
                 }
