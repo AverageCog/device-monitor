@@ -683,6 +683,40 @@ test('an answer that arrives after the phone tab was left changes nothing on scr
   assert.match(await until(()=>element('mobileCode').textContent),/^https:\/\/hub\.test\/mobile#join=[A-Za-z0-9_-]{43}$/);
   assert.equal(element('mobileRow').hidden,false);assert.ok(ui.drawn.length>1);assert.equal(ui.timers.size,1);
 });
+test('a dialog closed while it still waits for the hub neither refreshes the phone list nor issues invitations',async t=>{
+  const {h,call}=await fixture(t);
+  // The hub has no HTTPS address until "Enable Tailscale HTTPS" succeeds (a fixture hub refuses that, so it is answered here).
+  let https=false;const requests=[];
+  const gate=held(async(resource,options={})=>{
+    const request=(options.method||'GET')+' '+resource;requests.push(request+(options.body?' '+options.body:''));
+    if(request==='POST /api/remote/https'){https=true;return Response.json({ok:true});}
+    const res=await call(resource,{key:h.localKey,method:options.method,raw:options.body});
+    return request==='GET /api/info' && !https ? Response.json({...await res.json(),origin:null}) : res;
+  });
+  const ui=dialog(t,gate.fetch), {element}=ui, dlg=element('addDlg');
+  const after=async(from,ms=50)=>{await gate.settled();await new Promise(ok=>setTimeout(ok,ms));await gate.settled();return requests.slice(from);};
+  await ui.open();ui.choose('mobile');
+  await until(()=>element('cmdHint').textContent.startsWith('The iPhone and iPad app pairs through the hub’s HTTPS address.'));
+  await gate.settled();assert.equal(element('enableHttps').hidden,false);assert.equal(ui.timers.size,1);
+  // Enable HTTPS can take up to 20 seconds on a real hub (`tailscale serve --bg`): the dialog is closed meanwhile.
+  const enabling=gate.hold(/^POST \/api\/remote\/https /), clicked=element('enableHttps').listeners.click();
+  await gate.parked(enabling);dlg.close();assert.equal(ui.timers.size,0);
+  let from=requests.length;enabling.release();await clicked;
+  assert.deepEqual(await after(from),['GET /api/info']);
+  assert.equal(dlg.open,false);assert.equal(ui.timers.size,0);assert.equal(element('enableHttps').disabled,false);
+  assert.equal(element('mobileCode').textContent,'');assert.equal(element('mobileRow').hidden,true);
+  // The same for + when the dialog is closed before the hub's /api/info answer is in. The iPhone / iPad tab is still the one chosen.
+  const info=gate.hold(/^GET \/api\/info /), opened=ui.open();
+  await gate.parked(info);dlg.close();
+  from=requests.length;info.release();await opened;
+  assert.deepEqual(await after(from),[]);
+  assert.equal(ui.timers.size,0);assert.equal(element('mobileCode').textContent,'');assert.equal(element('mobileRow').hidden,true);
+  // Left open, the same click does show a phone invitation and keep the list fresh, so the checks above were not passing on a dead page.
+  from=requests.length;await ui.open();
+  assert.match(await until(()=>element('mobileCode').textContent),/^https:\/\/hub\.test\/mobile#join=[A-Za-z0-9_-]{43}$/);
+  assert.equal(ui.timers.size,1);assert.ok(requests.slice(from).some(r=>r.startsWith('POST /api/invites {"kind":"mobile"')));
+  dlg.close();assert.equal(ui.timers.size,0);
+});
 test('without an HTTPS address the phone tab explains what to enable first',async t=>{
   const {h,call}=await fixture(t,{publicUrl:null});
   const ui=dialog(t,(resource,options={})=>call(resource,{key:h.localKey,method:options.method,raw:options.body})), {element}=ui;

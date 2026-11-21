@@ -926,6 +926,9 @@ async function loadPhones(request) {
   return true;
 }
 async function updateCmd() {
+  // + and Enable HTTPS wait for the hub before they get here, and the dialog may have been closed meanwhile:
+  // a closed dialog must not restart the phone list refresh or issue invitations nobody will see.
+  if (!$('#addDlg').open) return;
   const request = ++invitationRequest, dest = $('#hubSel').value, mobile = osTab === 'mobile', id = mobile ? null : $('#enrollDevice').value || null;
   $('#cmd').textContent = ''; $('#viewUrl').textContent = ''; $('#pairCode').textContent = ''; $('#mobileCode').textContent = '';
   $('#cmdRow').style.display = osTab === 'app' || mobile ? 'none' : ''; $('#pairRow').hidden = osTab !== 'app';
