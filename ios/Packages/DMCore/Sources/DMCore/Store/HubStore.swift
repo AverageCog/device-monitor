@@ -359,25 +359,41 @@ public final class HubStore {
     private func fetchExtras(for attempt: Int) {
         guard fetchedForAttempt != attempt else { return }
         fetchedForAttempt = attempt
-        tasks.run { [weak self] in _ = try? await self?.refreshLatestVersions() }
-        tasks.run { [weak self] in _ = try? await self?.refreshEnergySettings() }
-        tasks.run { [weak self] in _ = try? await self?.refreshAlerts() }
-        tasks.run { [weak self] in _ = try? await self?.refreshInfo() }
+        let store = Unretained(store: self)
+        tasks.run { [api] in _ = try? await HubStore.refreshLatestVersions(of: store, from: api) }
+        tasks.run { [api] in _ = try? await HubStore.refreshEnergySettings(of: store, from: api) }
+        tasks.run { [api] in _ = try? await HubStore.refreshAlerts(of: store, from: api) }
+        tasks.run { [api] in _ = try? await HubStore.refreshInfo(of: store, from: api) }
+    }
+
+    /// A store, referred to without keeping it alive. The store's own tasks ask the hub through
+    /// one: when nobody called `stop()`, the stream and the timer are only cancelled by the
+    /// store going away, and a task that held the store for the length of a request would put
+    /// that off until the hub had answered. A request looks the store up before asking and
+    /// again with the answer, and holds nothing in between.
+    private struct Unretained: Sendable {
+        weak var store: HubStore?
     }
 
     /// `loadLatestVersions`: asks for each platform's newest desktop app. A platform without a
     /// published update keeps what was known. Throws the first failure after trying both.
     public func refreshLatestVersions() async throws(HubError) {
+        try await HubStore.refreshLatestVersions(of: Unretained(store: self), from: api)
+    }
+
+    private static func refreshLatestVersions(of reference: Unretained, from api: any HubAPI) async throws(HubError) {
         var first: HubError?
         for platform in UpdatePlatform.allCases {
-            let known = state.latestVersions[platform.rawValue]
+            let key = platform.rawValue
+            guard let known = reference.store.map({ $0.state.latestVersions[key] }) else { return }
             do {
+                let version = try await api.latestVersion(platform: platform)
+                guard let store = reference.store else { return }
                 // An `update` event that arrived meanwhile is newer than this answer.
-                if let version = try await api.latestVersion(platform: platform), state.latestVersions[platform.rawValue] == known {
-                    change { $0.latestVersions[platform.rawValue] = version }
-                }
+                if let version, store.state.latestVersions[key] == known { store.change { $0.latestVersions[key] = version } }
             } catch {
-                let failure = failed(error)
+                guard let store = reference.store else { return }
+                let failure = store.failed(error)
                 first = first ?? failure
             }
         }
@@ -392,12 +408,17 @@ public final class HubStore {
 
     @discardableResult
     public func refreshInfo() async throws(HubError) -> HubInfo {
+        try await HubStore.refreshInfo(of: Unretained(store: self), from: api)
+    }
+
+    @discardableResult
+    private static func refreshInfo(of reference: Unretained, from api: any HubAPI) async throws(HubError) -> HubInfo {
         do {
             let answer = try await api.info()
-            info = answer
+            reference.store?.info = answer
             return answer
         } catch {
-            throw failed(error)
+            throw reference.store?.failed(error) ?? HubError(error)
         }
     }
 
@@ -538,12 +559,16 @@ public final class HubStore {
     }
 
     public func refreshEnergySettings() async throws(HubError) {
-        let revision = energyRevision
+        try await HubStore.refreshEnergySettings(of: Unretained(store: self), from: api)
+    }
+
+    private static func refreshEnergySettings(of reference: Unretained, from api: any HubAPI) async throws(HubError) {
+        guard let revision = reference.store?.energyRevision else { return }
         do {
             let saved = try await api.energySettings()
-            if revision == energyRevision { setEnergySettings(saved) }
+            if let store = reference.store, revision == store.energyRevision { store.setEnergySettings(saved) }
         } catch {
-            throw failed(error)
+            throw reference.store?.failed(error) ?? HubError(error)
         }
     }
 
@@ -573,18 +598,23 @@ public final class HubStore {
 
     /// Fetches settings, what is firing and the log.
     public func refreshAlerts() async throws(HubError) {
+        try await HubStore.refreshAlerts(of: Unretained(store: self), from: api)
+    }
+
+    private static func refreshAlerts(of reference: Unretained, from api: any HubAPI) async throws(HubError) {
         do {
             // An alert that arrives while the answer is on its way may or may not be in it.
             for last in [false, false, true] {
-                let revision = alertsRevision
+                guard let revision = reference.store?.alertsRevision else { return }
                 let response = try await api.alerts()
-                if revision == alertsRevision || last {
-                    change { $0.alerts = AlertsState(response) }
+                guard let store = reference.store else { return }
+                if revision == store.alertsRevision || last {
+                    store.change { $0.alerts = AlertsState(response) }
                     return
                 }
             }
         } catch {
-            throw failed(error)
+            throw reference.store?.failed(error) ?? HubError(error)
         }
     }
 
@@ -689,7 +719,7 @@ public final class HubStore {
 }
 
 /// The tasks a store has running. They are cancelled when the store stops, and when it goes away
-/// without having been stopped.
+/// without having been stopped, which it can only do if none of them holds it while it waits.
 private final class TaskBag: Sendable {
     private struct State: Sendable {
         var nextID: UInt64 = 0

@@ -906,6 +906,48 @@ import Testing
         try await eventually("its stream and its timer went with it") { hub.connections[0].isClosed && clock.sleeperCount == 0 }
     }
 
+    /// Waits for an answer that never comes, and counts in `abandoned` when the wait is given up.
+    nonisolated static func unanswered<Value: Sendable>(_ gate: Gate<Value>, _ abandoned: Counter) async throws -> Value {
+        do {
+            return try await gate.wait()
+        } catch {
+            abandoned.increment()
+            throw error
+        }
+    }
+
+    @Test func aStoreDroppedWithRequestsInFlightStillGoesAway() async throws {
+        let hub = ScriptedHub(), clock = ManualHubClock(now: F.now)
+        // Nothing the store asks for is answered: not what it wants at the start, not a chart.
+        let version = Gate<String?>(), price = Gate<EnergySettings?>(), alerts = Gate<AlertsResponse>(), info = Gate<HubInfo>()
+        let chart = Gate<HistoryResponse>(), abandoned = Counter()
+        hub.on {
+            $0.latestVersion = { _ in try await Self.unanswered(version, abandoned) }
+            $0.energySettings = { try await Self.unanswered(price, abandoned) }
+            $0.alerts = { try await Self.unanswered(alerts, abandoned) }
+            $0.info = { try await Self.unanswered(info, abandoned) }
+            $0.history = { _, _ in try await Self.unanswered(chart, abandoned) }
+        }
+        let preferences = F.preferences().0
+        preferences.setCardRange(.hour, for: "a")
+        var store: HubStore? = HubStore(api: hub, preferences: preferences, clock: clock)
+        let dropped = WeakReference(store)
+        store?.start()
+        try await eventually("the stream is open") { hub.connections.count == 1 }
+        hub.connections[0].send(.snapshot([F.device("a")]))
+        try await eventually("everything is asked for") {
+            store?.connection == .live && version.arrivals == 1 && price.arrivals == 1 && alerts.arrivals == 1 && info.arrivals == 1 && chart.arrivals == 1
+        }
+        // The stream, the timer, and five requests waiting for the hub.
+        #expect(store?.activeTaskCount == 7 && clock.sleeperCount == 1)
+
+        store = nil                                                // without stop()
+        try await eventually("the store is gone") { dropped.object == nil }
+        try await eventually("its stream and its timer went with it") { hub.connections[0].isClosed && clock.sleeperCount == 0 }
+        try await eventually("its requests were cancelled") { abandoned.count == 5 }
+        #expect(hub.calls.count == 5)                              // and the second platform's version was not asked for
+    }
+
     // MARK: Unpairing
 
     @Test func unpairStopsFirstAndStaysStopped() async throws {

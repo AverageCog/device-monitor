@@ -791,4 +791,20 @@ final class StreamListener: Sendable {
         #expect(await storeError { _ = try await store.refreshInfo() }?.isUnauthorized == true)
         #expect(store.connection == .unauthorized)
     }
+
+    @Test func aStoreOverAFrozenDemoCanBeLetGoOf() async throws {
+        // What a preview is: answers that take a moment, on a clock nobody moves.
+        let (hub, clock) = DemoHubTests.make(latency: 250)
+        var store: HubStore? = HubStore(api: hub, preferences: StoreFixtures.preferences().0, clock: clock)
+        let dropped = WeakReference(store)
+        store?.start()
+        // Waiting on the clock: the hub's ticker, the store's timer, and the four things the
+        // store asked for at the start, which will never be answered.
+        try await eventually("the store is live and waiting for its answers") { store?.connection == .live && clock.sleeperCount == 6 }
+        #expect(store?.alerts.isLoaded == false && store?.activeTaskCount == 6)
+
+        store = nil                                                // without stop()
+        try await eventually("the store is gone") { dropped.object == nil }
+        try await eventually("only the hub's ticker is still waiting") { clock.sleeperCount == 1 }
+    }
 }
