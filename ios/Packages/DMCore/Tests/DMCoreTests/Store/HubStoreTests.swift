@@ -1286,44 +1286,4 @@ import Testing
         try await eventually("its requests were cancelled") { abandoned.count == 5 }
         #expect(hub.calls.count == 5)                              // and the second platform's version was not asked for
     }
-
-    // MARK: Unpairing
-
-    @Test func unpairStopsFirstAndStaysStopped() async throws {
-        let h = StoreHarness()
-        let connection = try await h.goLive()
-        let answer = Gate<Bool>()
-        h.hub.on { $0.unpairSelf = { _ = try await answer.wait() } }
-        let unpair = Task { try await h.store.unpair() }
-        try await eventually("the hub is being told") { answer.arrivals == 1 }
-        // Its own stream is closed before the hub can close it and make that look like an outage.
-        #expect(h.store.connection == .idle && !h.store.isRunning)
-        try await eventually("the stream is closed") { connection.isClosed }
-        answer.open(true)
-        try await unpair.value
-        #expect(h.store.connection == .idle && !h.store.isRunning && h.hub.calls("unpairSelf").count == 1)
-        await settle()
-        #expect(h.hub.connections.count == 1)
-    }
-
-    @Test func aFailedUnpairLeavesTheStoreRunning() async throws {
-        let h = StoreHarness()
-        try await h.goLive()
-        h.hub.on { $0.unpairSelf = { throw HubError.unreachable("Could not connect to the hub.") } }
-        #expect(await storeError { try await h.store.unpair() } == .unreachable("Could not connect to the hub."))
-        #expect(h.store.isRunning && h.store.connection == .connecting)
-        try await h.connection(1).send(.snapshot([]))
-        try await eventually("the store is live again") { h.store.connection == .live }
-
-        // A hub that has already forgotten this phone: that is what was asked for.
-        h.hub.on { $0.unpairSelf = { throw F.refused(401) } }
-        try await h.store.unpair()
-        #expect(h.store.connection == .idle && !h.store.isRunning)
-
-        // A store that was never started stays stopped when the hub cannot be told.
-        let idle = StoreHarness()
-        idle.hub.on { $0.unpairSelf = { throw HubError.unreachable("Could not connect to the hub.") } }
-        #expect(await storeError { try await idle.store.unpair() } != nil)
-        #expect(idle.store.connection == .idle && idle.hub.connections.isEmpty)
-    }
 }

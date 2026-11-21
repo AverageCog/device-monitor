@@ -735,25 +735,8 @@ public final class HubStore {
         }
     }
 
-    /// "Disconnect": stops, then has the hub forget this enrollment. On success the store stays
-    /// stopped and the caller discards the credentials. A hub that already forgot the enrollment
-    /// counts as success. Any other failure is thrown, and a store that was running runs again.
-    public func unpair() async throws(HubError) {
-        let wasRunning = isRunning, wasSuspended = isSuspended
-        // First, so the hub closing this app's stream is not mistaken for a lost connection.
-        stop()
-        do {
-            try await api.unpairSelf()
-        } catch {
-            let failure = HubError(error)
-            if failure.isUnauthorized { return }
-            if wasRunning {
-                start()
-                if wasSuspended { suspend() }
-            }
-            throw failure
-        }
-    }
+    // Disconnecting is `SessionController.disconnect()`, not an action of the store: the stored
+    // credentials have to go with the enrollment, and only the session holds those.
 
     /// Tasks the store started that have not finished. Zero some moments after `stop()`.
     var activeTaskCount: Int { tasks.count }

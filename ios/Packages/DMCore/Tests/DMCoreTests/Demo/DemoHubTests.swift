@@ -864,7 +864,9 @@ final class StreamListener: Sendable {
         let first = store.series(for: ID.gamingPC).points.last?.t ?? 0
         try await eventually("reports and heartbeats arrive") { (store.series(for: ID.gamingPC).points.last?.t ?? 0) > first && store.lastStatusAt != nil }
         #expect(store.counts == FleetCounts(online: 5, total: 6))
-        try await store.unpair()
+        // What the session does to disconnect: stop, then have the hub forget the enrollment.
+        store.stop()
+        try await hub.unpairSelf()
         #expect(store.connection == .idle)
         try await eventually("nothing is left running") { store.activeTaskCount == 0 }
         #expect(await storeError { _ = try await store.refreshInfo() }?.isUnauthorized == true)
