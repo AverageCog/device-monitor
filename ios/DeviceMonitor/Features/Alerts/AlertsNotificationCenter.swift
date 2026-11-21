@@ -62,6 +62,15 @@ final class AlertsNotificationCenter {
         UNUserNotificationCenter.current().removeAllDeliveredNotifications()
     }
 
+    /// The app has left the hub these alerts came from: none of them is to be seen again. Every
+    /// notification goes, as the app posts nothing but alerts; one just added may not count as
+    /// delivered yet, hence the pending ones too.
+    func removeAll() {
+        let center = UNUserNotificationCenter.current()
+        center.removeAllPendingNotificationRequests()
+        center.removeAllDeliveredNotifications()
+    }
+
     private nonisolated static func authorizationStatus() async -> UNAuthorizationStatus {
         await withCheckedContinuation { continuation in
             UNUserNotificationCenter.current().getNotificationSettings { settings in

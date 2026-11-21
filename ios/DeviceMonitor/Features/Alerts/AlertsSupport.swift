@@ -257,6 +257,8 @@ struct AlertsSelect<Value: Hashable & Sendable>: View {
     private let options: [DMSegment<Value>]
     private let identifier: String
 
+    @Environment(\.dynamicTypeSize) private var typeSize
+
     init(_ title: String, selection: Binding<Value>, options: [DMSegment<Value>], identifier: String) {
         self.title = title
         _selection = selection
@@ -277,14 +279,22 @@ struct AlertsSelect<Value: Hashable & Sendable>: View {
                 Text(current)
                     .dmFont(.body)
                     .foregroundStyle(Theme.textPrimary)
-                    .lineLimit(1)
+                    // At the accessibility sizes the plate sits under its title, across the row,
+                    // and even "CPU temperature" does not fit on one line: it wraps there instead
+                    // of losing its middle, and the plate grows to hold it.
+                    .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
                     .truncationMode(.middle)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(Theme.textMuted)
                     .accessibilityHidden(true)
             }
             .padding(.horizontal, 12)
+            // Keeps a value that grew taller than the plate off its edges; one line at the usual
+            // sizes is shorter than the minimum height, and stays 38 points high.
+            .padding(.vertical, 6)
             .frame(minHeight: 38)
             .dmSurface(Theme.surface2, radius: Theme.Radius.control)
             // Drawn 38 points high, touched over 44.

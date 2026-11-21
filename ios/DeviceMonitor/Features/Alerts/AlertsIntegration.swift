@@ -67,6 +67,8 @@ final class AlertsNotifier {
     private var preferences: Preferences?
     private let delegate = AlertsNotificationDelegate()
 
+    /// The hub the session was paired with when last looked at: the one whose alerts were posted.
+    private var pairedHub: PairedHub?
     /// The store whose log has been gone through since its stream last came up.
     private var caughtUp: ObjectIdentifier?
     /// Counts the changes of the connection, so a log that was fetched across one is fetched again.
@@ -93,6 +95,7 @@ final class AlertsNotifier {
 
     func attach(to session: SessionController) {
         self.session = session
+        pairedHub = session.hub
         UNUserNotificationCenter.current().delegate = delegate
         watch()
     }
@@ -122,10 +125,11 @@ final class AlertsNotifier {
         catchUp()
     }
 
-    /// Follows the session's store and its connection, for as long as the app runs.
+    /// Follows the session's hub, its store and the store's connection, for as long as the app runs.
     private func watch() {
         guard let session else { return }
         withObservationTracking {
+            _ = session.hub
             _ = session.store?.connection
         } onChange: { [weak self] in
             // Called before the change is made; by the time the task runs it has been.
@@ -137,6 +141,10 @@ final class AlertsNotifier {
     }
 
     private func connectionChanged() {
+        // Only the hub going counts as leaving it: the connection changes with every outage, and
+        // "Try again" after a revocation replaces the store, with the hub still the same.
+        if let pairedHub, pairedHub != session?.hub { leftHub() }
+        pairedHub = session?.hub
         changes += 1
         caughtUp = nil
         let isLive = session?.store?.connection == .live
@@ -174,6 +182,20 @@ final class AlertsNotifier {
             announce(fetched: store.alerts, now: store.clock.now)
             caughtUp = ObjectIdentifier(store)
             return
+        }
+    }
+
+    /// Disconnect or Pair again: the hub is forgotten, and so is what was posted about it. Its
+    /// alerts name devices, disks and times, and would otherwise stay on the lock screen and in
+    /// Notification Centre, for whoever has the phone next.
+    private func leftHub() {
+        note("hub: left, its notifications removed")
+        waiting = []
+        let previous = posting
+        posting = Task {
+            // A notification still being handed over would land after a removal made now.
+            await previous?.value
+            AlertsNotificationCenter.shared.removeAll()
         }
     }
 
@@ -229,7 +251,9 @@ final class AlertsNotifier {
     }
 
     private func announce(_ plan: AlertNotifications.Plan) {
-        guard let preferences else { return }
+        // Once the session has left its hub, what is still on its way (a log answer, alerts held
+        // back for it) is about a hub this device has forgotten: nothing of it is remembered or posted.
+        guard let preferences, session?.store != nil else { return }
         // Remembered whether or not this device shows anything, so that switching notifications
         // on later does not bring up alerts from before.
         if let marker = plan.marker { remember(marker) }
@@ -240,10 +264,13 @@ final class AlertsNotifier {
         note("notify: [\(plan.notifications.map(\.title).joined(separator: " + "))] \(verdict)")
         guard preferences.notificationsEnabled, !isDemo, !plan.notifications.isEmpty else { return }
         let notifications = plan.notifications
+        let hub = session?.hub
         let previous = posting
         posting = Task {
             await previous?.value
             for notification in notifications {
+                // The session left the hub while this batch waited its turn (`leftHub()`).
+                guard self.session?.hub == hub else { return }
                 await AlertsNotificationCenter.post(notification)
             }
         }
