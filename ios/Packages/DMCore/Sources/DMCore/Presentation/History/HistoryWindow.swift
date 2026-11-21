@@ -124,14 +124,8 @@ public struct HistoryWindow: Sendable, Equatable {
     /// is cut to the current window; nil when less than a minute would be left, and the window
     /// then stays as it is.
     public func zoomed(to a: Double, _ b: Double) -> HistoryWindow? {
-        // const from = Math.max(hv.from, a), to = Math.min(hv.to, b); if (to - from >= 60e3) { … hv.zoomed = true; … }
-        let from = max(self.from, min(a, b)), to = min(self.to, max(a, b))
-        guard to - from >= HistoryWindow.minimumSpan else { return nil }
-        var next = self
-        next.from = from
-        next.to = to
-        next.isZoomed = true
-        return next
+        guard !a.isNaN, !b.isNaN else { return nil }
+        return clipped(from: min(a, b), to: max(a, b))
     }
 
     /// The window after a drag across a chart from one horizontal position to another, on a chart
@@ -141,7 +135,21 @@ public struct HistoryWindow: Sendable, Equatable {
         // if (d && d.x2 != null && Math.abs(d.x2 - d.x1) > 8) { const a = hvT(Math.min(d.x1, d.x2), d.W), b = hvT(Math.max(d.x1, d.x2), d.W); … }
         guard abs(x2 - x1) > HistoryWindow.minimumDrag else { return nil }
         let layout = HistoryChartLayout(width: chartWidth, from: from, to: to)
-        return zoomed(to: layout.time(atX: min(x1, x2)), layout.time(atX: max(x1, x2)))
+        return clipped(from: layout.time(atX: min(x1, x2)), to: layout.time(atX: max(x1, x2)))
+    }
+
+    // const from = Math.max(hv.from, a), to = Math.min(hv.to, b);
+    // if (to - from >= 60e3) { hv.from = from; hv.to = to; hv.zoomed = true; … }
+    private func clipped(from a: Double, to b: Double) -> HistoryWindow? {
+        // Math.max and Math.min give NaN for a NaN, and no comparison with NaN holds.
+        guard !a.isNaN, !b.isNaN else { return nil }
+        let from = max(self.from, a), to = min(self.to, b)
+        guard to - from >= HistoryWindow.minimumSpan else { return nil }
+        var next = self
+        next.from = from
+        next.to = to
+        next.isZoomed = true
+        return next
     }
 
     /// How many points to ask for, given the width of the column the charts are in: one per point
