@@ -70,6 +70,17 @@ public final class DemoHubAPI: HubAPI {
     /// The id of the demo's own enrollment.
     public static let enrollmentID = "5d0c1b7e-3f2a-4c68-9e15-7a4b2d9c6e30"
 
+    /// Whether the demo hub can be reached, for showing what the app does while its hub is away.
+    public enum Availability: Sendable, Hashable {
+        /// It answers and streams.
+        case reachable
+        /// Off or asleep: every request and every connection attempt fails at once.
+        case unreachable
+        /// It answers nothing and refuses nothing, like an address that drops packets: requests
+        /// and connection attempts wait until they are cancelled or the availability changes.
+        case silent
+    }
+
     /// A device counts as offline after this long without a report (`OFFLINE_MS` in server.js).
     static let offlineAfter: Double = 30_000
     /// Raw samples sent with a snapshot (`LIVE_HISTORY_MS`).
@@ -107,6 +118,11 @@ public final class DemoHubAPI: HubAPI {
         var diskAlertUntil: Double = 0
         var invitations: Int = 0
         var revoked = false
+        var availability = Availability.reachable
+        /// Requests and connection attempts waiting on a silent hub.
+        var parkedRequests: [UInt64: AsyncStream<Void>.Continuation] = [:]
+        var parkedStreams: [UInt64: AsyncThrowingStream<HubEvent, any Error>.Continuation] = [:]
+        var nextParked: UInt64 = 0
     }
 
     public let configuration: Configuration
@@ -150,9 +166,13 @@ public final class DemoHubAPI: HubAPI {
     }
 
     deinit {
-        let (driver, subscribers) = state.withLock { ($0.driver, Array($0.subscribers.values)) }
+        let (driver, subscribers, streams, requests) = state.withLock {
+            ($0.driver, Array($0.subscribers.values), Array($0.parkedStreams.values), Array($0.parkedRequests.values))
+        }
         driver?.cancel()
         subscribers.forEach { $0.finish() }
+        streams.forEach { $0.finish() }
+        requests.forEach { $0.finish() }
     }
 
     // MARK: - Directing the demo
@@ -195,7 +215,31 @@ public final class DemoHubAPI: HubAPI {
             return Array(state.subscribers.values)
         }
         // The hub destroys the socket; the refusal comes with the next request.
-        streams.forEach { $0.finish(throwing: HubError.unreachable("The connection to the hub was lost.")) }
+        streams.forEach { $0.finish(throwing: Self.connectionLost) }
+    }
+
+    public var availability: Availability { state.withLock { $0.availability } }
+
+    /// Takes the hub away or brings it back. Leaving `.reachable` breaks every open stream, as a
+    /// hub that is switched off does. Whatever was waiting on a silent hub is let go: a request
+    /// goes on to the hub as it now is, a connection attempt fails and is for its owner to repeat.
+    public func setAvailability(_ availability: Availability) {
+        typealias Streams = [AsyncThrowingStream<HubEvent, any Error>.Continuation]
+        let (open, waiting, requests): (Streams, Streams, [AsyncStream<Void>.Continuation]) = state.withLock { state in
+            guard state.availability != availability else { return ([], [], []) }
+            let open = state.availability == .reachable ? Array(state.subscribers.values) : []
+            if state.availability == .reachable { state.subscribers = [:] }
+            state.availability = availability
+            defer {
+                state.parkedStreams = [:]
+                state.parkedRequests = [:]
+            }
+            return (open, Array(state.parkedStreams.values), Array(state.parkedRequests.values))
+        }
+        let lost = availability == .silent ? HubError.unreachable(HubError.Reason.timedOut) : Self.connectionLost
+        open.forEach { $0.finish(throwing: lost) }
+        waiting.forEach { $0.finish(throwing: Self.noConnection) }
+        requests.forEach { $0.finish() }
     }
 
     // MARK: - HubAPI
@@ -349,8 +393,16 @@ public final class DemoHubAPI: HubAPI {
     public func events() -> AsyncThrowingStream<HubEvent, any Error> {
         let (stream, continuation) = AsyncThrowingStream<HubEvent, any Error>.makeStream()
         let now = clock.now
-        let subscriber: UInt64? = state.withLock { state in
-            guard !state.revoked else { return nil }
+        let opened: Opened = state.withLock { state in
+            switch state.availability {
+            case .reachable: break
+            case .unreachable: return .failed
+            case .silent:
+                state.nextParked += 1
+                state.parkedStreams[state.nextParked] = continuation
+                return .parked(state.nextParked)
+            }
+            guard !state.revoked else { return .refused }
             state.nextSubscriber += 1
             continuation.yield(.snapshot(state.machines.map { self.view($0, now: now, history: true) }))
             state.subscribers[state.nextSubscriber] = continuation
@@ -365,32 +417,67 @@ public final class DemoHubAPI: HubAPI {
                     }
                 }
             }
-            return state.nextSubscriber
+            return .subscribed(state.nextSubscriber)
         }
-        guard let subscriber else {
-            continuation.finish(throwing: Self.refusal)
-            return stream
-        }
-        continuation.onTermination = { [weak self] _ in
-            self?.state.withLock { _ = $0.subscribers.removeValue(forKey: subscriber) }
+        switch opened {
+        case .refused: continuation.finish(throwing: Self.refusal)
+        case .failed: continuation.finish(throwing: Self.noConnection)
+        case .parked(let id):
+            continuation.onTermination = { [weak self] _ in
+                self?.state.withLock { _ = $0.parkedStreams.removeValue(forKey: id) }
+            }
+        case .subscribed(let subscriber):
+            continuation.onTermination = { [weak self] _ in
+                self?.state.withLock { _ = $0.subscribers.removeValue(forKey: subscriber) }
+            }
         }
         return stream
+    }
+
+    /// What became of a connection attempt.
+    private enum Opened {
+        case subscribed(UInt64), parked(UInt64), refused, failed
     }
 
     // MARK: - Requests and the stream
 
     private static let refusal = HubError.unauthorized(status: 401, message: "Open a fresh dashboard invitation.")
+    private static let noConnection = HubError.unreachable("Could not connect to the hub.")
+    private static let connectionLost = HubError.unreachable("The connection to the hub was lost.")
 
-    /// Every operation: the latency, then the hub's state under its lock.
+    /// Every operation: the latency, the way to the hub, then the hub's state under its lock.
     private func request<T: Sendable>(_ body: @Sendable (inout State, Double) throws -> T) async throws -> T {
         if configuration.latency > 0 {
             do { try await clock.sleep(milliseconds: configuration.latency) } catch { throw HubError.cancelled }
         }
+        try await reach()
         guard !Task.isCancelled else { throw HubError.cancelled }
         let now = clock.now
         return try state.withLock { state in
             guard !state.revoked else { throw Self.refusal }
             return try body(&state, now)
+        }
+    }
+
+    /// Fails while the hub is unreachable, and waits for as long as it is silent.
+    private func reach() async throws {
+        while true {
+            let (change, continuation) = AsyncStream<Void>.makeStream()
+            let (availability, id) = state.withLock { state in
+                guard state.availability == .silent else { return (state.availability, UInt64(0)) }
+                state.nextParked += 1
+                state.parkedRequests[state.nextParked] = continuation
+                return (state.availability, state.nextParked)
+            }
+            switch availability {
+            case .reachable: return
+            case .unreachable: throw Self.noConnection
+            case .silent:
+                // Ends when the availability changes, and when the caller gives up.
+                for await _ in change {}
+                state.withLock { _ = $0.parkedRequests.removeValue(forKey: id) }
+                guard !Task.isCancelled else { throw HubError.cancelled }
+            }
         }
     }
 

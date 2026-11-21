@@ -675,6 +675,85 @@ final class StreamListener: Sendable {
         #expect(await abandoned.value == .cancelled)
     }
 
+    @Test func anUnreachableHubFailsEverythingUntilItIsBack() async throws {
+        let (hub, _) = Self.make()
+        #expect(hub.availability == .reachable)
+        let listener = StreamListener(hub)
+        await listener.wait(for: 1, "snapshot")
+
+        hub.setAvailability(.unreachable)
+        #expect(hub.availability == .unreachable)
+        // The open stream breaks, as when the hub is switched off…
+        #expect(await EventStreamTests.eventually { listener.hasEnded })
+        #expect(listener.failure == .unreachable("The connection to the hub was lost."))
+        // …and nothing connects after that.
+        let refused = HubError.unreachable("Could not connect to the hub.")
+        let again = StreamListener(hub)
+        #expect(await EventStreamTests.eventually { again.hasEnded })
+        #expect(again.failure == refused && again.events.isEmpty)
+        #expect(await hubError { _ = try await hub.devices() } == refused)
+        #expect(await hubError { try await hub.unpairSelf() } == refused)
+
+        // Back again it is the same hub: a rename made before is still there.
+        hub.setAvailability(.reachable)
+        _ = try await hub.rename(device: ID.gamingPC, name: "Renamed")
+        hub.setAvailability(.unreachable)
+        hub.setAvailability(.reachable)
+        let back = StreamListener(hub)
+        await back.wait(for: 1, "snapshot")
+        guard case .snapshot(let devices) = try #require(back.events.first) else { return }
+        #expect(devices.first { $0.id == ID.gamingPC }?.name == "Renamed")
+
+        // A revoked enrollment is only heard of from a hub that answers.
+        hub.revokeEnrollment()
+        hub.setAvailability(.unreachable)
+        #expect(await hubError { _ = try await hub.info() } == refused)
+        hub.setAvailability(.reachable)
+        #expect(await hubError { _ = try await hub.info() }?.isUnauthorized == true)
+    }
+
+    @Test func aSilentHubAnswersNothingUntilSomethingChanges() async throws {
+        let (hub, _) = Self.make()
+        let listener = StreamListener(hub)
+        await listener.wait(for: 1, "snapshot")
+
+        hub.setAvailability(.silent)
+        #expect(await EventStreamTests.eventually { listener.hasEnded })
+        #expect(listener.failure == .unreachable("The hub did not answer in time."))
+
+        // A connection attempt and a request both wait…
+        let waiting = StreamListener(hub)
+        let count = OSAllocatedUnfairLock(initialState: Int?.none)
+        let request = Task {
+            let devices = try await hub.devices()
+            count.withLock { $0 = devices.count }
+        }
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(!waiting.hasEnded && waiting.events.isEmpty && count.withLock { $0 } == nil)
+
+        // …a caller that gives up is told so…
+        let abandoned = Task { await hubError { _ = try await hub.info() } }
+        try await Task.sleep(for: .milliseconds(20))
+        abandoned.cancel()
+        #expect(await abandoned.value == .cancelled)
+
+        // …and when the hub is back the request goes through, and the attempt fails for its owner to repeat.
+        hub.setAvailability(.reachable)
+        try await request.value
+        #expect(count.withLock { $0 } == 6)
+        #expect(await EventStreamTests.eventually { waiting.hasEnded })
+        #expect(waiting.failure == .unreachable("Could not connect to the hub.") && waiting.events.isEmpty)
+        let again = StreamListener(hub)
+        await again.wait(for: 1, "snapshot")
+
+        // From silent to switched off, whatever waits fails.
+        hub.setAvailability(.silent)
+        let late = Task { await hubError { _ = try await hub.info() } }
+        try await Task.sleep(for: .milliseconds(20))
+        hub.setAvailability(.unreachable)
+        #expect(await late.value == .unreachable("Could not connect to the hub."))
+    }
+
     @Test func aHubThatIsDroppedEndsItsStreams() async throws {
         var hub: DemoHubAPI? = DemoHubAPI(configuration: .init(seed: 3, timeZone: Self.gmt), clock: ManualHubClock(now: Self.noon))
         let listener = StreamListener(try #require(hub))
