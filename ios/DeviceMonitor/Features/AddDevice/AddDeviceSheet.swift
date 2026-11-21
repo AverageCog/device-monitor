@@ -97,10 +97,6 @@ private struct AddDeviceViewSection: View {
         let invitation = model.invitation
         AddDeviceCard(AddDeviceGuide.viewTitle) {
             AddDeviceParagraph(AddDeviceGuide.viewText)
-            if session.isDemo {
-                BannerView(AddDeviceGuide.demoNote, kind: .info)
-                    .accessibilityIdentifier("add-device-demo-note")
-            }
             switch invitation.state {
             case .ready(let link, let expires):
                 ready(link, expires: expires)
@@ -122,6 +118,10 @@ private struct AddDeviceViewSection: View {
 
     @ViewBuilder
     private func ready(_ link: URL, expires: Double) -> some View {
+        if session.isDemo {
+            BannerView(AddDeviceGuide.demoNote, kind: .info)
+                .accessibilityIdentifier("add-device-demo-note")
+        }
         Group {
             if let code = model.qrCode {
                 AddDeviceQRView(code: code)
