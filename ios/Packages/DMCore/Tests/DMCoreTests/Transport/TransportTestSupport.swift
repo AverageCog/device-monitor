@@ -179,7 +179,8 @@ private final class FakeTransport: PinnedTransport {
         }
         if (300..<400).contains(reply.status) { throw HubError.redirectRefused }
         guard reply.body.count <= maxResponseBytes else { throw HubError.responseTooLarge }
-        let response = HTTPURLResponse(url: request.url!, statusCode: reply.status, httpVersion: "HTTP/1.1", headerFields: [:])!
+        // Everything the hub's `send()` writes is labelled as JSON.
+        let response = HTTPURLResponse(url: request.url!, statusCode: reply.status, httpVersion: "HTTP/1.1", headerFields: ["Content-Type": "application/json"])!
         return PinnedSession.Response(data: reply.body, response: response, peerPin: peerPin)
     }
 

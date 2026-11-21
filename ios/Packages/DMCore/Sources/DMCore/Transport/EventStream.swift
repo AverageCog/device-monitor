@@ -33,7 +33,8 @@ public struct EventStream: Sendable {
     }
 
     /// Connects and yields the payload of each `data:` frame as it completes; the first is the
-    /// snapshot. The sequence
+    /// snapshot. Each is JSON that Foundation can decode (see `HubClient.wellFormedJSON`). The
+    /// sequence
     /// - throws `HubError.unauthorized` when the hub answers 401/403,
     /// - throws another `HubError` when the hub cannot be reached or verified, when the connection
     ///   drops, or when nothing arrives for 15 s,
@@ -110,7 +111,8 @@ public struct EventStream: Sendable {
                 guard let head else { continue }
                 if (200..<300).contains(head.statusCode) {
                     for frame in try parser.feed(chunk) {
-                        guard queue.push(frame) else { return }
+                        // Frames are JSON, handed on as JSON Foundation can decode.
+                        guard queue.push(HubClient.wellFormedJSON(frame)) else { return }
                     }
                 } else if refusal.count + chunk.count <= HubClient.smallResponseLimit {
                     refusal.append(chunk)

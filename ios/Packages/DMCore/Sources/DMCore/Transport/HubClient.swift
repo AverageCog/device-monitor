@@ -60,6 +60,9 @@ public actor HubClient {
     /// - `body` is JSON and is sent with `Content-Type: application/json`.
     /// - `timeout` bounds the whole exchange. `maxResponseBytes` defaults to 32 MiB, or 64 KiB for
     ///   `/api/info` and `/api/update/*`.
+    /// - A body the hub labels `application/json` is returned as JSON that Foundation can decode:
+    ///   half a surrogate pair, which the hub can leave at the end of a name it cut, reads as
+    ///   U+FFFD (see `wellFormedJSON`). Any other body is returned untouched.
     ///
     /// Throws `HubError`: `.unauthorized` for 401 (the hub no longer knows this enrollment),
     /// `.http` for any other non-2xx status, `.unreachable` and friends when the hub cannot be
@@ -71,10 +74,12 @@ public actor HubClient {
     ) async throws -> (Data, HTTPURLResponse) {
         let request = try Self.makeRequest(origin: origin, method: method, path: path, query: query, bearer: enrollment.client, body: body)
         let reply = try await send(request, timeout: timeout, limit: maxResponseBytes ?? Self.responseLimit(for: path))
+        // What the hub labels as JSON is handed on as JSON Foundation can decode.
+        let data = reply.response.mimeType == "application/json" ? Self.wellFormedJSON(reply.data) : reply.data
         guard (200..<300).contains(reply.response.statusCode) else {
-            throw HubError.status(reply.response.statusCode, body: reply.data, to: .request)
+            throw HubError.status(reply.response.statusCode, body: data, to: .request)
         }
-        return (reply.data, reply.response)
+        return (data, reply.response)
     }
 
     /// `request` followed by JSON decoding; a body that does not decode throws `.invalidResponse`.
@@ -83,7 +88,8 @@ public actor HubClient {
         timeout: TimeInterval = HubClient.defaultTimeout, maxResponseBytes: Int? = nil
     ) async throws -> T {
         let (data, _) = try await request(method: method, path: path, query: query, body: body, timeout: timeout, maxResponseBytes: maxResponseBytes)
-        guard let value = try? JSONDecoder().decode(T.self, from: data) else { throw HubError.invalidResponse }
+        // Whatever it was labelled as, it is about to be read as JSON.
+        guard let value = try? JSONDecoder().decode(T.self, from: Self.wellFormedJSON(data)) else { throw HubError.invalidResponse }
         return value
     }
 

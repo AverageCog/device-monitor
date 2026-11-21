@@ -65,6 +65,21 @@ import Testing
         #expect(hub.calls.map(\.path) == ["/api/stream"])
     }
 
+    @Test func deliversFramesFoundationCanDecodeWhenTheHubCutAStringInsideAnEmoji() async throws {
+        let (hub, _, client) = try HubClientTests.setUp()
+        // The escape arrives split across chunks, like anything else in a frame.
+        hub.onStream { _ in
+            Self.script(200, [#"data: {"type":"snapshot","devices":[{"latest":{"hostname":"aaa\ud8"#, #"3d"}}]}"# + "\n\ndata: {\"name\":\"\\ud83d\\ude00\"}\n\n"])
+        }
+        let result = await Self.collect(EventStream(client: client).frames())
+        // Half a pair becomes the escape for U+FFFD; an escaped pair is left as it came.
+        #expect(result.frames == ["{\"type\":\"snapshot\",\"devices\":[{\"latest\":{\"hostname\":\"aaa\\ufffd\"}}]}", "{\"name\":\"\\ud83d\\ude00\"}"])
+        #expect(result.failure == nil)
+        for frame in result.frames {
+            #expect(throws: Never.self) { try JSONSerialization.jsonObject(with: Data(frame.utf8)) }
+        }
+    }
+
     @Test func reportsRefusalsWithTheHubsWords() async throws {
         let (hub, _, client) = try HubClientTests.setUp()
         func refusal(_ status: Int, _ chunks: [String]) async -> HubError? {

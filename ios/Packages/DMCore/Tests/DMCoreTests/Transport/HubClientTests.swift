@@ -167,6 +167,28 @@ import Testing
         #expect(await hubError { _ = try await client.json(Device.self, path: "/api/devices/ws") } == .invalidResponse)
     }
 
+    /// The hub cuts strings by UTF-16 length (`str()` in `security.js`), which can leave half an
+    /// emoji at the end of a hostname or label; `JSON.stringify` writes that half as an escape
+    /// Foundation refuses. Browsers show it as U+FFFD, and so does this client.
+    @Test func decodesAStringTheHubCutInsideAnEmoji() async throws {
+        struct Device: Decodable, Sendable, Equatable { let id: String; let hostname: String }
+        let (hub, _, client) = try Self.setUp()
+        let kept = String(repeating: "a", count: 63)                        // 63 letters + 😀, cut to 64 units
+        hub.onRequest { call in
+            call.path == "/api/gone"
+                ? .json(404, #"{"error":"no device named aaa\ud83d"}"#)
+                : .json(200, #"[{"id":"ws","hostname":""# + kept + #"\ud83d"},{"id":"nas","hostname":""# + "\\ud83d\\ude00" + #" intact"}]"#)
+        }
+        let devices: [Device] = try await client.json(path: "/api/devices")
+        #expect(devices == [Device(id: "ws", hostname: kept + "\u{FFFD}"), Device(id: "nas", hostname: "😀 intact")])
+
+        // Callers that decode `request`'s body themselves get the same text.
+        let (data, _) = try await client.request(path: "/api/devices")
+        let parsed = try #require(try JSONSerialization.jsonObject(with: data) as? [[String: String]])
+        #expect(parsed.map { $0["hostname"] } == [kept + "\u{FFFD}", "😀 intact"])
+        #expect(await hubError { _ = try await client.request(path: "/api/gone") } == .http(status: 404, message: "no device named aaa\u{FFFD}"))
+    }
+
     @Test func neverReplaysAfterAnAmbiguousFailure() async throws {
         let (hub, store, client) = try Self.setUp()
         for failure in [HubError.unreachable("The connection to the hub was lost."), .responseTooLarge, .redirectRefused, .untrustedCertificate("x"), .cancelled] {

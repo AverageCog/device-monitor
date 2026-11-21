@@ -387,6 +387,34 @@ final class TransportE2ETests: Sendable {
 
     // MARK: Live stream
 
+    /// The hub cuts strings by UTF-16 length, so a name can end with half an emoji, which it
+    /// then writes as an escape Foundation's JSON parsers refuse. The dashboard in a browser is
+    /// not troubled by it, and neither may the app be: one such device must not hide all the others.
+    @Test func decodesAHostnameTheHubCutInsideAnEmoji() async throws {
+        let (_, _, client) = try await pair()
+        let kept = String(repeating: "a", count: 63)
+        try hub.seed(id: Self.device, hostname: kept + "😀")       // 65 UTF-16 units; the hub keeps 64
+        try hub.seed(id: "e2e-other", hostname: "😀 intact")
+
+        struct Device: Decodable, Sendable { let id: String; let hostname: String? }
+        let devices: [Device] = try await client.json(path: "/api/devices")
+        #expect(devices.map(\.id).sorted() == [Self.device, "e2e-other"])
+        let cut = try #require(devices.first { $0.id == Self.device }?.hostname)
+        // Whatever the hub makes of the half (today an escape this client reads as U+FFFD), the
+        // rest of the name and every other device arrive.
+        #expect(cut.hasPrefix(kept) && cut.unicodeScalars.count <= 64 && !cut.contains("😀"))
+        #expect(devices.first { $0.id == "e2e-other" }?.hostname == "😀 intact")
+
+        let (data, _) = try await client.request(path: "/api/devices")
+        #expect(try JSONSerialization.jsonObject(with: data) is [Any])
+
+        let snapshot = try #require(await Self.read(client.events(), until: { _ in true }).frames.first)
+        let listed = try #require(try Self.object(snapshot)["devices"] as? [[String: Any]])
+        let names = listed.compactMap { ($0["latest"] as? [String: Any])?["hostname"] as? String }
+        #expect(names.count == 2 && names.contains(cut) && names.contains("😀 intact"))
+        await client.close()
+    }
+
     @Test func streamsTheSnapshotThenLiveFrames() async throws {
         let (enrollment, _, client) = try await pair()
         try hub.seed(id: Self.device, hostname: "first-report")
