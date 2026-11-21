@@ -93,12 +93,31 @@ final class RegressionUITests: XCTestCase {
         XCTAssertFalse(oneHour.isSelected)
         // The element's frame is the area that takes a touch, centred on the plate.
         XCTAssertGreaterThanOrEqual(sixHours.frame.height, 44, "6 h takes a touch over \(sixHours.frame)")
+        // "1 h" and "6 h" with their padding were 43 points wide.
+        XCTAssertGreaterThanOrEqual(oneHour.frame.width, 44, "1 h takes a touch across \(oneHour.frame)")
+        XCTAssertGreaterThanOrEqual(sixHours.frame.width, 44, "6 h takes a touch across \(sixHours.frame)")
 
         // 19 points from the middle is 3 points beyond the edge of a 32-point plate.
         sixHours.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).withOffset(CGVector(dx: 0, dy: -19)).tap()
         XCTAssertTrue(wait(upTo: 5) { sixHours.isSelected }, "A touch just above 6 h chooses it")
         oneHour.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).withOffset(CGVector(dx: 0, dy: 19)).tap()
         XCTAssertTrue(wait(upTo: 5) { oneHour.isSelected }, "A touch just below 1 h chooses it")
+    }
+
+    /// The temperature unit's segments were 38 and 36 points wide, the shortest labels of any
+    /// segmented control.
+    @MainActor
+    func testTheTemperatureUnitSegmentsAreTouchTargetsAcrossAsWellAsDown() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-dm-demo", "-dm-tab", "settings"]
+        app.launch()
+
+        for unit in ["C", "F"] {
+            let segment = app.buttons["settings-unit-\(unit)"]
+            XCTAssertTrue(segment.waitForExistence(timeout: 20))
+            XCTAssertGreaterThanOrEqual(segment.frame.width, 44, "°\(unit) takes a touch across \(segment.frame)")
+            XCTAssertGreaterThanOrEqual(segment.frame.height, 44, "°\(unit) takes a touch over \(segment.frame)")
+        }
     }
 
     /// At the largest text sizes on a phone the price editor's mode read "One rate | Time of…".

@@ -72,6 +72,7 @@ struct DMSegmentedControl<Value: Hashable & Sendable>: View {
     private func row(minimumScale: CGFloat) -> some View {
         // The plate is 32 points tall at the standard text size, the touch target 44. It is
         // widened on each segment: a larger shape around the whole row does not reach its buttons.
+        // Across, the row itself keeps each segment 44 points wide at least.
         let reach = max(0, (44 - minHeight) / 2)
         return DMSegmentRow(fillsWidth: fillsWidth, minimumScale: minimumScale, padding: 2 * Self.labelPadding) {
             ForEach(segments) { segment in
@@ -151,7 +152,8 @@ private struct DMSegmentFrame: ViewModifier {
 
 /// The segments of a `DMSegmentedControl` side by side: each as wide as its label, or with
 /// `fillsWidth` all as wide as the widest, so none is cut short while another has room to spare.
-/// Given less, the labels narrow alike, down to `minimumScale`.
+/// Given less, the labels narrow alike, down to `minimumScale`. No segment is narrower than a
+/// touch target.
 ///
 /// Its ideal width is what the labels need at about the smallest scale it allows, so a
 /// `ViewThatFits` takes it only where they fit whole.
@@ -160,6 +162,10 @@ private struct DMSegmentRow: Layout {
     let minimumScale: CGFloat
     /// The part of each segment's width that does not shrink with its label.
     let padding: CGFloat
+
+    /// "°C" with its padding is 38 points wide at the standard text size, "1 h" 43: short of
+    /// the 44 a finger needs across as well as down.
+    private static var minWidth: CGFloat { 44 }
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let widths = widths(in: proposal.width, subviews: subviews)
@@ -181,21 +187,36 @@ private struct DMSegmentRow: Layout {
     private func widths(in available: CGFloat?, subviews: Subviews) -> [CGFloat] {
         let ideal = subviews.map { $0.sizeThatFits(.unspecified).width }
         let wanted = fillsWidth ? Array(repeating: ideal.max() ?? 0, count: ideal.count) : ideal
-        let fixed = padding * CGFloat(wanted.count)
-        let full = wanted.reduce(0, +)
-        guard full > fixed else { return wanted }
-        let width: CGFloat
-        if let available {
-            width = fillsWidth ? available : min(available, full)
-        } else if minimumScale < 1 {
+        guard let available else {
             // Claimed with a little to spare: text does not narrow exactly in proportion to its
             // size (tracking, and the system font's optical sizes), and must not be cut short.
-            width = fixed + (full - fixed) * min(1, minimumScale + 0.05)
-        } else {
-            width = full
+            return widths(wanted, scale: minimumScale < 1 ? min(1, minimumScale + 0.05) : 1)
         }
-        let scale = max(0, (width - fixed) / (full - fixed))
-        return wanted.map { padding + max(0, $0 - padding) * scale }
+        let width = fillsWidth ? available : min(available, widths(wanted, scale: 1).reduce(0, +))
+        return widths(wanted, scale: scale(wanted, fitting: width))
+    }
+
+    /// The segments with their labels at `scale` of their size, none narrower than `minWidth`.
+    private func widths(_ wanted: [CGFloat], scale: CGFloat) -> [CGFloat] {
+        wanted.map { max(Self.minWidth, padding + max(0, $0 - padding) * scale) }
+    }
+
+    /// The scale at which the segments add up to `width`.
+    private func scale(_ wanted: [CGFloat], fitting width: CGFloat) -> CGFloat {
+        // A segment held at `minWidth` gives no width up as the labels narrow, so the others
+        // narrow a little further, which may bring another down to it: hold those in turn.
+        var held = Set<Int>()
+        while true {
+            let free = wanted.indices.filter { !held.contains($0) }
+            let shrinking = free.reduce(0) { $0 + max(0, wanted[$1] - padding) }
+            // Every segment held: the row is as narrow as it goes.
+            guard shrinking > 0 else { return 0 }
+            let fixed = Self.minWidth * CGFloat(held.count) + padding * CGFloat(free.count)
+            let scale = max(0, (width - fixed) / shrinking)
+            let under = free.filter { padding + max(0, wanted[$0] - padding) * scale < Self.minWidth }
+            if under.isEmpty { return scale }
+            held.formUnion(under)
+        }
     }
 }
 
