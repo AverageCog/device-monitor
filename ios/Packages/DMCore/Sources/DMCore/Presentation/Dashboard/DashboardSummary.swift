@@ -2,7 +2,7 @@ import Foundation
 
 /// The line at the top of the dashboard and what the grid says when it has no card to show
 /// (renderGrid and the stream's error handler in public/index.html).
-public struct DashboardSummary: Sendable, Equatable {
+public struct DashboardSummaryModel: Sendable, Equatable {
     /// What the summary says while the live stream is down, until the next snapshot arrives.
     public static let reconnectingText = "Reconnecting to hub\u{2026}"
     /// What the dashboard says about its summary line once a device is offline: tapping it opens
@@ -36,9 +36,9 @@ public struct DashboardSummary: Sendable, Equatable {
         emptyState = total == 0 ? .noDevices : online == 0 ? .allOffline : nil
         if isReconnecting {
             // $('#summaryText').textContent = 'Reconnecting to hub…'; … $('#summaryShort').textContent = '';
-            text = DashboardSummary.reconnectingText
+            text = DashboardSummaryModel.reconnectingText
             shortText = ""
-            compactText = DashboardSummary.reconnectingText
+            compactText = DashboardSummaryModel.reconnectingText
         } else if total == 0 {
             text = ""
             shortText = ""
@@ -58,20 +58,20 @@ public struct DashboardSummary: Sendable, Equatable {
 /// A convenience for building the whole screen in one go. A view that redraws one card when its
 /// device reports can make that card's `DeviceCardModel` on its own.
 public struct DashboardModel: Sendable, Equatable {
-    public let summary: DashboardSummary
+    public let summary: DashboardSummaryModel
     /// The online devices, in the order of the grid.
     public let cards: [DeviceCardModel]
     /// The offline devices; they have no card.
-    public let offline: OfflineDeviceList
+    public let offline: OfflineDeviceListModel
 
     public init(
         devices: [Device], unit: TemperatureUnit, latestVersions: [String: String] = [:], isReconnecting: Bool = false,
         now: Double = Date().hubTime, locale: Locale = .current
     ) {
         let sorted = DashboardOrder.sorted(devices, locale: locale)
-        summary = DashboardSummary(devices: devices, isReconnecting: isReconnecting)
+        summary = DashboardSummaryModel(devices: devices, isReconnecting: isReconnecting)
         cards = sorted.filter(\.online).map { DeviceCardModel(device: $0, unit: unit, latestVersions: latestVersions, now: now) }
-        offline = OfflineDeviceList(sorted: sorted.filter { !$0.online }, latestVersions: latestVersions, now: now)
+        offline = OfflineDeviceListModel(sorted: sorted.filter { !$0.online }, latestVersions: latestVersions, now: now)
     }
 }
 
@@ -147,7 +147,7 @@ public enum DashboardOrder {
 }
 
 /// A row of the offline list (renderOffline).
-public struct OfflineDeviceRow: Sendable, Equatable, Identifiable {
+public struct OfflineDeviceRowModel: Sendable, Equatable, Identifiable {
     public let id: String
     /// `d.name || d.hostname || d.id`.
     public let name: String
@@ -168,12 +168,12 @@ public struct OfflineDeviceRow: Sendable, Equatable, Identifiable {
 }
 
 /// The offline devices, compact, under the grid's summary.
-public struct OfflineDeviceList: Sendable, Equatable {
+public struct OfflineDeviceListModel: Sendable, Equatable {
     public static let title = "Offline devices"
     /// What a row does when tapped.
     public static let rowHint = "Open history"
 
-    public let rows: [OfflineDeviceRow]
+    public let rows: [OfflineDeviceRowModel]
 
     public var isEmpty: Bool { rows.isEmpty }
 
@@ -183,7 +183,7 @@ public struct OfflineDeviceList: Sendable, Equatable {
     }
 
     init(sorted offline: [Device], latestVersions: [String: String], now: Double) {
-        rows = offline.map { OfflineDeviceRow(device: $0, latestVersions: latestVersions, now: now) }
+        rows = offline.map { OfflineDeviceRowModel(device: $0, latestVersions: latestVersions, now: now) }
     }
 }
 

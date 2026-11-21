@@ -1,7 +1,7 @@
 import Foundation
 
 /// The heading of the history page (renderHvDevices in public/index.html).
-public struct HistoryHeader: Sendable, Equatable {
+public struct HistoryHeaderModel: Sendable, Equatable {
     /// What the page is titled when the device it was opened for is not known to the hub.
     public static let unknownDeviceTitle = "Unknown device"
 
@@ -15,7 +15,7 @@ public struct HistoryHeader: Sendable, Equatable {
 
     public init(device d: Device?) {
         guard let d else {
-            title = HistoryHeader.unknownDeviceTitle
+            title = HistoryHeaderModel.unknownDeviceTitle
             subtitle = ""
             isOnline = nil
             return
@@ -34,7 +34,7 @@ public struct HistoryHeader: Sendable, Equatable {
 }
 
 /// A device button above the history page's charts.
-public struct HistoryDeviceChip: Sendable, Equatable, Identifiable {
+public struct HistoryDeviceChipModel: Sendable, Equatable, Identifiable {
     public let id: String
     public let name: String
     /// Decides the colour of the chip's dot.
@@ -44,10 +44,10 @@ public struct HistoryDeviceChip: Sendable, Equatable, Identifiable {
     /// One chip per device, in the order the user arranged the dashboard, devices without a place
     /// last. Unlike the grid, names do not break ties: devices with the same place keep the order
     /// they are given in (`[...devices.values()].sort((a, b) => (a.order ?? 1e9) - (b.order ?? 1e9))`).
-    public static func chips(for devices: [Device], selected: String?) -> [HistoryDeviceChip] {
+    public static func chips(for devices: [Device], selected: String?) -> [HistoryDeviceChipModel] {
         DashboardOrder.sortedByOrderOnly(devices).map {
             // <button data-id="…" class="${d.id === hv.id ? 'on' : ''}"><i class="${d.online ? 'on' : ''}"></i>${esc(d.name)}</button>
-            HistoryDeviceChip(id: $0.id, name: $0.name ?? "", isOnline: $0.online, isSelected: $0.id == selected)
+            HistoryDeviceChipModel(id: $0.id, name: $0.name ?? "", isOnline: $0.online, isSelected: $0.id == selected)
         }
     }
 

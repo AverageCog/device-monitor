@@ -1,24 +1,21 @@
 import Foundation
 
-/// The "…" menu of a card or an offline row (openMenu in public/index.html).
-public enum DeviceMenu {
-    public enum Item: String, Sendable, Hashable, CaseIterable {
-        case history, rename, remove
+/// An entry of the "…" menu of a card or an offline row (openMenu in public/index.html).
+/// `allCases` is the menu, top to bottom.
+public enum DeviceMenuItem: String, Sendable, Hashable, CaseIterable {
+    case history, rename, remove
 
-        public var title: String {
-            switch self {
-            case .history: "History"
-            case .rename: "Rename"
-            case .remove: "Remove from dashboard"
-            }
+    public var title: String {
+        switch self {
+        case .history: "History"
+        case .rename: "Rename"
+        case .remove: "Remove from dashboard"
         }
-
-        /// The dashboard writes "Remove from dashboard" in its danger colour.
-        public var isDestructive: Bool { self == .remove }
     }
 
-    /// The items, top to bottom.
-    public static let items: [Item] = [.history, .rename, .remove]
+    /// The dashboard writes "Remove from dashboard" in its danger colour.
+    public var isDestructive: Bool { self == .remove }
+
     /// Accessibility label of the button that opens the menu.
     public static let buttonLabel = "Device options"
     /// Title of the question Rename asks; its field starts out holding the device's name.

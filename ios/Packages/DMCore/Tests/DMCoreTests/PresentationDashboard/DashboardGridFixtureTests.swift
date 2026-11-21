@@ -82,15 +82,15 @@ import Testing
     @Test func summaryLine() {
         var failures = [String]()
         for c in grid.cases {
-            let summary = DashboardSummary(devices: c.devices), e = c.expected.summary
+            let summary = DashboardSummaryModel(devices: c.devices), e = c.expected.summary
             if summary.text != e.text { failures.append("\(c.label): \"\(summary.text)\", dashboard \"\(e.text)\"") }
             if summary.shortText != e.short { failures.append("\(c.label): short \"\(summary.shortText)\", dashboard \"\(e.short)\"") }
             // A narrow window shows the short form in place of the long one whenever the long one is marked `full`.
             if summary.compactText != (e.full ? e.short : e.text + e.short) { failures.append("\(c.label): compact \"\(summary.compactText)\"") }
             if summary.hasOfflineDevices != e.hasOff { failures.append("\(c.label): offline list \(summary.hasOfflineDevices), dashboard \(e.hasOff)") }
-            if (e.hasOff ? DashboardSummary.offlineListHint : "") != e.title { failures.append("\(c.label): the dashboard's hint is \"\(e.title)\"") }
+            if (e.hasOff ? DashboardSummaryModel.offlineListHint : "") != e.title { failures.append("\(c.label): the dashboard's hint is \"\(e.title)\"") }
             if summary.total != c.devices.count || summary.online != c.expected.grid.count || summary.isReconnecting { failures.append("\(c.label): counts \(summary.online)/\(summary.total)") }
-            if summary != DashboardSummary(total: c.devices.count, online: c.devices.filter(\.online).count) { failures.append("\(c.label): the two initialisers disagree") }
+            if summary != DashboardSummaryModel(total: c.devices.count, online: c.devices.filter(\.online).count) { failures.append("\(c.label): the two initialisers disagree") }
         }
         DashFixture.report(failures, of: grid.cases.count)
     }
@@ -98,21 +98,21 @@ import Testing
     @Test func reconnectingReplacesTheSummary() {
         var failures = [String]()
         for c in grid.cases {
-            let summary = DashboardSummary(devices: c.devices, isReconnecting: true), e = c.expected.reconnecting
+            let summary = DashboardSummaryModel(devices: c.devices, isReconnecting: true), e = c.expected.reconnecting
             if summary.text != e.text || summary.shortText != e.short || summary.compactText != (e.full ? e.short : e.text + e.short) || !summary.isReconnecting {
                 failures.append("\(c.label): \"\(summary.text)\" / \"\(summary.shortText)\" / \"\(summary.compactText)\", dashboard \"\(e.text)\" / \"\(e.short)\"")
             }
             // The grid under the summary does not change while the stream is down.
-            if summary.emptyState != DashboardSummary(devices: c.devices).emptyState || summary.hasOfflineDevices != c.expected.summary.hasOff { failures.append("\(c.label): reconnecting changed more than the text") }
+            if summary.emptyState != DashboardSummaryModel(devices: c.devices).emptyState || summary.hasOfflineDevices != c.expected.summary.hasOff { failures.append("\(c.label): reconnecting changed more than the text") }
         }
         DashFixture.report(failures, of: grid.cases.count)
-        #expect(DashboardSummary.reconnectingText == "Reconnecting to hub\u{2026}")
+        #expect(DashboardSummaryModel.reconnectingText == "Reconnecting to hub\u{2026}")
     }
 
     @Test func emptyStates() throws {
         var seen = Set<String>()
         for c in grid.cases {
-            let state = DashboardSummary(devices: c.devices).emptyState
+            let state = DashboardSummaryModel(devices: c.devices).emptyState
             guard let expected = c.expected.empty else {
                 #expect(state == nil, "\(c.label)")
                 continue
@@ -150,8 +150,8 @@ import Testing
         for c in grid.cases {
             let page = DashboardModel(devices: c.devices, unit: .fahrenheit, latestVersions: c.latestVersions, isReconnecting: false, now: c.now, locale: enUS)
             #expect(page.cards.map(\.id) == c.expected.grid, "\(c.label)")
-            #expect(page.offline == OfflineDeviceList(devices: c.devices, latestVersions: c.latestVersions, now: c.now, locale: enUS), "\(c.label)")
-            #expect(page.summary == DashboardSummary(devices: c.devices), "\(c.label)")
+            #expect(page.offline == OfflineDeviceListModel(devices: c.devices, latestVersions: c.latestVersions, now: c.now, locale: enUS), "\(c.label)")
+            #expect(page.summary == DashboardSummaryModel(devices: c.devices), "\(c.label)")
             #expect(page.cards.allSatisfy { $0.isOnline }, "\(c.label)")
             for card in page.cards {
                 let device = c.devices.first { $0.id == card.id }
@@ -159,7 +159,7 @@ import Testing
                 #expect(alone == card)
             }
         }
-        #expect(DashboardModel(devices: [], unit: .celsius, isReconnecting: true).summary.text == DashboardSummary.reconnectingText)
+        #expect(DashboardModel(devices: [], unit: .celsius, isReconnecting: true).summary.text == DashboardSummaryModel.reconnectingText)
     }
 
     @Test func namesWithAccentsSortAsInABrowser() {
@@ -179,8 +179,8 @@ import Testing
         var failures = [String]()
         var rows = 0, wakeable = 0
         for c in grid.cases {
-            let list = OfflineDeviceList(devices: c.devices, latestVersions: c.latestVersions, now: c.now, locale: enUS), e = c.expected.offline
-            if e.heading != OfflineDeviceList.title { failures.append("\(c.label): heading \(e.heading)") }
+            let list = OfflineDeviceListModel(devices: c.devices, latestVersions: c.latestVersions, now: c.now, locale: enUS), e = c.expected.offline
+            if e.heading != OfflineDeviceListModel.title { failures.append("\(c.label): heading \(e.heading)") }
             if list.rows.map(\.id) != e.rows.map(\.id) {
                 failures.append("\(c.label): \(names(list.rows.map(\.id), c.devices)), dashboard \(names(e.rows.map(\.id), c.devices))")
                 continue
@@ -191,13 +191,13 @@ import Testing
                 if row.name != expected.name { failures.append("\(c.label), \(row.id): name \"\(row.name)\", dashboard \"\(expected.name)\"") }
                 if row.subtitle != expected.subtitle { failures.append("\(c.label), \(row.id): \"\(row.subtitle)\", dashboard \"\(expected.subtitle)\"") }
                 if row.canWake != (expected.wake != nil) { failures.append("\(c.label), \(row.id): wake \(row.canWake)") }
-                if expected.title != OfflineDeviceList.rowHint { failures.append("\(c.label), \(row.id): row hint \(expected.title)") }
+                if expected.title != OfflineDeviceListModel.rowHint { failures.append("\(c.label), \(row.id): row hint \(expected.title)") }
                 if let wake = expected.wake {
                     wakeable += 1
                     if wake.text != WakeButtonState.idle.title || wake.title != WakeButtonState.hint { failures.append("\(c.label), \(row.id): wake button \(wake.text) / \(wake.title)") }
                 }
                 guard let device = c.devices.first(where: { $0.id == row.id }) else { continue }
-                if row != OfflineDeviceRow(device: device, latestVersions: c.latestVersions, now: c.now) { failures.append("\(c.label), \(row.id): the list and the row initialiser disagree") }
+                if row != OfflineDeviceRowModel(device: device, latestVersions: c.latestVersions, now: c.now) { failures.append("\(c.label), \(row.id): the list and the row initialiser disagree") }
             }
         }
         DashFixture.report(failures, of: rows)
@@ -247,22 +247,21 @@ import Testing
 
     @Test func deviceMenu() throws {
         let menu = try DashFixture.decode(Menu.self, "dashboard/menu.json")
-        #expect(DeviceMenu.items.map(\.rawValue) == menu.items.map(\.action))
-        #expect(DeviceMenu.items.map(\.title) == menu.items.map(\.text))
-        #expect(DeviceMenu.items.map(\.isDestructive) == menu.items.map(\.danger))
-        #expect(DeviceMenu.Item.allCases == DeviceMenu.items)
-        #expect(DeviceMenu.buttonLabel == menu.labels.options && DeviceMenu.buttonLabel == menu.labels.offlineOptions)
+        #expect(DeviceMenuItem.allCases.map(\.rawValue) == menu.items.map(\.action))
+        #expect(DeviceMenuItem.allCases.map(\.title) == menu.items.map(\.text))
+        #expect(DeviceMenuItem.allCases.map(\.isDestructive) == menu.items.map(\.danger))
+        #expect(DeviceMenuItem.buttonLabel == menu.labels.options && DeviceMenuItem.buttonLabel == menu.labels.offlineOptions)
         #expect(DeviceCardText.reorderHandleLabel == menu.labels.grip)
-        #expect(DeviceCardText.chartHint == menu.labels.chart && OfflineDeviceList.rowHint == menu.labels.offlineRow)
+        #expect(DeviceCardText.chartHint == menu.labels.chart && OfflineDeviceListModel.rowHint == menu.labels.offlineRow)
         #expect(DeviceCardText.rangePickerLabel == menu.labels.range)
         #expect(DeviceCardText.details == menu.labels.details)
         #expect(menu.cases.count >= 8)
         for c in menu.cases {
-            #expect(DeviceMenu.renamePrompt == c.prompt.message)
+            #expect(DeviceMenuItem.renamePrompt == c.prompt.message)
             // prompt('Device name', d.name): the field starts out with the device's name.
             #expect(c.device.name == c.prompt.value)
-            #expect(DeviceMenu.removeConfirmation(for: c.device) == c.confirm)
-            #expect(DeviceMenu.removeConfirmation(name: c.device.name ?? "") == c.confirm)
+            #expect(DeviceMenuItem.removeConfirmation(for: c.device) == c.confirm)
+            #expect(DeviceMenuItem.removeConfirmation(name: c.device.name ?? "") == c.confirm)
         }
     }
 

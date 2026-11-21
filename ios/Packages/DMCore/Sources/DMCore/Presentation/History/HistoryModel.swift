@@ -24,9 +24,9 @@ public struct HistoryModel: Sendable, Equatable {
     /// The points the model was made from: the tooltip looks through all of them.
     public let points: [HistoryPoint]
     /// CPU, GPU, Memory, CPU temp, GPU temp, GPU power: those the window has a reading for.
-    public let tiles: [HistoryTile]
+    public let tiles: [HistoryTileModel]
     /// Utilization, Temperature, GPU power, Network, Disk I/O: those the window has a reading for.
-    public let charts: [HistoryChart]
+    public let charts: [HistoryChartModel]
 
     /// `emptyText` when there is no chart to show.
     public var emptyText: String? { charts.isEmpty ? HistoryModel.emptyText : nil }
@@ -53,8 +53,8 @@ public struct HistoryModel: Sendable, Equatable {
         // const gap = Math.max(10e3, hv.resolution * 3);
         let gap = max(10e3, resolution * 3)
         self.gap = gap
-        tiles = HistoryTile.Kind.allCases.compactMap { HistoryTile(kind: $0, points: points, unit: unit) }
-        charts = HistoryChart.Kind.allCases.compactMap { HistoryChart(kind: $0, points: points, gap: gap, unit: unit) }
+        tiles = HistoryTileModel.Kind.allCases.compactMap { HistoryTileModel(kind: $0, points: points, unit: unit) }
+        charts = HistoryChartModel.Kind.allCases.compactMap { HistoryChartModel(kind: $0, points: points, gap: gap, unit: unit) }
     }
 
     // MARK: Time axis
@@ -107,14 +107,14 @@ public struct HistoryModel: Sendable, Equatable {
 
     /// What all charts show for a time under the pointer: a marker at the nearest point and that
     /// point's readings. nil when no point is within reach, and when there is no chart to show it on.
-    public func tooltip(at time: Double, locale: Locale = .current, timeZone: TimeZone = .current) -> HistoryTooltip? {
+    public func tooltip(at time: Double, locale: Locale = .current, timeZone: TimeZone = .current) -> HistoryTooltipModel? {
         // if (best && Math.abs(best.t - hv.hoverT) <= Math.max(gap, span / 50))
         guard !charts.isEmpty, let best = nearestPoint(to: time), abs(best.t - time) <= tooltipReach else { return nil }
-        return HistoryTooltip(
+        return HistoryTooltipModel(
             t: best.t,
             title: Format.historyTooltipTime(best.t, resolution: resolution, locale: locale, timeZone: timeZone) + Format.historyResolutionSuffix(resolution),
             charts: charts.map { chart in
-                HistoryTooltip.ChartRows(kind: chart.kind, rows: chart.series.compactMap { chart.tooltipRow(for: $0, at: best) })
+                HistoryTooltipModel.ChartRows(kind: chart.kind, rows: chart.series.compactMap { chart.tooltipRow(for: $0, at: best) })
             }
         )
     }
@@ -137,7 +137,7 @@ public struct HistoryTimeTick: Sendable, Equatable, Identifiable {
 }
 
 /// A tile above the charts: the highest value in the window, with the average under it.
-public struct HistoryTile: Sendable, Equatable, Identifiable {
+public struct HistoryTileModel: Sendable, Equatable, Identifiable {
     public enum Kind: String, Sendable, Hashable, CaseIterable {
         case cpu, gpu, mem, cpuTemp, gpuTemp, gpuPower
 
@@ -220,7 +220,7 @@ public struct HistoryTile: Sendable, Equatable, Identifiable {
 }
 
 /// One chart of the history page (an entry of HV_CHARTS, as drawHvChart draws it).
-public struct HistoryChart: Sendable, Equatable, Identifiable {
+public struct HistoryChartModel: Sendable, Equatable, Identifiable {
     public enum Kind: String, Sendable, Hashable, CaseIterable {
         case utilization, temperature, gpuPower, network, diskIO
     }
@@ -254,7 +254,7 @@ public struct HistoryChart: Sendable, Equatable, Identifiable {
     /// A value on the axis as its label writes it: "50%", "120°", "250 W", "5 MB/s". Temperatures
     /// are given in the unit shown, like the grid levels.
     public func axisLabel(_ value: Double) -> String {
-        HistoryChart.axisLabel(kind, value)
+        HistoryChartModel.axisLabel(kind, value)
     }
 
     /// A value as the hub reports it, in the unit the chart shows (`conv`): only temperatures change.
@@ -275,7 +275,7 @@ public struct HistoryChart: Sendable, Equatable, Identifiable {
 
     /// nil when no point has a reading for any of the chart's series.
     init?(kind: Kind, points P: [HistoryPoint], gap: Double, unit: TemperatureUnit) {
-        let cfg = HistoryChart.configuration(kind)
+        let cfg = HistoryChartModel.configuration(kind)
         // series: c.series.filter(([k]) => hv.points.some(p => p[k] != null))
         let present = cfg.series.filter { entry in P.contains { $0.value(entry.0) != nil } }
         guard !present.isEmpty else { return nil }
@@ -353,7 +353,7 @@ public struct HistoryChart: Sendable, Equatable, Identifiable {
         var levels = [HistoryChartGridLevel]()
         for i in 0...4 {
             let v = yMax * Double(i) / 4
-            levels.append(HistoryChartGridLevel(index: i, value: v, label: i % 2 == 0 ? HistoryChart.axisLabel(kind, v) : nil))
+            levels.append(HistoryChartGridLevel(index: i, value: v, label: i % 2 == 0 ? HistoryChartModel.axisLabel(kind, v) : nil))
         }
         gridLevels = levels
     }
@@ -440,14 +440,14 @@ public struct HistoryChartGridLevel: Sendable, Equatable, Identifiable {
 
 /// What the charts show for the moment under the pointer (the crosshair and tooltip of
 /// drawHvChart). All charts mark the same point.
-public struct HistoryTooltip: Sendable, Equatable {
+public struct HistoryTooltipModel: Sendable, Equatable {
     public struct ChartRows: Sendable, Equatable, Identifiable {
-        public let kind: HistoryChart.Kind
+        public let kind: HistoryChartModel.Kind
         /// One row per series with a reading at the point. Empty when the chart has none there:
         /// the dashboard then draws the marker on that chart, but no tooltip.
         public let rows: [HistoryTooltipRow]
 
-        public var id: HistoryChart.Kind { kind }
+        public var id: HistoryChartModel.Kind { kind }
     }
 
     /// Time of the point: where the vertical marker goes on every chart.
@@ -459,7 +459,7 @@ public struct HistoryTooltip: Sendable, Equatable {
     /// One entry per chart of the model, in the same order.
     public let charts: [ChartRows]
 
-    public func rows(for kind: HistoryChart.Kind) -> [HistoryTooltipRow] {
+    public func rows(for kind: HistoryChartModel.Kind) -> [HistoryTooltipRow] {
         charts.first { $0.kind == kind }?.rows ?? []
     }
 }

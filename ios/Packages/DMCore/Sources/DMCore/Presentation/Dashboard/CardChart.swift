@@ -178,7 +178,7 @@ public struct CardChartModel: Sendable, Equatable {
 
     /// What the dashboard shows next to the pointer: the nearest sample's time and its readings.
     /// nil when there is nothing to point at.
-    public func tooltip(at time: Double, unit: TemperatureUnit, locale: Locale = .current, timeZone: TimeZone = .current) -> CardChartTooltip? {
+    public func tooltip(at time: Double, unit: TemperatureUnit, locale: Locale = .current, timeZone: TimeZone = .current) -> CardChartTooltipModel? {
         guard let best = nearestSample(to: time) else { return nil }
         let rows = CardChartModel.seriesTable.compactMap { entry -> CardChartTooltipRow? in
             guard let value = best.value(entry.metric) else { return nil }
@@ -189,7 +189,7 @@ public struct CardChartModel: Sendable, Equatable {
                 valueText: Format.fmtPct(value), temperature: celsius.map { Format.fmtTemp($0, unit) }
             )
         }
-        return CardChartTooltip(
+        return CardChartTooltipModel(
             t: best.t,
             time: Format.cardTooltipTime(best.t, live: range == .tenMinutes, now: end, locale: locale, timeZone: timeZone),
             rows: rows
@@ -198,7 +198,7 @@ public struct CardChartModel: Sendable, Equatable {
 }
 
 /// The tooltip of a card's chart.
-public struct CardChartTooltip: Sendable, Equatable {
+public struct CardChartTooltipModel: Sendable, Equatable {
     /// Time of the sample: where the vertical marker goes.
     public let t: Double
     public var date: Date { Date(hubTime: t) }

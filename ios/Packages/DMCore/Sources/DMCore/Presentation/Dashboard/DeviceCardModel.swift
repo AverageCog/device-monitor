@@ -17,15 +17,15 @@ public struct DeviceCardModel: Sendable, Equatable, Identifiable {
     public let subtitle: String
     /// The dashboard dims the card of an offline device (opacity 0.55) and greys its status dot.
     public let isOnline: Bool
-    public let cpu: DeviceGauge
-    public let gpu: DeviceGauge
-    public let memory: DeviceGauge
+    public let cpu: DeviceGaugeModel
+    public let gpu: DeviceGaugeModel
+    public let memory: DeviceGaugeModel
     /// In the order shown, two to a row: CPU, then GPU, VRAM, the system drive, Network and
     /// Disk I/O for whichever of them the device has.
     public let stats: [DeviceStat]
 
     /// CPU, GPU, Memory, left to right.
-    public var gauges: [DeviceGauge] { [cpu, gpu, memory] }
+    public var gauges: [DeviceGaugeModel] { [cpu, gpu, memory] }
 
     public init(device d: Device, unit: TemperatureUnit, latestVersions: [String: String] = [:], now: Double = Date().hubTime) {
         let reading = DeviceReading(device: d)
@@ -50,16 +50,16 @@ public struct DeviceCardModel: Sendable, Equatable, Identifiable {
         let cpuInfo = L.cpu, mem = L.memory, gpus = L.gpus, g = gpus.first ?? Report.GPU()
         // setGauge(refs.cpu, cpu.usage); setGauge(refs.gpu, gpus.length ? g.usage : null);
         // setGauge(refs.mem, mem.total ? mem.used / mem.total * 100 : null);
-        cpu = DeviceGauge(
+        cpu = DeviceGaugeModel(
             kind: .cpu, value: cpuInfo.usage,
             caption: d.online ? DeviceGaugeCaption(celsius: cpuInfo.temp, source: cpuInfo.tempSource, unit: unit) : .offline
         )
-        gpu = DeviceGauge(
+        gpu = DeviceGaugeModel(
             kind: .gpu, value: gpus.isEmpty ? nil : g.usage,
             caption: gpus.isEmpty ? .noGPU : d.online ? DeviceGaugeCaption(celsius: g.temp, source: nil, unit: unit) : .offline
         )
         let total = DashJS.number(mem.total)
-        memory = DeviceGauge(
+        memory = DeviceGaugeModel(
             kind: .memory, value: total.map { (mem.used ?? 0) / $0 * 100 },
             caption: .text(total == nil ? "" : Format.memPair(mem.used, mem.total))
         )
@@ -164,7 +164,7 @@ public struct DeviceReading: Sendable, Equatable {
 }
 
 /// One of the three gauges on a card (gaugeSvg / setGauge).
-public struct DeviceGauge: Sendable, Equatable, Identifiable {
+public struct DeviceGaugeModel: Sendable, Equatable, Identifiable {
     public enum Kind: String, Sendable, Hashable, CaseIterable {
         case cpu, gpu, memory
     }

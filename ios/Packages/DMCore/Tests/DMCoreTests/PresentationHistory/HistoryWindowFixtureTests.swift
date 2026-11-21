@@ -244,20 +244,20 @@ import Testing
         var unknown = 0
         for c in headers.cases {
             let name = "\(c.label), \(c.selected)"
-            let chips = HistoryDeviceChip.chips(for: c.devices, selected: c.selected).map { Headers.Chip(id: $0.id, name: $0.name, selected: $0.isSelected, online: $0.isOnline) }
+            let chips = HistoryDeviceChipModel.chips(for: c.devices, selected: c.selected).map { Headers.Chip(id: $0.id, name: $0.name, selected: $0.isSelected, online: $0.isOnline) }
             if chips != c.expected.chips { failures.append("\(name): chips \(chips.map { $0.name + ($0.selected ? "*" : "") }), dashboard \(c.expected.chips.map { $0.name + ($0.selected ? "*" : "") })") }
-            let header = HistoryHeader(devices: c.devices, selected: c.selected)
+            let header = HistoryHeaderModel(devices: c.devices, selected: c.selected)
             if header.title != c.expected.title || header.subtitle != c.expected.subtitle { failures.append("\(name): \"\(header.title)\" / \"\(header.subtitle)\", dashboard \"\(c.expected.title)\" / \"\(c.expected.subtitle)\"") }
             let device = c.devices.first { $0.id == c.selected }
-            if header != HistoryHeader(device: device) || header.isOnline != device?.online { failures.append("\(name): the two initialisers disagree") }
+            if header != HistoryHeaderModel(device: device) || header.isOnline != device?.online { failures.append("\(name): the two initialisers disagree") }
             if device == nil { unknown += 1 }
         }
         DashFixture.report(failures, of: headers.cases.count)
-        #expect(unknown >= 3 && HistoryHeader(device: nil).title == "Unknown device" && HistoryHeader(device: nil).subtitle.isEmpty)
+        #expect(unknown >= 3 && HistoryHeaderModel(device: nil).title == "Unknown device" && HistoryHeaderModel(device: nil).subtitle.isEmpty)
 
         #expect(headers.button.count >= 6)
         for b in headers.button {
-            #expect(HistoryDeviceChip.defaultDevice(among: b.devices, last: b.last) == b.opens, "\(b.label)")
+            #expect(HistoryDeviceChipModel.defaultDevice(among: b.devices, last: b.last) == b.opens, "\(b.label)")
         }
     }
 }
