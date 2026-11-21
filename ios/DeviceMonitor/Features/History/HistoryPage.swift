@@ -213,63 +213,124 @@ private struct HistoryHeader: View {
 
     @Environment(HubStore.self) private var store
     @Environment(AppRouter.self) private var router
-    @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         let header = HistoryHeaderModel(devices: store.devices, selected: router.historyDevice(among: store.devices))
         let showsReset = controller.window.showsReset
         let showsProgress = controller.isReplacingCharts
-        HStack(alignment: .center, spacing: Theme.Spacing.m) {
-            titles(header)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(header.title)
-                .accessibilityValue(header.subtitle)
-                .accessibilityAddTraits(.isHeader)
-                .accessibilityIdentifier("screen-history")
-            Spacer(minLength: 0)
-            if showsProgress {
-                ProgressView()
-                    .controlSize(.small)
-                    .tint(Theme.textSecondary)
-                    .accessibilityLabel(HistoryText.loading)
-                    .accessibilityIdentifier("history-progress")
-                    .transition(.opacity)
+        // `.hv-head { flex-wrap: wrap }`: "Reset zoom" sits beside the titles for as long as they
+        // need not wrap to make room for it. Large text or a long name keeps the row, and the
+        // button goes under it: beside them it would leave the name a few letters a line.
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .center, spacing: Theme.Spacing.m) {
+                titleRow(header, showsProgress: showsProgress)
+                if showsReset { resetButton.fixedSize() }
             }
-            if showsReset {
-                Button(HistoryWindow.resetTitle) { controller.resetZoom() }
-                    .buttonStyle(.dm(size: .small))
-                    .fixedSize()
-                    .accessibilityIdentifier("history-reset-zoom")
-                    .transition(.opacity)
+            VStack(alignment: .leading, spacing: Theme.Spacing.s) {
+                titleRow(header, showsProgress: showsProgress)
+                if showsReset { resetButton }
             }
         }
-        // As tall as the button, so the page does not move when it comes and goes.
-        .frame(minHeight: 44)
         .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: showsReset)
         .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: showsProgress)
     }
 
-    @ViewBuilder
-    private func titles(_ header: HistoryHeaderModel) -> some View {
-        let title = Text(header.title)
-            .dmFont(.screenTitle)
-            .foregroundStyle(Theme.textPrimary)
-        let subtitle = Text(header.subtitle)
-            .dmFont(.statValue)
-            .foregroundStyle(Theme.textMuted)
-        if sizeClass == .regular {
-            // One line, as on the dashboard.
-            HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.m) {
-                title.lineLimit(1)
-                subtitle.lineLimit(1)
-            }
-        } else {
-            VStack(alignment: .leading, spacing: 1) {
-                title.lineLimit(2)
-                if !header.subtitle.isEmpty { subtitle.lineLimit(2) }
+    /// The titles with the mark of a slow answer at the far end. Both arrangements start with
+    /// this row, so without the button they are the same and nothing moves between them.
+    private func titleRow(_ header: HistoryHeaderModel, showsProgress: Bool) -> some View {
+        HStack(alignment: .center, spacing: Theme.Spacing.m) {
+            HistoryTitles(header: header)
+            Spacer(minLength: 0)
+            HistoryProgressMark(isShowing: showsProgress)
+        }
+        // As tall as the button, so the page does not move when it comes and goes beside them.
+        .frame(minHeight: 44)
+    }
+
+    private var resetButton: some View {
+        Button(HistoryWindow.resetTitle) { controller.resetZoom() }
+            .buttonStyle(.dm(size: .small))
+            .accessibilityIdentifier("history-reset-zoom")
+            .transition(.opacity)
+    }
+}
+
+/// The device's name, and what it runs and whether it is online: on one line where the page is
+/// wide and that fits, as on the dashboard, else one under the other.
+private struct HistoryTitles: View {
+    let header: HistoryHeaderModel
+
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    var body: some View {
+        Group {
+            if sizeClass == .regular {
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.m) {
+                        title.lineLimit(1)
+                        subtitle.lineLimit(1)
+                    }
+                    stacked
+                }
+            } else {
+                stacked
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(header.title)
+        .accessibilityValue(header.subtitle)
+        .accessibilityAddTraits(.isHeader)
+        .accessibilityIdentifier("screen-history")
+    }
+
+    private var stacked: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            title.lineLimit(2)
+            // Never cut short: it ends with whether the device is online.
+            if !header.subtitle.isEmpty { subtitle.fixedSize(horizontal: false, vertical: true) }
+        }
+    }
+
+    private var title: some View {
+        Text(header.title)
+            .dmFont(.screenTitle)
+            .foregroundStyle(Theme.textPrimary)
+    }
+
+    private var subtitle: some View {
+        Text(header.subtitle)
+            .dmFont(.statValue)
+            .foregroundStyle(Theme.textMuted)
+    }
+}
+
+/// The mark of an answer that is slow to come while older charts are on screen. Its place is kept
+/// while it is not showing, so the titles beside it wrap the same whether or not the hub is slow.
+private struct HistoryProgressMark: View {
+    let isShowing: Bool
+
+    var body: some View {
+        // A second one that is never drawn keeps the place: as large as the real one is.
+        mark
+            .hidden()
+            .accessibilityHidden(true)
+            .overlay {
+                if isShowing {
+                    mark
+                        .accessibilityLabel(HistoryText.loading)
+                        .accessibilityIdentifier("history-progress")
+                        .transition(.opacity)
+                }
+            }
+            // It grows with the text this far. Beyond, the name beside it needs the room more.
+            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+    }
+
+    private var mark: some View {
+        ProgressView()
+            .controlSize(.small)
+            .tint(Theme.textSecondary)
     }
 }
 

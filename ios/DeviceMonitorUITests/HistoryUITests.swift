@@ -203,6 +203,32 @@ final class HistoryUITests: XCTestCase {
     }
 
     @MainActor
+    func testResetZoomLeavesTheDeviceNameItsRoom() {
+        // At the usual text size the button sits beside the name, as on the dashboard.
+        var app = launch(["-dm-tab", "history", "-dm-history-zoom", "0.2,0.8"])
+        var heading = waitForHistory(of: "Gaming PC", in: app)
+        var reset = app.element(withIdentifier: HistoryID.resetZoom)
+        XCTAssertTrue(reset.waitForExistence(timeout: 20), "-dm-history-zoom starts zoomed")
+        XCTAssertFalse(reset.frame.intersects(heading.frame), "Reset zoom \(reset.frame) lies over the name \(heading.frame)")
+        XCTAssertLessThan(reset.frame.minY, heading.frame.maxY, "Reset zoom shares the row with the name while both fit in it")
+        app.terminate()
+
+        // At the largest text size the button would take most of the row: the name broke as
+        // "Gami", "ng PC", and the line that says whether the device is online was cut short.
+        app = launch(["-dm-tab", "history", "-dm-history-zoom", "0.2,0.8", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"])
+        heading = waitForHistory(of: "Gaming PC", in: app)
+        reset = app.element(withIdentifier: HistoryID.resetZoom)
+        XCTAssertTrue(reset.waitForExistence(timeout: 20), "-dm-history-zoom starts zoomed")
+        XCTAssertFalse(reset.frame.intersects(heading.frame), "Reset zoom \(reset.frame) lies over the name \(heading.frame)")
+        // On a phone the two cannot share a row at this size; a wide iPad may still have the room.
+        if app.frame.width < 500 {
+            XCTAssertGreaterThanOrEqual(reset.frame.minY, heading.frame.maxY, "Reset zoom goes under the name when the row is too narrow for both")
+            XCTAssertGreaterThan(heading.frame.width, app.frame.width / 2, "The name keeps the row: \(heading.frame)")
+        }
+        attachScreenshot(of: app, named: "history-zoomed-largest-text")
+    }
+
+    @MainActor
     func testHoldingAChartPointsWithoutZooming() {
         let app = launch()
         waitForHistory(of: "Gaming PC", in: app)
