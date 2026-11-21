@@ -127,6 +127,41 @@ import Testing
         #expect(AlertThresholds.displayRange(kind: .cpuTemp, unit: .fahrenheit) == 68...302)
     }
 
+    @Test func longDecimalsAreShownShortAndKeptExact() throws {
+        let enUS = F.enUS
+        // Every whole Fahrenheit limit, entered where Fahrenheit is shown and opened where Celsius is.
+        for fahrenheit in stride(from: 68.0, through: 302.0, by: 1) {
+            let stored = AlertThresholds.storedValue(fromDisplay: fahrenheit, kind: .gpuTemp, unit: .fahrenheit)
+            let text = AlertThresholds.fieldText(stored, kind: .gpuTemp, unit: .celsius, locale: enUS)
+            #expect(text.count <= 6, "\(fahrenheit)°F shows as \(text)")
+            // The field's own text, read back, leaves the limit alone: the hub goes on writing
+            // the Fahrenheit number that was typed.
+            let shown = try #require(NumberEntry.parse(text, locale: enUS))
+            #expect(shown == AlertThresholds.displayValue(stored, kind: .gpuTemp, unit: .celsius))
+            #expect(AlertThresholds.storedValue(fromDisplay: shown, kind: .gpuTemp, unit: .celsius, current: stored) == stored)
+        }
+        let odd = (195.0 - 32) * 5 / 9
+        #expect(AlertThresholds.fieldText(odd, kind: .cpuTemp, unit: .celsius, locale: enUS) == "90.56")
+        #expect(AlertThresholds.fieldText(odd, kind: .cpuTemp, unit: .celsius, locale: Locale(identifier: "de_DE")) == "90,56")
+        // A number that is not the one on screen is taken as typed.
+        #expect(AlertThresholds.storedValue(fromDisplay: 90.5, kind: .cpuTemp, unit: .celsius, current: odd) == 90.5)
+        #expect(AlertThresholds.storedValue(fromDisplay: 90.56, kind: .cpuTemp, unit: .celsius, current: 91) == 90.56)
+        // The same for limits that are not temperatures, whatever the temperature unit.
+        for unit in [TemperatureUnit.celsius, .fahrenheit] {
+            #expect(AlertThresholds.fieldText(1.0 / 3, kind: .dailyCost, unit: unit, locale: enUS) == "0.33")
+            // The double is a hair below 2.675.
+            #expect(AlertThresholds.fieldText(2.675, kind: .dailyCost, unit: unit, locale: enUS) == "2.67")
+            #expect(AlertThresholds.fieldText(0.125, kind: .mem, unit: unit, locale: enUS) == "0.13")
+            #expect(AlertThresholds.fieldText(499.999, kind: .power, unit: unit, locale: enUS) == "500")
+            #expect(AlertThresholds.storedValue(fromDisplay: 0.33, kind: .dailyCost, unit: unit, current: 1.0 / 3) == 1.0 / 3)
+        }
+        // Whole numbers, and what is no number at all, are left as they are.
+        for value in [0.0, 1e21, 1e300, .infinity, -.infinity] {
+            #expect(AlertThresholds.displayValue(value, kind: .power, unit: .celsius) == value)
+        }
+        #expect(AlertThresholds.displayValue(.nan, kind: .power, unit: .celsius).isNaN)
+    }
+
     @Test func fieldTextAndUnitLabels() {
         let enUS = F.enUS
         #expect(AlertThresholds.fieldText(90, kind: .cpuTemp, unit: .celsius, locale: enUS) == "90")
