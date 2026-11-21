@@ -227,13 +227,20 @@ final class DashboardUITests: XCTestCase {
 
     // MARK: Reordering
 
+    /// Whether card `a` comes before card `b` in the grid: an earlier row, or earlier in the same row.
+    @MainActor
+    private func card(_ a: String, isBefore b: String, in app: XCUIApplication) -> Bool {
+        let first = app.deviceRow(a).frame, second = app.deviceRow(b).frame
+        guard !first.isEmpty, !second.isEmpty else { return false }
+        return abs(first.minY - second.minY) > 1 ? first.minY < second.minY : first.minX < second.minX
+    }
+
     @MainActor
     func testDraggingAGripReorders() {
         let app = launchDemo()
 
-        let first = app.deviceRow("gaming"), second = app.deviceRow("spark")
-        XCTAssertTrue(second.waitForExistence(timeout: 10))
-        XCTAssertLessThan(first.frame.minY + first.frame.minX, second.frame.minY + second.frame.minX, "Gaming PC starts before DGX Spark")
+        XCTAssertTrue(app.deviceRow("spark").waitForExistence(timeout: 10))
+        XCTAssertTrue(card("gaming", isBefore: "spark", in: app), "Gaming PC starts before DGX Spark")
 
         // Hold the grip, then drag it onto the next card: its top, which is on screen on a phone too.
         let grip = app.element(withIdentifier: DashboardID.grip("gaming"))
@@ -241,19 +248,39 @@ final class DashboardUITests: XCTestCase {
         XCTAssertEqual(grip.label, "Drag to reorder")
         XCTAssertEqual(grip.value as? String, "1 of 5")
         let start = grip.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-        let target = second.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.12))
+        let target = app.deviceRow("spark").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.12))
         start.press(forDuration: 0.6, thenDragTo: target, withVelocity: .slow, thenHoldForDuration: 0.4)
 
-        XCTAssertTrue(
-            wait(upTo: 10) { second.frame.minY + second.frame.minX < first.frame.minY + first.frame.minX },
-            "DGX Spark is now before Gaming PC")
+        XCTAssertTrue(wait(upTo: 10) { card("spark", isBefore: "gaming", in: app) }, "DGX Spark is now before Gaming PC")
+        XCTAssertEqual(app.element(withIdentifier: DashboardID.grip("gaming")).value as? String, "2 of 5")
         attachScreenshot(of: app, named: "dashboard-reordered")
 
         // The order is the hub's now: it survives leaving the tab.
         app.tabBars.buttons["Settings"].tap()
         app.tabBars.buttons["Devices"].tap()
-        XCTAssertTrue(first.waitForExistence(timeout: 10))
-        XCTAssertLessThan(second.frame.minY + second.frame.minX, first.frame.minY + first.frame.minX)
+        XCTAssertTrue(app.deviceRow("gaming").waitForExistence(timeout: 10))
+        XCTAssertTrue(card("spark", isBefore: "gaming", in: app))
+    }
+
+    /// The same drag without a finger (`-dm-dashboard-drag`): the calls the grip makes, onto the
+    /// third card and dropped.
+    @MainActor
+    func testADroppedCardKeepsItsNewPlace() {
+        let app = launchDemo(["-dm-dashboard-drag", "gaming:mbp"])
+
+        XCTAssertTrue(wait(upTo: 15) { card("mbp", isBefore: "gaming", in: app) }, "Gaming PC lands after MacBook Pro")
+        XCTAssertTrue(card("spark", isBefore: "mbp", in: app), "The cards it passed keep their order")
+        XCTAssertTrue(wait(upTo: 5) { app.element(withIdentifier: DashboardID.grip("gaming")).value as? String == "3 of 5" })
+        attachScreenshot(of: app, named: "dashboard-dropped")
+    }
+
+    /// "Move up", the accessibility action of a card's grip (`-dm-dashboard-move`).
+    @MainActor
+    func testMoveUpChangesPlacesWithTheCardBefore() {
+        let app = launchDemo(["-dm-dashboard-move", "spark:-1"])
+
+        XCTAssertTrue(wait(upTo: 15) { card("spark", isBefore: "gaming", in: app) }, "DGX Spark moved up")
+        XCTAssertTrue(wait(upTo: 5) { app.element(withIdentifier: DashboardID.grip("spark")).value as? String == "1 of 5" })
     }
 
     // MARK: Offline devices

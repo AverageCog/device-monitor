@@ -184,8 +184,7 @@ private struct DashboardOfflineRow: View {
         }
         .buttonStyle(DashboardOfflineRowStyle())
         .accessibilityLabel(row.name)
-        // Starts with "offline", which is all a card-less device is to a glance or a UI test.
-        .accessibilityValue("offline, \(row.subtitle)")
+        .accessibilityValue(DashboardStrings.offlineSummary(row.subtitle))
         .accessibilityHint(OfflineDeviceListModel.rowHint)
         .accessibilityIdentifier(DashboardID.row(row.id))
     }

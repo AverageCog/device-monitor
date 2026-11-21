@@ -270,8 +270,24 @@ final class DashboardReorderModel {
     /// it there; or keeps it in the air (`holds`). Everything but the touch itself: the same
     /// calls the grip's surface makes. For screenshots and for checking the path without a hand.
     func debugDrag(id: String, over target: String, holds: Bool, online: [String], store: HubStore, failures: DashboardDeviceActionModel) async {
-        guard let from = frames[id], let to = frames[target] else { return }
         let grip = CGPoint(x: 17, y: 26)
+        if target == "bottom" {
+            // Onto no card: down to the edge of the screen and resting there, so the page scrolls
+            // under the finger and the card passes whatever comes by.
+            guard let scrollView = Self.debugScrollView() else { return }
+            let visible = scrollView.convert(scrollView.bounds, to: nil)
+            let start = CGPoint(x: visible.midX, y: visible.midY)
+            let edge = visible.maxY - scrollView.adjustedContentInset.bottom - 12
+            begin(id: id, at: grip, windowPoint: start, scrollView: scrollView, online: online)
+            for step in 1...10 {
+                move(id: id, windowPoint: CGPoint(x: start.x, y: start.y + (edge - start.y) * Double(step) / 10))
+                try? await Task.sleep(for: .milliseconds(30))
+            }
+            try? await Task.sleep(for: .milliseconds(2200))
+            if !holds { end(id: id, store: store, failures: failures) }
+            return
+        }
+        guard let from = frames[id], let to = frames[target] else { return }
         begin(id: id, at: grip, windowPoint: .zero, scrollView: nil, online: online)
         // From the grip to a point well inside the other card, as window positions.
         let travel = CGPoint(x: to.midX - (from.minX + grip.x), y: to.minY + min(120, to.height / 2) - (from.minY + grip.y))
@@ -283,6 +299,20 @@ final class DashboardReorderModel {
         guard !holds else { return }
         try? await Task.sleep(for: .milliseconds(400))
         end(id: id, store: store, failures: failures)
+    }
+
+    /// The page's scroll view, which a real drag is handed by the grip it starts on.
+    private static func debugScrollView() -> UIScrollView? {
+        func search(_ view: UIView) -> UIScrollView? {
+            if let found = view as? UIScrollView, found.window != nil, found.bounds.height > 300, found.contentSize.height > found.bounds.height {
+                return found
+            }
+            return view.subviews.lazy.compactMap(search).first
+        }
+        return UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .lazy.compactMap(search).first
     }
     #endif
 }

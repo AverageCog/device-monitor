@@ -71,13 +71,20 @@ struct DashboardGrid: View {
 
     // MARK: Cards
 
+    private var columnWidth: CGFloat {
+        #if DEBUG
+        if let width = DashboardDebugOptions.current.cardWidth { return width }
+        #endif
+        return minimumCardWidth
+    }
+
     private var cards: some View {
         let devices = reorder.arranged(store.onlineDevices)
         let ids = devices.map(\.id)
         let series = store.series
         let open = DashboardMemory.shared.openDetails
         let lifted = reorder.liftedID
-        return DashboardGridLayout(minimumColumnWidth: minimumCardWidth, spacing: Theme.Layout.gridSpacing) {
+        return DashboardGridLayout(minimumColumnWidth: columnWidth, spacing: Theme.Layout.gridSpacing) {
             ForEach(Array(devices.enumerated()), id: \.element.id) { index, device in
                 DashboardCard(
                     device: device, series: series[device.id] ?? .empty, isDetailsOpen: open.contains(device.id),

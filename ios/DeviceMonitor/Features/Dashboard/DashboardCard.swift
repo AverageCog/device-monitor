@@ -81,8 +81,7 @@ struct DashboardCard: View, Equatable {
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(model.name)
-        // "online, CPU 27%": the card in a few words, for UI tests and for whoever lands on it.
-        .accessibilityValue("online, \(model.cpu.label) \(model.cpu.valueText)")
+        .accessibilityValue(DashboardStrings.cardSummary(model.cpu))
         .accessibilityIdentifier(DashboardID.row(model.id))
     }
 
@@ -96,7 +95,7 @@ struct DashboardCard: View, Equatable {
                 .contextMenu { DashboardDeviceMenuItems(perform: perform) }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(model.name)
-                .accessibilityValue("\(model.isOnline ? "Online" : "Offline"), \(model.subtitle)")
+                .accessibilityValue("\(DashboardStrings.status(isOnline: model.isOnline)), \(model.subtitle)")
                 .accessibilityAddTraits(.isHeader)
             DashboardDeviceMenuButton(identifier: DashboardID.menu(model.id), perform: perform)
                 // The glyph, not its plate, lines up with the card's content edge.

@@ -25,6 +25,13 @@ nonisolated enum DashboardStrings {
     static let wakeFailed = "The wake signal could not be sent."
     static let renameMessage = "The hub keeps up to \(DeviceRename.maxLength) characters."
 
+    /// What VoiceOver says for the status dot.
+    static func status(isOnline: Bool) -> String { isOnline ? "Online" : "Offline" }
+    /// A card in a few words, for whoever lands on it and for UI tests: "online, CPU 27%".
+    static func cardSummary(_ gauge: DeviceGaugeModel) -> String { "online, \(gauge.label) \(gauge.valueText)" }
+    /// The same for a row of the offline list: "offline, last seen 3d ago · Windows 11 Home".
+    static func offlineSummary(_ subtitle: String) -> String { "offline, \(subtitle)" }
+
     static func renameFailed(_ name: String) -> String { "Couldn\u{2019}t rename \u{201C}\(name)\u{201D}" }
     static func removeFailed(_ name: String) -> String { "Couldn\u{2019}t remove \u{201C}\(name)\u{201D}" }
     /// Where a card is in the grid, for VoiceOver: "2 of 5".

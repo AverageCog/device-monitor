@@ -20,6 +20,8 @@ import Foundation
 ///                                              (underscores are shown as spaces)
 ///     -dm-dashboard-scrub <0…1>                every chart starts scrubbed at that fraction of
 ///                                              its width, with its tooltip
+///     -dm-dashboard-card-width <points>        the narrowest a column of the grid may be (290),
+///                                              to see several columns on a phone
 ///     -dm-dashboard-state <loading|empty|all-offline>
 ///                                              loading: draw the state before the first snapshot;
 ///                                              empty: remove every device (demo hub only);
@@ -35,9 +37,11 @@ import Foundation
 ///                                              choose that range in the card's range menu (it is
 ///                                              remembered, like any choice made there)
 ///     -dm-dashboard-move <device id>:<-1|1>    the card's "Move up" or "Move down" action
-///     -dm-dashboard-drag <device id>:<over id>[:hold]
+///     -dm-dashboard-drag <device id>:<over id|bottom>[:hold]
 ///                                              drag the card by its grip onto another card and
-///                                              drop it; with `hold`, keep it in the air there
+///                                              drop it; with `hold`, keep it in the air there.
+///                                              `bottom` rests the finger at the lower edge of the
+///                                              screen for two seconds instead, so the page scrolls
 ///
 /// The default range of the cards and the temperature unit need no argument of their own: the
 /// defaults they are kept in can be given for one launch, e.g. `-dm.range 1h` or `-dm.unit F`.
@@ -63,6 +67,7 @@ nonisolated struct DashboardDebugOptions: Sendable {
     var commits = false
     var failure: String?
     var scrub: Double?
+    var cardWidth: Double?
     var range: (id: String, range: String)?
     var move: (id: String, offset: Int)?
     var drag: Drag?
@@ -89,6 +94,7 @@ nonisolated struct DashboardDebugOptions: Sendable {
         commits = arguments.contains("-dm-dashboard-commit")
         failure = value(after: "-dm-dashboard-error")?.replacingOccurrences(of: "_", with: " ")
         scrub = value(after: "-dm-dashboard-scrub").flatMap(Double.init).map { min(1, max(0, $0)) }
+        cardWidth = value(after: "-dm-dashboard-card-width").flatMap(Double.init).map { max(60, $0) }
         let range = parts(after: "-dm-dashboard-range")
         if range.count == 2 { self.range = (range[0], range[1]) }
         let move = parts(after: "-dm-dashboard-move")
