@@ -45,8 +45,11 @@ final class SettingsPriceEditorModel {
         self.script = script
     }
 
-    /// Whether a DEBUG launch argument wants the region list open.
-    var opensRegions: Bool { script?.showsRegions ?? false }
+    /// Whether a DEBUG launch argument wants the region list open. True once.
+    func takeOpensRegions() -> Bool {
+        defer { script?.showsRegions = false }
+        return script?.showsRegions ?? false
+    }
 
     // MARK: Loading
 

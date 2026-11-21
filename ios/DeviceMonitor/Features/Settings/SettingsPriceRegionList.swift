@@ -6,6 +6,8 @@ import SwiftUI
 struct SettingsPriceRegionList: View {
     /// A `PriceRegion.code` or `PriceRegions.customCode`.
     let selection: String
+    /// Nothing is saved on the hub yet: `selection` is what the app assumes.
+    var isGuess = false
     let choose: (String) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -43,7 +45,9 @@ struct SettingsPriceRegionList: View {
     private func row(_ name: String, detail: String?, code: String) -> some View {
         let isSelected = code == selection
         return Button {
-            choose(code)
+            // The place already saved stays as it is, with the rate it has. One that is only
+            // the app's guess is saved by choosing it.
+            if !isSelected || isGuess { choose(code) }
             dismiss()
         } label: {
             HStack(spacing: Theme.Spacing.m) {

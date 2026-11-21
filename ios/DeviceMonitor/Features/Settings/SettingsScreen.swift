@@ -146,6 +146,7 @@ private struct SettingsDeviceSection: View {
 /// The link is gone again when the tab is left, the app leaves the foreground, or it lapses.
 private struct SettingsLinkRows: View {
     @Environment(HubStore.self) private var store
+    @Environment(SessionController.self) private var session
     @Environment(\.scenePhase) private var scenePhase
     @State private var model = AddDeviceInvitationModel(script: SettingsLaunch.settingsLink)
 
@@ -212,7 +213,7 @@ private struct SettingsLinkRows: View {
                     AddDeviceLinkActions(link: link, expires: expires, identifier: "settings-link")
                     Spacer(minLength: 0)
                 }
-                note(BrowserInvitation.Labels.validity)
+                note(session.isDemo ? AddDeviceGuide.demoNote : BrowserInvitation.Labels.validity)
             }
         case .failed(let text):
             Text(text)

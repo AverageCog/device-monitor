@@ -76,7 +76,7 @@ struct SettingsPriceEditor: View {
         }
         .sensoryFeedback(.error, trigger: model.failures)
         .navigationDestination(isPresented: $showsRegions) {
-            SettingsPriceRegionList(selection: model.editor.regionCode) { code in
+            SettingsPriceRegionList(selection: model.editor.regionCode, isGuess: model.editor.price.guessed) { code in
                 model.perform { editor, _ in editor.chooseRegion(code) }
             }
         }
@@ -92,7 +92,8 @@ struct SettingsPriceEditor: View {
             }
         }
         .task {
-            if model.opensRegions { showsRegions = true }
+            // DEBUG launch argument only, and only the first time the editor appears.
+            if model.takeOpensRegions() { showsRegions = true }
         }
     }
 
@@ -165,7 +166,11 @@ struct SettingsPriceEditor: View {
         )
         let currency = Binding<String>(
             get: { model.editor.currency },
-            set: { code in act { editor, _ in editor.chooseCurrency(code) } }
+            set: { code in
+                // Choosing what is already chosen changes nothing, as in a browser's picker.
+                guard code != model.editor.currency else { return }
+                act { editor, _ in editor.chooseCurrency(code) }
+            }
         )
         let segments = DMSegmentedControl(
             PriceEditor.Labels.title, selection: mode,
@@ -393,7 +398,7 @@ struct SettingsPriceEditor: View {
         _ title: String, hour: Double, options: [PriceEditor.HourOption], isInvalid: Bool, fills: Bool, identifier: String,
         choose: @escaping (Double) -> Void
     ) -> some View {
-        let selection = Binding<Double>(get: { hour }, set: { choose($0) })
+        let selection = Binding<Double>(get: { hour }, set: { if $0 != hour { choose($0) } })
         return Menu {
             Picker(title, selection: selection) {
                 ForEach(options) { option in
@@ -424,7 +429,7 @@ struct SettingsPriceEditor: View {
     // MARK: Changes
 
     @ScaledMetric(relativeTo: .body) private var fieldWidth: CGFloat = 96
-    @ScaledMetric(relativeTo: .body) private var hourWidth: CGFloat = 108
+    @ScaledMetric(relativeTo: .body) private var hourWidth: CGFloat = 118
     @ScaledMetric(relativeTo: .footnote) private var wordWidth: CGFloat = 18
     @ScaledMetric(relativeTo: .footnote) private var unitWidth: CGFloat = 50
 
@@ -594,6 +599,8 @@ struct SettingsPricePickerLabel: View {
         let label = HStack(spacing: Theme.Spacing.s) {
             Text(text)
                 .lineLimit(1)
+                // "midnight" on a narrow phone shrinks a little before it is cut short.
+                .minimumScaleFactor(0.8)
             Spacer(minLength: 0)
             Image(systemName: systemImage)
                 .font(.system(size: 11, weight: .semibold))

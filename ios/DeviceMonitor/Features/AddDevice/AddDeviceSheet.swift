@@ -89,12 +89,17 @@ struct AddDeviceSheet: View {
 /// "View from another device": the dashboard's text and the link, as text and as a QR code.
 private struct AddDeviceViewSection: View {
     @Environment(HubStore.self) private var store
+    @Environment(SessionController.self) private var session
     let model: AddDeviceInvitationModel
 
     var body: some View {
         let invitation = model.invitation
         AddDeviceCard(AddDeviceGuide.viewTitle) {
             AddDeviceParagraph(AddDeviceGuide.viewText)
+            if session.isDemo {
+                BannerView(AddDeviceGuide.demoNote, kind: .info)
+                    .accessibilityIdentifier("add-device-demo-note")
+            }
             switch invitation.state {
             case .ready(let link, let expires):
                 ready(link, expires: expires)
