@@ -125,7 +125,8 @@ public final class DemoHubAPI: HubAPI {
         }
         var alerts = DemoAlerts(seed: configuration.seed, timeZone: configuration.timeZone)
         let subject = { (id: String) in machines.first { $0.spec.id == id }.map { DemoAlerts.Subject(id: id, name: $0.name, online: $0.spec.offFor == nil, lastSeen: nil) } }
-        // What already happened when the demo opens: two alerts still firing, three in the past.
+        // What had already happened when the demo opens: two alerts that are still firing, and an
+        // outage and a hot GPU that came and went.
         if let off = machines.first(where: { $0.spec.offFor != nil }), let gone = off.spec.offFor, let device = subject(off.spec.id) {
             alerts.seedFiring(rule: .offline, device: device, firedAt: start - gone + 10 * 60e3, value: nil, detail: .init(since: start - gone))
         }

@@ -69,6 +69,19 @@ public final class HubStore {
     /// `lastError` in words.
     public var lastErrorText: String? { lastError?.errorDescription }
 
+    public var isLive: Bool { connection == .live }
+
+    /// The line under the title: "3 of 4 devices online", or "Reconnecting to hub…" from the
+    /// moment the stream is lost until it is back (`#summaryText`).
+    public var summaryText: String {
+        if case .reconnecting = connection { FleetCounts.reconnectingText } else { counts.text }
+    }
+
+    /// The same for narrow layouts: "3/4 online", and nothing while reconnecting (`#summaryShort`).
+    public var summaryShortText: String {
+        if case .reconnecting = connection { "" } else { counts.shortText }
+    }
+
     // MARK: Devices
 
     /// Every device, in the dashboard's order (`renderGrid`): by position, then by name.
@@ -95,11 +108,13 @@ public final class HubStore {
     public private(set) var info: HubInfo?
 
     public let preferences: Preferences
+    /// The store's time. Charts and "last seen" texts should measure against `clock.now` rather
+    /// than `Date()`, so that a demo or a test on a clock of its own stays consistent.
+    public let clock: any HubClock
     /// Receives the alert events the hub wants announced. See `AlertNotifier`.
     @ObservationIgnored public var alertNotifier: (any AlertNotifier)?
 
     @ObservationIgnored private let api: any HubAPI
-    @ObservationIgnored private let clock: any HubClock
     @ObservationIgnored private let locale: Locale
     @ObservationIgnored private let tasks = TaskBag()
 

@@ -122,13 +122,18 @@ import Testing
 
     @Test func reconnectsThreeSecondsAfterTheStreamEnds() async throws {
         let h = StoreHarness()
+        #expect(h.store.summaryText == "" && h.store.summaryShortText == "" && !h.store.isLive)
         let first = try await h.goLive()
+        #expect(h.store.summaryText == "2 of 2 devices online" && h.store.summaryShortText == "2/2 online" && h.store.isLive)
+        #expect(h.store.clock.now == F.now)
         first.finish()                                             // the hub ended the response
         try await eventually("the store noticed") { Self.isReconnecting(h.store) }
         #expect(h.store.connection == .reconnecting(since: F.now))
         #expect(h.store.lastError == .unreachable("The hub closed the live stream.") && h.store.lastErrorAt == F.now)
         #expect(h.store.lastErrorText == "The hub closed the live stream." && h.store.failedAttempts == 1)
         #expect(h.store.devices.count == 2 && h.store.hasSnapshot)   // what it knew stays on show
+        // The dashboard's summary says so until the next snapshot.
+        #expect(h.store.summaryText == "Reconnecting to hub\u{2026}" && h.store.summaryShortText == "" && !h.store.isLive)
 
         await h.clock.waitForSleepers(2)                           // the wait, and the series timer
         h.clock.advance(by: 2999)
