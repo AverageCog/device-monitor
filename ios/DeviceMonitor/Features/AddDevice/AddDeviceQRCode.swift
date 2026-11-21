@@ -36,9 +36,12 @@ struct AddDeviceQRView: View {
     /// The side the hub's dashboard draws its invitation at.
     static let defaultSize: CGFloat = 220
 
+    @Environment(\.displayScale) private var displayScale
+
     var body: some View {
-        // The image carries one light module of its own; three more make four.
-        let module = size / CGFloat(code.side + 6)
+        // The image carries one light module of its own; three more make four. A module is a whole
+        // number of screen pixels, so every one is the same size and has sharp edges.
+        let module = max(1, (size * displayScale / CGFloat(code.side + 6)).rounded(.down)) / displayScale
         Image(decorative: code.image, scale: 1)
             .interpolation(.none)
             .resizable()

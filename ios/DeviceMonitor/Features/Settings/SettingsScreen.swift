@@ -124,6 +124,7 @@ private struct SettingsDeviceSection: View {
                     Text(overview.disconnectDetail)
                 }
             }
+            .accessibilityElement(children: .contain)
             .accessibilityIdentifier("settings-device")
             SettingsLinkRows()
         }
@@ -253,6 +254,7 @@ private struct SettingsHubSection: View {
                     .buttonStyle(.dm(size: .small))
                     .accessibilityIdentifier("settings-price-button")
             }
+            .accessibilityElement(children: .contain)
             .accessibilityIdentifier("settings-hub-price")
             if let fingerprint = overview.fingerprint {
                 SettingsAdaptiveRow(
@@ -269,6 +271,7 @@ private struct SettingsHubSection: View {
                         Label(BrowserInvitation.Labels.copy, systemImage: "doc.on.doc")
                     }
                 }
+                .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("settings-hub-identity")
             }
         }
@@ -423,10 +426,23 @@ struct SettingsAdaptiveRow<Trailing: View>: View {
 }
 
 nonisolated enum SettingsText {
-    /// The same text with a word joiner after each "://", so a line never ends on "https://"
-    /// with the host on the next one: an address that fits a line stays on one.
+    /// The same text for display, with invisible hints where an address may be broken: never
+    /// right after "https://" (which strands the scheme at a line's end), and, when the address
+    /// is longer than the line, after a dot of the host instead of in the middle of a name.
+    /// Not for text the user can select and copy.
     static func keepingAddressesWhole(_ text: String) -> String {
-        text.replacingOccurrences(of: "://", with: "://\u{2060}")
+        var out = ""
+        var rest = Substring(text)
+        while let scheme = rest.range(of: "://") {
+            // A word joiner: no line break here.
+            out += rest[..<scheme.upperBound] + "\u{2060}"
+            rest = rest[scheme.upperBound...]
+            let end = rest.firstIndex(where: \.isWhitespace) ?? rest.endIndex
+            // A zero-width space: a line break may go here.
+            out += rest[..<end].replacingOccurrences(of: ".", with: ".\u{200B}")
+            rest = rest[end...]
+        }
+        return out + rest
     }
 }
 

@@ -329,7 +329,10 @@ struct SettingsPriceEditor: View {
                     from
                     remove
                 }
-                to
+                HStack(spacing: SettingsPriceMetrics.gap) {
+                    word
+                    to
+                }
                 rate
             }
         }
