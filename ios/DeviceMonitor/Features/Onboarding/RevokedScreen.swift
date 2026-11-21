@@ -1,36 +1,87 @@
 import DMCore
 import SwiftUI
 
-// INTERIM — replaced by the Onboarding feature.
-/// The verified hub no longer accepts this enrollment (`SessionPhase.revoked`, the "repair" case
-/// of app/offline.js). The enrollment stays stored until the user pairs again.
+/// The verified hub no longer accepts this enrollment (`SessionPhase.revoked`): the "repair" case
+/// of app/offline.js. Nothing is retried, and the enrollment stays stored until the user pairs
+/// again. The desktop reuses its "Can't reach the hub" page for this; the hub is reachable here,
+/// so the screen says what did happen and how to get a fresh invitation.
 struct RevokedScreen: View {
     @Environment(SessionController.self) private var session
 
     var body: some View {
-        PhaseContainer {
-            // The desktop reuses its "Can't reach the hub" page here; the hub is reachable, so say what happened.
-            EmptyStateView(
-                title: "Pairing no longer valid",
-                // app/offline.js: "…Choose Change setup and paste a fresh desktop invitation."
-                message: "The verified hub no longer accepts this enrollment. On the hub, choose + → iPhone / iPad app, then pair again with the fresh invitation."
-            ) {
-                Button("Pair again") { session.pairAgain() }
-                    .buttonStyle(.dm(.primary))
-                    .accessibilityIdentifier("revoked-pair-again-button")
-                Button("Try again") { session.retryNow() }
+        OnboardingPhaseLayout { _ in
+            VStack(spacing: Theme.Spacing.xl) {
+                OnboardingMark(mode: .idle, badge: .revoked)
+                VStack(spacing: Theme.Spacing.s) {
+                    if isDemo { OnboardingTag(text: OnboardingCopy.demoTag) }
+                    Text(OnboardingCopy.revokedTitle)
+                        .dmFont(.emptyTitle)
+                        .foregroundStyle(Theme.textPrimary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityAddTraits(.isHeader)
+                    Text(isDemo ? OnboardingCopy.demoRevokedMessage : OnboardingCopy.revokedMessage)
+                        .dmFont(.body)
+                        .foregroundStyle(Theme.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if !isDemo, let origin = session.hubOriginText {
+                        OnboardingOriginText(origin: origin)
+                    }
+                }
+                if !isDemo {
+                    VStack(alignment: .leading, spacing: Theme.Spacing.m) {
+                        SectionLabel(OnboardingCopy.freshInvitationTitle)
+                        OnboardingStepList(steps: [.openInvitation(1), .plain(2, OnboardingCopy.pairAgainStep)])
+                    }
+                    .padding(Theme.Spacing.l + 2)
+                    .dmSurface()
+                }
+                OnboardingActionRow {
+                    Button(isDemo ? OnboardingCopy.exitDemo : OnboardingCopy.pairAgain) { session.pairAgain() }
+                        .buttonStyle(.dm(.primary))
+                        .accessibilityIdentifier("revoked-pair-again-button")
+                    // In case the hub was put right: asks it once more.
+                    Button(OnboardingCopy.tryAgain) {
+                        OnboardingHaptics.tap()
+                        session.retryNow()
+                    }
                     .buttonStyle(.dm())
                     .accessibilityIdentifier("revoked-retry-button")
+                }
+                Text(isDemo ? OnboardingCopy.demoRevokedHint : OnboardingCopy.revokedHint)
+                    .dmFont(.caption)
+                    .foregroundStyle(Theme.textMuted)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .frame(maxWidth: 480)
-            .padding(Theme.Spacing.xl)
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("phase-revoked")
         }
     }
+
+    private var isDemo: Bool {
+        #if DEBUG
+        if OnboardingDebugOptions.current.actsAsDemo { return true }
+        #endif
+        return session.isDemo
+    }
 }
 
-#Preview {
+#Preview("Revoked, not paired") {
     RevokedScreen()
         .demoEnvironment(.onboarding)
 }
+
+#if DEBUG
+#Preview("Revoked") {
+    RevokedScreen()
+        .onboardingPreview(.revoked)
+}
+
+#Preview("Revoked, large text") {
+    RevokedScreen()
+        .onboardingPreview(.revoked)
+        .dynamicTypeSize(.accessibility2)
+}
+#endif
