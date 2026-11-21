@@ -240,7 +240,8 @@ public struct AlertChannels: Codable, Sendable, Hashable {
     }
 
     /// Whether paired apps should show a notification. The hub puts this in `notify` of each
-    /// `alert` event (the name dates from when only the desktop apps listened).
+    /// `alert` event. The wire field is called `desktop`, but the desktop apps and the dashboard
+    /// drop `alert` events: today only the iPhone and iPad app acts on it.
     public var desktop: Bool
     public var ntfy: Ntfy
     public var webhook: Webhook
