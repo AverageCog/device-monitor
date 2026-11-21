@@ -197,34 +197,40 @@ import Testing
                 if tip.crosshair.map({ DashFixture.near($0, DashFixture.snapped(layout.x(tooltip.t))) }) != true { failures.append("\(name): marker at \(layout.x(tooltip.t)), dashboard \(String(describing: tip.crosshair))") }
                 let dots = tooltip.rows.map { CanvasDot(color: $0.tint.cssVariable, at: CanvasPoint(x: layout.x(tooltip.t), y: layout.y($0.value))) }
                 if !CanvasDot.same(dots, tip.dots) { failures.append("\(name): dots \(dots), dashboard \(tip.dots)") }
-                if model.nearestSample(to: time)?.t != tooltip.t { failures.append("\(name): nearestSample and tooltip disagree") }
+                if model.nearestSample(to: time)?.t != tooltip.t || tooltip.date != Date(hubTime: tooltip.t) { failures.append("\(name): nearestSample and tooltip disagree") }
             }
         }
         DashFixture.report(failures, of: total)
         #expect(shown > 500 && total - shown >= 15 && relative > 300 && clock > 100 && withTemperature > 400)
     }
 
-    @Test func layoutIsTheDashboards() {
-        let layout = CardChartLayout(width: 300, start: 1_000_000, end: 1_600_000)
-        #expect(layout.height == 64 && layout.plotWidth == 266 && layout.plotHeight == 52)
-        #expect(layout.x(1_000_000) == 30 && layout.x(1_600_000) == 296)
-        #expect(layout.y(0) == 58 && layout.y(100) == 6 && layout.y(50) == 32)
-        #expect(layout.time(atX: 30) == 1_000_000 && layout.time(atX: 296) == 1_600_000)
-        #expect(layout.time(atX: layout.x(1_234_567)).rounded() == 1_234_567)
+    @Test func positionsAndTimesConvertBothWays() {
+        for c in chart.cases.prefix(8) {
+            let layout = CardChartLayout(width: c.width, height: c.height, start: c.now - 600_000, end: c.now)
+            for x in [0, 30, 100.5, c.width] {
+                #expect(abs(layout.x(layout.time(atX: x)) - x) < 1e-6)
+            }
+            #expect(layout.plotWidth == c.width - CardChartLayout.padding.left - CardChartLayout.padding.right)
+            #expect(layout.plotHeight == c.height - CardChartLayout.padding.top - CardChartLayout.padding.bottom)
+        }
+        #expect(chart.cases.allSatisfy { $0.height == CardChartLayout.height })
     }
 
-    @Test func aRowReadsLikeTheDashboards() {
-        let sample = HistoryPoint(t: 1000, cpu: 27.6, gpu: nil, mem: 43.2, cpuTemp: 58.6)
-        let model = CardChartModel(points: [sample], range: .tenMinutes, now: 4000)
-        let tooltip = model.tooltip(at: 0, unit: .celsius, locale: DashFixture.enUS, timeZone: DashFixture.losAngeles)
-        #expect(tooltip?.time == "now" && tooltip?.t == 1000)
-        #expect(tooltip?.rows.map(\.text) == ["CPU 28% \u{B7} 59\u{B0}C", "Memory 43%"])
-        #expect(tooltip?.rows.map(\.temperature) == ["59\u{B0}C", nil])
-        #expect(model.tooltip(at: 0, unit: .fahrenheit, locale: DashFixture.enUS, timeZone: DashFixture.losAngeles)?.rows.first?.temperature == "137\u{B0}F")
-        #expect(model.series.map(\.metric) == [.cpu, .mem])
-        // Older than the window: neither drawn nor pointed at.
-        let late = CardChartModel(points: [sample], range: .tenMinutes, now: 1000 + 600_001)
-        #expect(late.series.allSatisfy(\.segments.isEmpty) && late.tooltip(at: 1000, unit: .celsius) == nil)
-        #expect(CardChartModel(points: [], range: .oneHour, now: 5).tooltip(at: 5, unit: .celsius) == nil)
+    @Test func aTooltipRowIsItsParts() throws {
+        // "CPU 28% \u{B7} 59\u{B0}C": label, reading and, where the sample has one, the temperature.
+        var rows = 0
+        for c in chart.cases {
+            let model = try model(c)
+            let layout = CardChartLayout(width: c.width, height: c.height, model: model)
+            for tip in c.expected.tips {
+                guard let expected = tip.tip, let tooltip = model.tooltip(at: layout.time(atX: tip.hover * c.width), unit: DashFixture.unit(c.unit), locale: DashFixture.enUS, timeZone: DashFixture.losAngeles) else { continue }
+                for (row, wanted) in zip(tooltip.rows, expected.rows) {
+                    let parts = wanted.text.components(separatedBy: " \u{B7} ")
+                    #expect(parts.first == row.label + " " + row.valueText && (parts.count > 1 ? parts[1] : nil) == row.temperature)
+                    rows += 1
+                }
+            }
+        }
+        #expect(rows > 1000)
     }
 }

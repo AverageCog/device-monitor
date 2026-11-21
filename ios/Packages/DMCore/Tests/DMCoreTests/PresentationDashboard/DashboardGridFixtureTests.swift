@@ -204,10 +204,33 @@ import Testing
         #expect(rows > 60 && wakeable > 5)
     }
 
-    @Test func wakeButtonTexts() {
-        // $('#offPop') click handler: btn.disabled = true; btn.textContent = 'Sending…'; … btn.textContent = r?.ok ? 'Sent ✓' : 'Failed';
-        #expect(WakeButtonState.allCases.map(\.title) == ["Wake", "Sending\u{2026}", "Sent \u{2713}", "Failed"])
-        #expect(WakeButtonState.allCases.map(\.isEnabled) == [true, false, false, false])
+    struct Wake: Decodable {
+        struct Button: Decodable {
+            let text: String
+            let disabled: Bool
+            let title: String
+        }
+
+        struct Press: Decodable {
+            let outcome: String
+            let before: Button
+            let during: Button
+            let after: Button
+        }
+
+        let wake: [Press]
+    }
+
+    @Test func wakeButton() throws {
+        let presses = try DashFixture.decode(Wake.self, "dashboard/menu.json").wake
+        #expect(presses.map(\.outcome) == ["sent", "refused", "unreachable"])
+        for press in presses {
+            let end: WakeButtonState = press.outcome == "sent" ? .sent : .failed
+            for (state, button) in [(WakeButtonState.idle, press.before), (.sending, press.during), (end, press.after)] {
+                #expect(state.title == button.text && state.isEnabled != button.disabled && WakeButtonState.hint == button.title, "\(press.outcome): \(state)")
+            }
+        }
+        #expect(WakeButtonState.allCases == [.idle, .sending, .sent, .failed])
     }
 
     // MARK: Menu
@@ -312,15 +335,13 @@ import Testing
         #expect(cut >= 8 && refused >= 5)
     }
 
-    @Test func renameExamples() {
-        #expect(DeviceRename.stored(for: "  Lab PC \n") == "Lab PC")
-        #expect(DeviceRename.stored(for: "\t\u{7F} ") == nil)
-        #expect(DeviceRename.sendable("   ") == nil)
-        #expect(DeviceRename.sendable(" Büro\u{0}-PC ") == "Büro-PC")
-        #expect(!DeviceRename.isAltered("Lab PC") && DeviceRename.isAltered(" Lab PC"))
+    @Test func theNameToSendIsWholeAndTrimmed() {
+        // These are properties of what the app sends, not of the hub: the hub's side is the test above.
+        #expect(DeviceRename.sendable("   ") == nil && DeviceRename.sendable("\u{1}\u{7F}") == nil)
+        #expect(DeviceRename.sendable(" B\u{FC}ro\u{0}-PC ") == "B\u{FC}ro-PC")
         let long = String(repeating: "x", count: 59) + "\u{1F4BB}"
-        #expect(DeviceRename.stored(for: long) == String(repeating: "x", count: 59) + "\u{FFFD}")
         #expect(DeviceRename.sendable(long) == String(repeating: "x", count: 59))
         #expect(DeviceRename.sendable(String(repeating: "x", count: 58) + "  tail") == String(repeating: "x", count: 58))
+        #expect(!DeviceRename.isAltered("Lab PC") && DeviceRename.isAltered(" Lab PC") && DeviceRename.isAltered(long))
     }
 }

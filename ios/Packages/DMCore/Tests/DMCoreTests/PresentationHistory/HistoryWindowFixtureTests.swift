@@ -158,33 +158,45 @@ import Testing
         #expect(zooms >= 15 && refused >= 8)
     }
 
-    @Test func zoomRules() {
-        let window = HistoryWindow(range: .oneHour, now: 3_600_000)
-        // Less than a minute left: refused, in either direction.
-        #expect(window.zoomed(to: 100_000, 159_999) == nil)
-        #expect(window.zoomed(to: 100_000, 160_000)?.span == 60_000)
-        #expect(window.zoomed(to: 160_000, 100_000) == window.zoomed(to: 100_000, 160_000))
-        // Cut to the window.
-        let clipped = window.zoomed(to: -500_000, 9_000_000)
-        #expect(clipped?.from == 0 && clipped?.to == 3_600_000 && clipped?.isZoomed == true && clipped?.range == .oneHour)
-        #expect(window.zoomed(to: 3_590_000, 4_000_000) == nil)
-        // A drag of eight points or less is a tap.
-        #expect(HistoryWindow.minimumDrag == 8 && HistoryWindow.minimumSpan == 60_000)
-        #expect(window.zoomed(byDragFrom: 100, to: 108, chartWidth: 900) == nil && window.zoomed(byDragFrom: 108, to: 100, chartWidth: 900) == nil)
-        #expect(window.zoomed(byDragFrom: 100, to: 400, chartWidth: 900) == window.zoomed(byDragFrom: 400, to: 100, chartWidth: 900))
-        #expect(window.zoomed(byDragFrom: 100, to: 400, chartWidth: 900)?.isZoomed == true)
+    @Test func theSessionCoversTheEdgesOfTheRules() {
+        let drags = windows.steps.filter { $0.action == "drag" }
+        func moved(_ step: Windows.Step) -> Double { abs((step.x2 ?? 0) - (step.x1 ?? 0)) }
+        func selected(_ step: Windows.Step) -> Double { min(step.before.to, step.b ?? 0) - max(step.before.from, step.a ?? 0) }
+        func zoomed(_ step: Windows.Step) -> Bool { !step.requests.isEmpty }
+        // Eight points are a click whatever they span; a little more is a selection.
+        #expect(drags.contains { moved($0) == 8 && selected($0) > 600_000 && !zoomed($0) })
+        #expect(drags.contains { moved($0) > 8 && moved($0) < 9 && zoomed($0) })
+        // Exactly a minute is enough; the next smaller selection is not.
+        #expect(drags.contains { selected($0) == 60_000 && zoomed($0) })
+        #expect(drags.contains { selected($0) < 60_000 && selected($0) > 59_999.99 && moved($0) > 8 && !zoomed($0) })
+        // Selections reaching past either edge, and both.
+        #expect(drags.contains { ($0.a ?? 0) < $0.before.from && zoomed($0) } && drags.contains { ($0.b ?? 0) > $0.before.to && zoomed($0) })
+        #expect(drags.contains { ($0.x1 ?? 0) > ($0.x2 ?? 0) })
+        // The timer with and without a zoom, a double-click with and without one.
+        for action in ["timer", "doubleClick"] {
+            #expect(windows.steps.contains { $0.action == action && $0.before.zoomed } && windows.steps.contains { $0.action == action && !$0.before.zoomed })
+        }
+    }
 
-        var zoomed = window.zoomed(to: 1_000_000, 2_000_000)!
-        #expect(zoomed.selectedRange == nil && zoomed.showsReset)
-        // The timer leaves a zoomed window alone; a double tap resets it, once.
-        let refreshedWhileZoomed = zoomed.refresh(now: 5_000_000)
-        #expect(!refreshedWhileZoomed && zoomed.from == 1_000_000)
-        let reset = zoomed.resetIfZoomed(now: 5_000_000)
-        #expect(reset && !zoomed.isZoomed && zoomed.to == 5_000_000 && zoomed.from == 1_400_000)
-        let resetAgain = zoomed.resetIfZoomed(now: 6_000_000)
-        #expect(!resetAgain && zoomed.to == 5_000_000)
-        let refreshed = zoomed.refresh(now: 6_000_000)
-        #expect(refreshed && zoomed.to == 6_000_000 && zoomed.span == 3_600_000)
+    @Test func zoomingByTimesMatchesZoomingByDrag() throws {
+        var window = HistoryWindow(range: .oneHour, now: start)
+        var compared = 0
+        // Every drag that started from a whole range, on that range's own window.
+        for step in windows.steps where step.action == "drag" && !step.before.zoomed {
+            guard let x1 = step.x1, let x2 = step.x2, let a = step.a, let b = step.b else { continue }
+            window = HistoryWindow(range: HistoryRange(rawValue: step.before.range) ?? .oneHour, now: step.before.to)
+            // The same stretch given as times, in either order, is the same zoom.
+            let byTimes = window.zoomed(to: a, b)
+            #expect(byTimes == window.zoomed(to: b, a))
+            if let byDrag = window.zoomed(byDragFrom: x1, to: x2, chartWidth: step.width) {
+                let zoomed = try #require(byTimes)
+                #expect(abs(zoomed.from - byDrag.from) < 1e-6 && abs(zoomed.to - byDrag.to) < 1e-6 && zoomed.isZoomed && zoomed.range == byDrag.range)
+                compared += 1
+            }
+            #expect(window.zoomed(to: .nan, b) == nil && window.zoomed(to: a, .nan) == nil)
+        }
+        #expect(compared >= 5)
+        #expect(window.fromDate == Date(hubTime: window.from) && window.toDate == Date(hubTime: window.to))
     }
 
     @Test func theTimerAndTheHint() {
@@ -198,10 +210,14 @@ import Testing
         for row in windows.pointsFor {
             #expect(HistoryWindow.points(forWidth: row.width) == row.points, "\(row.width) wide")
         }
-        #expect(HistoryWindow.points(forWidth: .nan) == 900 && HistoryWindow.points(forWidth: .infinity) == 1200 && HistoryWindow.points(forWidth: -40) == 200)
-        // The edges are sent as whole milliseconds.
-        let zoomed = HistoryWindow(range: .day, now: 86_400_000).zoomed(to: 1000.5, 70_000.49)
-        #expect(zoomed?.request(forWidth: 390) == HistoryRequest(from: 1001, to: 70_000, points: 390))
+        // Widths no browser reports still give a number within the hub's limits.
+        for width in [Double.nan, .infinity, -.infinity, -40, 1e300] {
+            #expect((200...1200).contains(HistoryWindow.points(forWidth: width)), "\(width) wide")
+        }
+        // The session above has zoomed windows with fractional edges; they are asked for as whole milliseconds.
+        #expect(windows.steps.contains { step in
+            step.after.from != step.after.from.rounded() && step.requests.contains { $0.contains("from=\(JS.string(JS.round(step.after.from)))&") }
+        })
     }
 
     // MARK: Chips and heading

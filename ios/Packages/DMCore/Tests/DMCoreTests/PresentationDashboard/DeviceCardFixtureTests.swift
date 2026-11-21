@@ -298,49 +298,57 @@ import Testing
         }
     }
 
-    @Test func anOfflineCardKeepsOnlyWhatTheHardwareIs() throws {
-        let devices = try ModelFixture.decode([Device].self, "devices.json")
-        var workstation = try ModelFixture.device(ModelFixture.workstation, in: devices)
-        let online = DeviceReading(device: workstation)
-        #expect(!online.isOffline && online.report == workstation.latest)
+    /// menu.json, `zeroed` and `versions`: the dashboard's own zeroed() and versionLabel(), asked directly.
+    struct Direct: Decodable {
+        struct Zeroed: Decodable {
+            let label: String
+            let input: Report
+            let output: Report
+        }
 
-        workstation.online = false
-        let reading = DeviceReading(device: workstation)
-        let latest = try #require(workstation.latest), zeroed = reading.report
-        #expect(reading.isOffline)
-        #expect(zeroed == DeviceReading.zeroed(latest))
-        #expect(zeroed.uptime == nil && zeroed.temps.isEmpty && zeroed.fans.isEmpty && zeroed.ai == nil)
-        #expect(zeroed.cpu.usage == 0 && zeroed.cpu.temp == nil && zeroed.cpu.clockMHz == nil && zeroed.cpu.name == latest.cpu.name)
-        #expect(zeroed.memory.used == 0 && zeroed.memory.total == latest.memory.total)
-        #expect(zeroed.gpus.map(\.name) == latest.gpus.map(\.name) && zeroed.gpus.map(\.memTotal) == latest.gpus.map(\.memTotal))
-        #expect(zeroed.gpus.allSatisfy { $0.usage == 0 && $0.temp == nil && $0.memUsed == 0 && $0.clockMHz == nil && $0.fan == nil })
-        #expect(zeroed.gpus.first?.power == 0 && zeroed.gpus.first?.powerLimit == latest.gpus.first?.powerLimit)
-        #expect(zeroed.net == Report.Net(rx: 0, tx: 0) && zeroed.diskIO == Report.DiskIO(read: 0, write: 0))
-        #expect(zeroed.disks == latest.disks && zeroed.platform == latest.platform && zeroed.appVersion == latest.appVersion)
+        struct Version: Decodable {
+            let platform: String?
+            /// false: the hub has no report of the device at all.
+            let report: Bool
+            let version: String?
+            let latest: [String: String]
+            let label: String?
+            let key: String?
+        }
 
-        // A card that has no power reading does not gain one, and one without network stays without.
-        var bare = Report()
-        bare.gpus = [Report.GPU(name: "Card")]
-        let zeroedBare = DeviceReading.zeroed(bare)
-        #expect(zeroedBare.gpus.first?.power == nil && zeroedBare.net == nil && zeroedBare.diskIO == nil)
-        #expect(DeviceReading(report: nil, isOnline: false).report.cpu.usage == 0)
-        #expect(DeviceReading(report: nil, isOnline: true).report == Report())
+        let zeroed: [Zeroed]
+        let versions: [Version]
     }
 
-    @Test func versionLabelsFollowWhatTheHubPublished() {
-        func device(_ platform: String?, _ version: String?) -> Device {
-            Device(id: "d", platform: platform, latest: Report(appVersion: version))
+    @Test func anOfflineCardIsDrawnFromAZeroedReport() throws {
+        let direct = try DashFixture.decode(Direct.self, "dashboard/menu.json")
+        var failures = [String]()
+        for row in direct.zeroed {
+            let zeroed = DeviceReading.zeroed(row.input)
+            if zeroed != row.output { failures.append("\(row.label): zeroed to \(zeroed), the dashboard to \(row.output)") }
+            let offline = DeviceReading(report: row.input, isOnline: false), online = DeviceReading(report: row.input, isOnline: true)
+            if offline.report != row.output || !offline.isOffline || online.report != row.input || online.isOffline { failures.append("\(row.label): the reading is not the report it should be") }
         }
-        let published = ["windows": "1.2.33", "mac": "1.2.31"]
-        #expect(DeviceVersion.platformKey("windows") == "windows" && DeviceVersion.platformKey("macos") == "mac")
-        #expect(DeviceVersion.platformKey("linux") == nil && DeviceVersion.platformKey("mac") == nil && DeviceVersion.platformKey(nil) == nil)
-        #expect(DeviceVersion.label(for: device("windows", "1.2.32"), latestVersions: published) == "v1.2.32 \u{2192} 1.2.33")
-        #expect(DeviceVersion.label(for: device("windows", "1.2.33"), latestVersions: published) == "v1.2.33")
-        #expect(DeviceVersion.label(for: device("macos", "1.2.30"), latestVersions: published) == "v1.2.30 \u{2192} 1.2.31")
-        #expect(DeviceVersion.label(for: device("linux", "1.2.30"), latestVersions: published) == "v1.2.30")
-        #expect(DeviceVersion.label(for: device("windows", "1.2.32"), latestVersions: [:]) == "v1.2.32")
-        #expect(DeviceVersion.label(for: device("windows", "1.2.32"), latestVersions: ["windows": ""]) == "v1.2.32")
-        #expect(DeviceVersion.label(for: device("windows", nil), latestVersions: published) == nil)
-        #expect(DeviceVersion.label(for: Device(id: "d", platform: "windows"), latestVersions: published) == nil)
+        DashFixture.report(failures, of: direct.zeroed.count)
+        #expect(direct.zeroed.count >= 20)
+        // The inputs cover what zeroing has to decide on.
+        #expect(direct.zeroed.contains { $0.input.gpus.contains { $0.power != nil } } && direct.zeroed.contains { $0.input.gpus.contains { $0.power == nil } })
+        #expect(direct.zeroed.contains { $0.input.net == nil } && direct.zeroed.contains { $0.input.net != nil } && direct.zeroed.contains { $0.input.ai != nil })
+        // Before the first report there is nothing to zero but the load.
+        #expect(DeviceReading(report: nil, isOnline: true).report == Report())
+        #expect(DeviceReading(report: nil, isOnline: false).report == DeviceReading.zeroed(Report()))
+    }
+
+    @Test func versionLabelsFollowWhatTheHubPublished() throws {
+        let direct = try DashFixture.decode(Direct.self, "dashboard/menu.json")
+        var failures = [String]()
+        for row in direct.versions {
+            let device = Device(id: "v", platform: row.platform, latest: row.report ? Report(appVersion: row.version) : nil)
+            let label = DeviceVersion.label(for: device, latestVersions: row.latest)
+            if label != row.label { failures.append("\(row.platform ?? "no platform") \(row.version ?? "no version") against \(row.latest): \(label ?? "nil"), dashboard \(row.label ?? "nil")") }
+            if DeviceVersion.platformKey(row.platform) != row.key { failures.append("platformKey(\(row.platform ?? "nil")) is \(DeviceVersion.platformKey(row.platform) ?? "nil"), dashboard \(row.key ?? "nil")") }
+        }
+        DashFixture.report(failures, of: direct.versions.count)
+        #expect(Set(direct.versions.compactMap(\.label)).count >= 12 && Set(direct.versions.map(\.key)) == ["windows", "mac", nil])
     }
 }

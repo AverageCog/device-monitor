@@ -298,41 +298,56 @@ import Testing
         #expect(titles.isSuperset(of: ["", " 1 min avg", " 30 min avg", " 1 h avg", " 2 h avg", " 24 h avg"]))
     }
 
-    @Test func theNearestPointIsTheEarlierOfTwoEquallyNear() {
-        let points = [HistoryPoint(t: 1000, cpu: 1), HistoryPoint(t: 3000, cpu: 2), HistoryPoint(t: 3000, cpu: 3)]
-        let model = HistoryModel(points: points, resolution: 2000, from: 0, to: 60_000, unit: .celsius)
-        #expect(model.nearestPoint(to: 2000)?.cpu == 1)
-        #expect(model.nearestPoint(to: 2001)?.cpu == 2)
-        #expect(model.nearestPoint(to: -5)?.cpu == 1 && model.nearestPoint(to: 9e9)?.cpu == 2)
+    @Test func theMarkerIsOnTheNearestPointWithinReach() throws {
+        var checked = 0
+        for c in pages.cases {
+            let model = try model(c)
+            #expect(model.gap == max(10_000, 3 * c.resolution) && model.tooltipReach == max(model.gap, (c.to - c.from) / 50))
+            for hover in c.hovers {
+                guard let tooltip = model.tooltip(at: hover.t, locale: enUS, timeZone: zone) else { continue }
+                let nearest = try #require(model.nearestPoint(to: hover.t))
+                #expect(nearest.t == tooltip.t && abs(nearest.t - hover.t) <= model.tooltipReach && tooltip.date == Date(hubTime: tooltip.t))
+                checked += 1
+            }
+        }
+        #expect(checked > 250)
         #expect(HistoryModel(points: [], resolution: 2000, from: 0, to: 1, unit: .celsius).nearestPoint(to: 0) == nil)
-        // Reach: max(gap, span / 50) = max(10 s, 1.2 s).
-        #expect(model.gap == 10_000 && model.tooltipReach == 10_000)
-        #expect(model.tooltip(at: 13_000, locale: enUS, timeZone: zone)?.t == 3000)
-        #expect(model.tooltip(at: 13_001, locale: enUS, timeZone: zone) == nil)
-        let wide = HistoryModel(points: points, resolution: 2000, from: 0, to: 6_000_000, unit: .celsius)
-        #expect(wide.tooltipReach == 120_000 && wide.tooltip(at: 123_000, locale: enUS, timeZone: zone)?.t == 3000)
     }
 
     @Test func layoutIsTheDashboards() {
         #expect(pages.meta.pad == ["l": HistoryChartLayout.padding.left, "r": HistoryChartLayout.padding.right, "t": HistoryChartLayout.padding.top, "b": HistoryChartLayout.padding.bottom])
-        let layout = HistoryChartLayout(width: 900, from: 1000, to: 5000)
-        #expect(layout.height == 170 && layout.plotWidth == 832 && layout.plotHeight == 140)
-        #expect(layout.x(1000) == 58 && layout.x(5000) == 890 && layout.time(atX: 58) == 1000 && layout.time(atX: 890) == 5000)
-        #expect(layout.y(0, yMax: 250) == 148 && layout.y(250, yMax: 250) == 8 && layout.y(125, yMax: 250) == 78)
-        #expect((0...4).map(layout.gridY) == [148, 113, 78, 43, 8])
+        #expect(pages.cases.allSatisfy { $0.height == HistoryChartLayout.height })
+        for c in pages.cases.prefix(8) {
+            let layout = layout(c)
+            for x in [0, 58, 123.25, c.width] {
+                #expect(abs(layout.x(layout.time(atX: x)) - x) < 1e-6)
+            }
+            #expect(layout.plotWidth == c.width - HistoryChartLayout.padding.left - HistoryChartLayout.padding.right)
+            #expect(layout.plotHeight == c.height - HistoryChartLayout.padding.top - HistoryChartLayout.padding.bottom)
+        }
     }
 
-    @Test func valuesReadAsOnTheDashboard() throws {
-        let points = [HistoryPoint(t: 0, cpu: 23.6, cpuTemp: 59.4, gpuPower: 395.5, rx: 4_812_345, dw: 1023)]
-        let model = HistoryModel(points: points, resolution: 60_000, from: 0, to: 1, unit: .fahrenheit)
-        #expect(model.charts.map(\.kind) == [.utilization, .temperature, .gpuPower, .network, .diskIO])
-        let texts = model.charts.map { $0.valueText(points[0].value($0.series[0].metric) ?? -1) }
-        #expect(texts == ["24%", "139\u{B0}F", "396 W", "4.6 MB/s", "1023 B/s"])
-        #expect(model.charts.map { $0.axisLabel(50) } == ["50%", "50\u{B0}", "50 W", "50 B/s", "50 B/s"])
-        #expect(model.charts.map(\.series.count) == [1, 1, 1, 1, 1])
-        let temperature = try #require(model.charts.first { $0.kind == .temperature })
-        #expect(temperature.displayValue(100) == 212 && temperature.unit == .fahrenheit)
-        #expect(temperature.series[0].lines == [[HistoryChartPoint(t: 0, value: 59.4 * 9 / 5 + 32)]])
-        #expect(try #require(model.charts.first { $0.kind == .utilization }).displayValue(100) == 100)
+    @Test func aChartFormatsItsOwnValues() throws {
+        // The tooltip rows and the axis labels checked above come from these two functions.
+        var rows = 0
+        for c in pages.cases {
+            let model = try model(c)
+            for chart in model.charts {
+                for level in chart.gridLevels {
+                    #expect(level.label == nil || level.label == chart.axisLabel(level.value))
+                }
+                #expect(chart.unit == model.unit && (chart.kind == .temperature || chart.displayValue(37.5) == 37.5))
+                for point in model.points {
+                    guard let tooltip = model.tooltip(at: point.t, locale: enUS, timeZone: zone), tooltip.t == point.t else { continue }
+                    for row in tooltip.rows(for: chart.kind) {
+                        guard let raw = model.nearestPoint(to: point.t)?.value(row.metric) else { continue }
+                        #expect(row.value == chart.valueText(raw) && row.y == chart.displayValue(raw))
+                        #expect(row.text == row.label + " " + row.value + (row.peak.map { " " + $0 } ?? ""))
+                        rows += 1
+                    }
+                }
+            }
+        }
+        #expect(rows > 1500)
     }
 }
