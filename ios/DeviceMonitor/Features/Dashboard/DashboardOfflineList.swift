@@ -15,46 +15,40 @@ struct DashboardOfflineList: View {
     @State private var actions = DashboardDeviceActionModel()
     @State private var wakeStates: [String: WakeButtonState] = [:]
     @State private var wakeOutcomes = DashboardWakeOutcomes()
+    /// The tallest the popover is made: as many rows as at the standard text size.
+    @ScaledMetric(relativeTo: .body) private var maximumHeight: CGFloat = 560
 
     var body: some View {
         // The hub's heartbeat keeps "last seen 5m ago" current while the list is open.
         let _ = store.lastStatusAt
         let model = OfflineDeviceListModel(
             devices: store.offlineDevices, latestVersions: store.latestVersions, now: store.clock.now, locale: DashboardLocale.names)
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 0) {
-                    ForEach(model.rows) { row in
-                        DashboardOfflineRow(
-                            row: row,
-                            wakeState: wakeState(for: row.id),
-                            open: { openHistory(row.id) },
-                            wake: { wake(row.id) },
-                            perform: { perform($0, on: row.id) }
-                        )
-                        if row.id != model.rows.last?.id {
-                            Hairline().padding(.leading, Theme.Spacing.l)
+        // The size of the popover; a sheet takes its detents instead.
+        DashboardOfflineListSizing(idealWidth: 380, chrome: 110, margin: Theme.Layout.screenPaddingCompact, maximumHeight: maximumHeight) {
+            NavigationStack {
+                ScrollView {
+                    rows(model)
+                        .padding(Theme.Layout.screenPaddingCompact)
+                }
+                .accessibilityIdentifier(DashboardID.offlineList)
+                .navigationTitle(OfflineDeviceListModel.title)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    if showsDone {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button(DashboardStrings.done) { dismiss() }
+                                .accessibilityIdentifier(DashboardID.offlineDone)
                         }
                     }
                 }
-                .dmSurface(Theme.surface1, radius: Theme.Radius.tile)
-                .padding(Theme.Layout.screenPaddingCompact)
+                .dmScreen()
             }
-            .accessibilityIdentifier(DashboardID.offlineList)
-            .navigationTitle(OfflineDeviceListModel.title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                if showsDone {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button(DashboardStrings.done) { dismiss() }
-                            .accessibilityIdentifier(DashboardID.offlineDone)
-                    }
-                }
-            }
-            .dmScreen()
+            // What the popover's height is measured from; never seen.
+            rows(model)
+                .hidden()
+                .accessibilityHidden(true)
         }
-        // The size of the popover; a sheet takes its detents instead.
-        .frame(minWidth: 320, idealWidth: 380, minHeight: 220, idealHeight: min(560, 110 + 76 * CGFloat(max(1, model.rows.count))))
+        .frame(minWidth: 320, minHeight: 220)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .preferredColorScheme(.dark)
@@ -86,6 +80,24 @@ struct DashboardOfflineList: View {
             if options.wake == "press", let id = model.rows.first(where: \.canWake)?.id { wake(id) }
         }
         #endif
+    }
+
+    private func rows(_ model: OfflineDeviceListModel) -> some View {
+        VStack(spacing: 0) {
+            ForEach(model.rows) { row in
+                DashboardOfflineRow(
+                    row: row,
+                    wakeState: wakeState(for: row.id),
+                    open: { openHistory(row.id) },
+                    wake: { wake(row.id) },
+                    perform: { perform($0, on: row.id) }
+                )
+                if row.id != model.rows.last?.id {
+                    Hairline().padding(.leading, Theme.Spacing.l)
+                }
+            }
+        }
+        .dmSurface(Theme.surface1, radius: Theme.Radius.tile)
     }
 
     private func wakeState(for id: String) -> WakeButtonState {
@@ -137,6 +149,40 @@ struct DashboardOfflineList: View {
 private nonisolated struct DashboardWakeOutcomes: Equatable, Sendable {
     var sent = 0
     var failed = 0
+}
+
+/// Sizes the offline list for a popover: its first subview, the list, fills whatever it is given;
+/// asked how tall it would like to be, it answers with the bar and the margins and its second
+/// subview, a copy of the rows that is never seen, as tall as that lays out at the list's width.
+///
+/// A popover asks once, before it comes up, and a scroll view in a navigation stack has no answer
+/// of its own. Measuring the rows once they are on screen comes too late: a popover resized while
+/// it is up keeps its content at the first size. And no fixed height per row holds at every text
+/// size: at accessibility sizes Wake and the menu go under the name, and a row is several times
+/// its usual height.
+private struct DashboardOfflineListSizing: Layout {
+    var idealWidth: CGFloat
+    /// The bar above the rows and the margins round them.
+    var chrome: CGFloat
+    /// The margin on either side of the rows.
+    var margin: CGFloat
+    var maximumHeight: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = proposal.width.flatMap { $0.isFinite ? $0 : nil } ?? idealWidth
+        if let height = proposal.height, height.isFinite { return CGSize(width: width, height: height) }
+        let rows = subviews.dropFirst().first?.sizeThatFits(rowsProposal(width)).height ?? 0
+        return CGSize(width: width, height: min(maximumHeight, chrome + rows))
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        subviews.first?.place(at: bounds.origin, proposal: ProposedViewSize(bounds.size))
+        subviews.dropFirst().first?.place(at: CGPoint(x: bounds.minX + margin, y: bounds.minY), proposal: rowsProposal(bounds.width))
+    }
+
+    private func rowsProposal(_ width: CGFloat) -> ProposedViewSize {
+        ProposedViewSize(width: max(0, width - 2 * margin), height: nil)
+    }
 }
 
 /// A row of the offline list (`.off-row`): grey dot, name, "last seen 5m ago · Windows 11 · v1.2.3",

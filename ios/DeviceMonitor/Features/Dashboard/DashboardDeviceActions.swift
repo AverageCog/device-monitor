@@ -75,6 +75,10 @@ final class DashboardDeviceActionModel {
     }
 
     /// The card goes when the hub announces the removal.
+    ///
+    /// A hub that no longer has the device answers 404: it was removed meanwhile, on the web
+    /// dashboard or from another phone, while the question was up. That is what was asked for,
+    /// so it is no failure; the dashboard says nothing either (`hubFetch` does not reject a 404).
     func commitRemove(_ subject: Subject, store: HubStore) {
         removing = nil
         Task {
@@ -82,7 +86,12 @@ final class DashboardDeviceActionModel {
                 try await store.remove(device: subject.id)
                 successes += 1
             } catch {
-                report(DashboardStrings.removeFailed(subject.name), HubError(error))
+                let failure = HubError(error)
+                if case .http(status: 404, _) = failure {
+                    successes += 1
+                } else {
+                    report(DashboardStrings.removeFailed(subject.name), failure)
+                }
             }
         }
     }

@@ -202,6 +202,12 @@ struct DashboardGrid: View {
         }
         if let id = options.removeID, let device = store.device(id), device.online {
             actions.perform(.remove, on: device) {}
+            if options.removedElsewhere, session.demoHub != nil {
+                // Once the question is seen to be up. The hub announces the removal to every
+                // client, so the card goes as it would for one removed on the web dashboard.
+                try? await Task.sleep(for: .milliseconds(600))
+                try? await store.remove(device: id)
+            }
         }
         if options.commits {
             // Long enough for the question to be seen to come up.
