@@ -10,8 +10,12 @@ import SwiftUI
 struct AdvancedScreen: View {
     @Environment(HubStore.self) private var store
     @Environment(Preferences.self) private var preferences
+    @Environment(AppRouter.self) private var router
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.horizontalSizeClass) private var sizeClass
+    #if DEBUG
+    @Environment(SessionController.self) private var session
+    #endif
 
     @State private var controller = AdvancedController()
     /// The page's width between its margins; zero until it has been laid out once.
@@ -40,12 +44,16 @@ struct AdvancedScreen: View {
         }
         .navigationTitle(AdvancedModel.title)
         .refreshable { await controller.refresh() }
+        // The controller works only while somebody is looking: the tab is the chosen one, it is on
+        // screen, and the app is in front.
         .onAppear {
             controller.attach(store: store, preferences: preferences, inputs: inputs, range: options.range)
             controller.setForeground(scenePhase == .active)
+            controller.setSelected(router.selectedTab == .advanced)
             controller.setVisible(true)
         }
         .onDisappear { controller.setVisible(false) }
+        .onChange(of: router.selectedTab) { _, tab in controller.setSelected(tab == .advanced) }
         .onChange(of: scenePhase) { _, phase in controller.setForeground(phase == .active) }
         .onChange(of: store.energySettings) { controller.priceChanged() }
         .onChange(of: preferences.temperatureUnit) { controller.unitChanged() }
@@ -62,9 +70,8 @@ struct AdvancedScreen: View {
         #endif
     }
 
-    /// A page wide enough for a second column anywhere gets the wider margins, whatever the size
-    /// class says: an iPhone on its side is one.
     private var margin: CGFloat {
+        // `-dm-advanced-width`: an iPad's width comes with an iPad's margins.
         if let forced = options.width { return forced >= 600 ? Theme.Layout.screenPaddingRegular : Theme.Layout.screenPaddingCompact }
         return Theme.Layout.screenPadding(for: sizeClass)
     }
@@ -90,17 +97,29 @@ struct AdvancedScreen: View {
     }
 
     #if DEBUG
-    /// `-dm-advanced-state stale`, `-dm-advanced-section`, `-dm-advanced-pan`.
+    /// `-dm-advanced-state stale`, `-dm-advanced-then`, `-dm-advanced-section`, `-dm-advanced-pan`.
     private func showRequestedState(with scroller: ScrollViewProxy) async {
-        guard options.state == .stale || options.section != nil || options.width != nil else { return }
+        guard options.state == .stale || options.then != nil || options.section != nil || options.width != nil else { return }
         // The sections below the chart take their height from the totals.
-        if options.state == nil || options.state == .stale {
+        func totals() async {
+            guard options.state == nil || options.state == .stale else { return }
             for _ in 0..<40 where controller.isLoading {
                 try? await Task.sleep(for: .milliseconds(100))
             }
         }
+        await totals()
         // The second request of a hub that answers once.
         if options.state == .stale { controller.retry() }
+        switch options.then {
+        case .range(let range):
+            controller.select(range)
+            await totals()
+        case .price(let rate):
+            // Only ever a hub that exists in memory.
+            if session.isDemo { _ = try? await store.saveEnergySettings(EnergySettings(region: PriceRegions.customCode, rate: rate, currency: "USD")) }
+        case nil:
+            break
+        }
         try? await Task.sleep(for: .milliseconds(400))
         if options.section != nil || options.width != nil {
             scroller.scrollTo(options.section ?? .top, anchor: UnitPoint(x: options.pan, y: 0))
@@ -238,10 +257,17 @@ private struct AdvancedTiles: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    /// `.tiles { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)) }`
+    private static let dashboardTileWidth: CGFloat = 170
+
     var body: some View {
         let spacing = Theme.Layout.tileSpacing
-        // `repeat(auto-fill, minmax(…, 1fr))`: as many columns as fit, filled from the left.
-        let fitting = max(1, Int((width + spacing) / (Theme.Layout.tileMinWidth + spacing)))
+        // `repeat(auto-fill, minmax(170px, 1fr))`: as many columns as fit, filled from the left.
+        // Tiles may be a little narrower than the dashboard's where that keeps the four on one
+        // row, or two side by side on a phone.
+        let roomy = Int((width + spacing) / (Self.dashboardTileWidth + spacing))
+        let tight = Int((width + spacing) / (Theme.Layout.tileMinWidth + spacing))
+        let fitting = max(1, roomy, min(4, tight))
         let columns = dynamicTypeSize.isAccessibilitySize ? max(1, fitting / 2) : fitting
         EqualColumnsLayout(columns: columns, columnSpacing: spacing, rowSpacing: spacing) {
             ForEach(controller.tiles) { tile in

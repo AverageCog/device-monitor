@@ -49,6 +49,7 @@ final class AdvancedController {
     /// `adv.seq`: names the newest question; an answer to an older one is dropped.
     @ObservationIgnored private var sequence = 0
     @ObservationIgnored private var isVisible = false
+    @ObservationIgnored private var isSelected = true
     @ObservationIgnored private var isForeground = true
     /// `adv.timer`, and the request it makes.
     @ObservationIgnored private var reloadTask: Task<Void, Never>?
@@ -73,7 +74,8 @@ final class AdvancedController {
         usage = model.usage
     }
 
-    private var isActive: Bool { isVisible && isForeground && store != nil }
+    /// Somebody is looking at the screen: `!$('#advView').hidden`.
+    private var isActive: Bool { isVisible && isSelected && isForeground && store != nil }
 
     // MARK: Wiring
 
@@ -91,10 +93,18 @@ final class AdvancedController {
         rebuild()
     }
 
-    /// The tab came on screen or left it.
+    /// The screen appeared or disappeared.
     func setVisible(_ visible: Bool) {
         let was = isActive
         isVisible = visible
+        activeChanged(from: was)
+    }
+
+    /// Another tab was chosen, or this one again. Said separately because a tab view may keep a
+    /// tab it is not showing "appeared".
+    func setSelected(_ selected: Bool) {
+        let was = isActive
+        isSelected = selected
         activeChanged(from: was)
     }
 

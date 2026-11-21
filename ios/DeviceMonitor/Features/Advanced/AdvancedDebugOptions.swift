@@ -13,6 +13,11 @@ import SwiftUI
 ///                                         no-devices: no totals and no devices either
 ///     -dm-advanced-price <guessed|tou>    work the page out as if no price were saved, or as if
 ///                                         time-of-use rates were; nothing is sent to the hub
+///     -dm-advanced-then <24h|7d|30d|price>
+///                                         once the totals are in, do what the user would:
+///                                         choose that range (which saves it, as the control
+///                                         does), or, in demo mode only, save a flat price of
+///                                         $0.10/kWh on the demo hub as the price sheet would
 ///     -dm-advanced-section <electricity|chart|power|usage|note>
 ///                                         scroll there once the totals are in
 ///     -dm-advanced-bucket <index|last>    select that bar of the chart, as a touch would
@@ -38,9 +43,17 @@ nonisolated struct AdvancedDebugOptions: Sendable, Equatable {
         case last
     }
 
+    /// Something the user would do, done without the touch.
+    enum Then: Sendable, Equatable {
+        case range(AdvancedRange)
+        /// Save this flat rate on the demo hub.
+        case price(Double)
+    }
+
     var range: AdvancedRange?
     var state: State?
     var price: Price?
+    var then: Then?
     var section: AdvancedSection?
     var bucket: Bucket?
     /// A device id, or "all".
@@ -67,6 +80,9 @@ nonisolated struct AdvancedDebugOptions: Sendable, Equatable {
         range = value(after: "-dm-advanced-range").flatMap(AdvancedRange.init(rawValue:))
         state = value(after: "-dm-advanced-state").flatMap(State.init(rawValue:))
         price = value(after: "-dm-advanced-price").flatMap(Price.init(rawValue:))
+        if let text = value(after: "-dm-advanced-then") {
+            then = text == "price" ? .price(0.1) : AdvancedRange(rawValue: text).map(Then.range)
+        }
         section = value(after: "-dm-advanced-section").flatMap(AdvancedSection.init(rawValue:))
         if let text = value(after: "-dm-advanced-bucket") {
             bucket = text == "last" ? .last : Int(text).map(Bucket.index)
