@@ -27,7 +27,7 @@ public struct AdvancedSeriesColor: Sendable, Hashable {
 
 /// The "Energy per hour" / "Energy per day" chart: stacked bars, one per bucket, a segment per
 /// device (function drawAdvChart).
-public struct AdvancedChart: Sendable, Equatable {
+public struct AdvancedChartModel: Sendable, Equatable {
     /// The canvas margins the dashboard draws with, and the opacity of the bars that are not
     /// under the pointer.
     public enum Layout {

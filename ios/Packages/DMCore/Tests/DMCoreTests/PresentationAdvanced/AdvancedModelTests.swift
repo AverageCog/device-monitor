@@ -237,7 +237,7 @@ import Testing
                 if bucket.isSoFar { soFar += 1 }
                 #expect(bucket.tooltip.title == bucket.longLabel + (bucket.isSoFar ? " (so far)" : ""))
                 let ours = bucket.tooltip.rows.map { [$0.color.token, $0.name, $0.energy, $0.cost] }
-                    + [["transparent", AdvancedChart.Tooltip.totalLabel, bucket.tooltip.totalEnergy, bucket.tooltip.totalCost]]
+                    + [["transparent", AdvancedChartModel.Tooltip.totalLabel, bucket.tooltip.totalEnergy, bucket.tooltip.totalCost]]
                 if ours.count != wanted.rows.count {
                     failures.append("\(at): rows \(ours), dashboard \(wanted.rows)")
                 } else {
@@ -280,9 +280,9 @@ import Testing
         #expect(AdvancedSeriesColor.cycle.map(\.index) == Array(0..<8))
         #expect(AdvancedSeriesColor.color(at: 8) == AdvancedSeriesColor.color(at: 0))
         #expect(AdvancedSeriesColor.color(at: 13).token == "--serious")
-        #expect(AdvancedChart.Layout.left == page.layout.left && AdvancedChart.Layout.right == page.layout.right)
-        #expect(AdvancedChart.Layout.top == page.layout.top && AdvancedChart.Layout.bottom == page.layout.bottom)
-        #expect(AdvancedChart.Layout.dimmedOpacity == page.dimmedAlpha)
+        #expect(AdvancedChartModel.Layout.left == page.layout.left && AdvancedChartModel.Layout.right == page.layout.right)
+        #expect(AdvancedChartModel.Layout.top == page.layout.top && AdvancedChartModel.Layout.bottom == page.layout.bottom)
+        #expect(AdvancedChartModel.Layout.dimmedOpacity == page.dimmedAlpha)
         #expect(AdvancedRefresh.reloadInterval * 1000 == page.reloadMs)
         #expect(AdvancedRefresh.liveInterval * 1000 == page.liveMs)
     }

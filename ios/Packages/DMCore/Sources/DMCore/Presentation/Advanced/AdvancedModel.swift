@@ -140,7 +140,7 @@ public struct AdvancedModel: Sendable, Equatable {
     /// The devices that used energy in the range.
     public let legend: [LegendItem]
     /// Nil while loading: the dashboard leaves the chart blank.
-    public let chart: AdvancedChart?
+    public let chart: AdvancedChartModel?
     public let power: PowerTable
     public let usage: UsageTable
 
@@ -300,7 +300,7 @@ public struct AdvancedModel: Sendable, Equatable {
     private static func chart(
         rows: [Row], bounds: [Double], price: EnergyPrice, now: Double, labels: AdvancedLabels,
         money: (Double) -> String, locale: Locale
-    ) -> AdvancedChart {
+    ) -> AdvancedChartModel {
         let n = bounds.count - 1
         // A summary with fewer buckets than the bounds counts as having used nothing there.
         let wh = { (row: Row, i: Int) -> Double in
@@ -313,14 +313,14 @@ public struct AdvancedModel: Sendable, Equatable {
         }
         let totals = (0..<n).map { i in rows.reduce(0.0) { $0 + wh($1, i) } / 1000 }
         let yMax = Format.niceMax(max(totals.max() ?? 0, 0.001) * 1.1)
-        let buckets = (0..<n).map { i -> AdvancedChart.Bucket in
+        let buckets = (0..<n).map { i -> AdvancedChartModel.Bucket in
             let used = rows.filter { wh($0, i) > 0 }
             let long = labels.bucket(bounds[i], next: bounds[i + 1], long: true)
             let soFar = bounds[i + 1] > now
-            let tooltip = AdvancedChart.Tooltip(
+            let tooltip = AdvancedChartModel.Tooltip(
                 title: long + (soFar ? " (so far)" : ""),
                 rows: used.map { row in
-                    AdvancedChart.TooltipRow(
+                    AdvancedChartModel.TooltipRow(
                         deviceID: row.device.id, name: row.device.displayName, color: row.color,
                         energy: Format.fmtKwh(wh(row, i) / 1000, locale: locale), cost: money(bucketCost(row, i))
                     )
@@ -328,23 +328,23 @@ public struct AdvancedModel: Sendable, Equatable {
                 totalEnergy: Format.fmtKwh(totals[i], locale: locale),
                 totalCost: money(rows.reduce(0.0) { $0 + bucketCost($1, i) })
             )
-            return AdvancedChart.Bucket(
+            return AdvancedChartModel.Bucket(
                 index: i, start: bounds[i], end: bounds[i + 1],
                 label: labels.bucket(bounds[i], next: bounds[i + 1], long: false), longLabel: long,
                 segments: used.map { row in
                     let kWh = wh(row, i) / 1000
-                    return AdvancedChart.Segment(deviceID: row.device.id, name: row.device.displayName, color: row.color, kWh: kWh, fraction: kWh / yMax)
+                    return AdvancedChartModel.Segment(deviceID: row.device.id, name: row.device.displayName, color: row.color, kWh: kWh, fraction: kWh / yMax)
                 },
                 totalKWh: totals[i], isSoFar: soFar, tooltip: tooltip
             )
         }
-        let ticks = (0...4).map { i -> AdvancedChart.Tick in
+        let ticks = (0...4).map { i -> AdvancedChartModel.Tick in
             let value = yMax * Double(i) / 4
             // +(yMax * i / 4).toFixed(2) + ' kWh'
             let label = i % 2 == 0 ? JS.string(Double(JS.toFixed(value, 2)) ?? value) + " kWh" : nil
-            return AdvancedChart.Tick(kWh: value, fraction: Double(i) / 4, label: label, isBaseline: i == 0)
+            return AdvancedChartModel.Tick(kWh: value, fraction: Double(i) / 4, label: label, isBaseline: i == 0)
         }
-        return AdvancedChart(buckets: buckets, yMax: yMax, ticks: ticks)
+        return AdvancedChartModel(buckets: buckets, yMax: yMax, ticks: ticks)
     }
 }
 
