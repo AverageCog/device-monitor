@@ -130,8 +130,8 @@ public final class HubStore {
     @ObservationIgnored private var fetchedForAttempt = 0
     /// The newest series request per device; an answer to an older one is dropped.
     @ObservationIgnored private var seriesRequests: [String: Int] = [:]
-    /// Bumped when the stream or a save changes the value, so an answer that was already on its
-    /// way does not put an older one back.
+    /// Bumped whenever the stream brings news of the value and whenever a save or a clear is
+    /// answered. An answer that finds its number changed was overtaken, and may be the older.
     @ObservationIgnored private var energyRevision = 0
     @ObservationIgnored private var alertsRevision = 0
 
@@ -281,7 +281,10 @@ public final class HubStore {
         case .energySettings:
             energyRevision += 1
             isEnergySettingsLoaded = true
-        case .alert, .alerts: alertsRevision += 1
+            // It also decides `alerts.priceSet`.
+            alertsRevision += 1
+        // A removal takes what was firing for the device with it, on the hub as well.
+        case .alert, .alerts, .removed: alertsRevision += 1
         default: break
         }
         publish(since: before)
@@ -572,18 +575,32 @@ public final class HubStore {
         }
     }
 
-    /// Saves the electricity price on the hub, for every dashboard. `energySettings` becomes
-    /// what the hub stored (it rounds rates and sorts time-of-use periods).
+    /// Saves the electricity price on the hub, for every dashboard, and returns what the hub
+    /// stored (it rounds rates and sorts time-of-use periods). `energySettings` becomes that too,
+    /// unless the stream brought other news of the price while the hub was answering: then it is
+    /// whatever the hub has now, which may already be someone else's later save.
     @discardableResult
     public func saveEnergySettings(_ settings: EnergySettings) async throws(HubError) -> EnergySettings {
+        let revision = energyRevision
+        let saved: EnergySettings
         do {
-            let saved = try await api.saveEnergySettings(settings)
-            energyRevision += 1
-            setEnergySettings(saved)
-            return saved
+            saved = try await api.saveEnergySettings(settings)
         } catch {
             throw failed(error)
         }
+        let overtaken = revision != energyRevision
+        // Whatever was asked before now may predate the save.
+        energyRevision += 1
+        if !overtaken {
+            setEnergySettings(saved)
+        } else if state.energySettings != saved {
+            // Other news of the price got here while the hub was answering, and it is not what
+            // was saved: either the announcement of this save is still on its way, or a later
+            // save has replaced it already. Only the hub can say which. The save itself went
+            // through, so failing to ask is not the caller's failure.
+            _ = try? await refreshEnergySettings()
+        }
+        return saved
     }
 
     private func setEnergySettings(_ settings: EnergySettings?) {
@@ -618,17 +635,32 @@ public final class HubStore {
         }
     }
 
-    /// Saves rules and channels. `alerts.settings` becomes what the hub stored.
+    /// Saves rules and channels. `alerts.settings` becomes what the hub stored, and
+    /// `alerts.active` what fires under it, unless the stream brought other news of the alerts
+    /// while the hub was answering: then both are whatever the hub has now.
     public func saveAlerts(_ settings: AlertSettings) async throws(HubError) {
+        let revision = alertsRevision
+        let update: AlertsUpdate
         do {
-            let update = try await api.saveAlerts(settings)
-            alertsRevision += 1
+            update = try await api.saveAlerts(settings)
+        } catch {
+            throw failed(error)
+        }
+        let overtaken = revision != alertsRevision
+        // Whatever was asked before now may predate the save.
+        alertsRevision += 1
+        if !overtaken {
             change {
                 $0.alerts.settings = update.settings
                 $0.alerts.active = update.active
             }
-        } catch {
-            throw failed(error)
+        } else if state.alerts.settings != update.settings || state.alerts.active != update.active {
+            // Other news of the alerts got here while the hub was answering, and it is not what
+            // the answer says: an alert that fired or cleared since, a device removed, someone
+            // else's rules, or just the hub's announcements still arriving. Only the hub can
+            // say which. The save itself went through, so failing to ask is not the caller's
+            // failure.
+            _ = try? await refreshAlerts()
         }
     }
 
@@ -642,14 +674,23 @@ public final class HubStore {
         }
     }
 
+    /// Empties the hub's alert log, and `alerts.events` with it. An entry that reached the store
+    /// while the hub was answering stays if the hub logged it after emptying the log.
     public func clearAlertLog() async throws(HubError) {
+        let known = Set(state.alerts.events.map(\.id))
         do {
             try await api.clearAlertLog()
-            alertsRevision += 1
-            change { $0.alerts.events = [] }
         } catch {
             throw failed(error)
         }
+        // Whatever was asked before now may still hold the old log.
+        alertsRevision += 1
+        // What the store had when it asked is gone for certain.
+        change { $0.alerts.events.removeAll { known.contains($0.id) } }
+        // What arrived since was logged just before the hub emptied its log or just after, and
+        // only the hub can say which. The log was cleared either way, so failing to ask is not
+        // the caller's failure; the entries in doubt then stay on show.
+        if !state.alerts.events.isEmpty { _ = try? await refreshAlerts() }
     }
 
     /// Log entries newer than the one the user last looked at.

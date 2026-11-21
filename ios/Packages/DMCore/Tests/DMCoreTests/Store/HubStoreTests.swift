@@ -706,6 +706,116 @@ import Testing
         h.store.stop()
     }
 
+    nonisolated static let german = EnergySettings(region: "DE", rate: 0.39, currency: "EUR")
+    nonisolated static let californian = EnergySettings(region: "US-CA", rate: 0.316, currency: "USD")
+
+    /// Starts saving `german` and holds the hub's answer back.
+    func priceSaveInFlight(_ h: StoreHarness) async throws -> (answer: Gate<EnergySettings>, save: Task<EnergySettings, any Error>) {
+        let answer = Gate<EnergySettings>()
+        h.hub.on { $0.saveEnergySettings = { _ in try await answer.wait() } }
+        let save = Task { try await h.store.saveEnergySettings(Self.german) }
+        try await eventually("the request is out") { answer.arrivals == 1 }
+        return (answer, save)
+    }
+
+    @Test func aSaveAnswerDoesNotPutAnOlderPriceBack() async throws {
+        let h = StoreHarness()
+        let connection = try await h.goLive()
+        let (answer, save) = try await priceSaveInFlight(h)
+        // The hub stored the price and announced it, then someone else saved another one, and
+        // both announcements got here before the answer to the save.
+        connection.send([.energySettings(Self.german), .energySettings(Self.californian)])
+        try await eventually("both are applied") { h.store.energySettings == Self.californian }
+        h.hub.on { $0.energySettings = { Self.californian } }       // what the hub has when asked
+        answer.open(Self.german)
+        #expect(try await save.value == Self.german)                // what it stored for this save
+        #expect(h.store.energySettings == Self.californian && h.hub.calls("energySettings").count == 2)
+        h.store.stop()
+    }
+
+    @Test func aSaveAnnouncedBeforeItIsAnsweredIsNotAskedAbout() async throws {
+        let h = StoreHarness()
+        let connection = try await h.goLive()
+        let (answer, save) = try await priceSaveInFlight(h)
+        connection.send(.energySettings(Self.german))               // the usual order: the announcement is written first
+        try await eventually("the announcement is applied") { h.store.energySettings == Self.german }
+        answer.open(Self.german)
+        #expect(try await save.value == Self.german)
+        #expect(h.store.energySettings == Self.german && h.hub.calls("energySettings").count == 1)
+        h.store.stop()
+    }
+
+    @Test func aSaveAnsweredAfterAnOlderAnnouncementShowsWhatTheHubHasNow() async throws {
+        let h = StoreHarness()
+        let connection = try await h.goLive()
+        let (answer, save) = try await priceSaveInFlight(h)
+        // Someone else's save, from just before this one reached the hub. The announcement of
+        // this one is still on its way when the answer arrives.
+        connection.send(.energySettings(Self.californian))
+        try await eventually("the announcement is applied") { h.store.energySettings == Self.californian }
+        h.hub.on { $0.energySettings = { Self.german } }
+        answer.open(Self.german)
+        #expect(try await save.value == Self.german)
+        #expect(h.store.energySettings == Self.german && h.store.alerts.priceSet)
+        h.store.stop()
+    }
+
+    @Test func aSaveSucceedsEvenWhenTheHubCannotBeAskedAgain() async throws {
+        let h = StoreHarness()
+        let connection = try await h.goLive()
+        let (answer, save) = try await priceSaveInFlight(h)
+        connection.send([.energySettings(Self.german), .energySettings(Self.californian)])
+        try await eventually("both are applied") { h.store.energySettings == Self.californian }
+        h.hub.on { $0.energySettings = { throw HubError.unreachable("The hub did not answer in time.") } }
+        answer.open(Self.german)
+        #expect(try await save.value == Self.german)                // the save itself went through
+        #expect(h.store.energySettings == Self.californian && h.store.connection == .live)   // as the stream left it
+        h.store.stop()
+    }
+
+    @Test func twoSavesAnsweredOutOfOrderEndWithWhatTheHubHas() async throws {
+        let h = StoreHarness()
+        try await h.goLive()
+        let first = Gate<EnergySettings>(), second = Gate<EnergySettings>()
+        h.hub.on { $0.saveEnergySettings = { try await ($0.region == "DE" ? first : second).wait() } }
+        let one = Task { try await h.store.saveEnergySettings(Self.german) }
+        try await eventually("the first request is out") { first.arrivals == 1 }
+        let two = Task { try await h.store.saveEnergySettings(Self.californian) }
+        try await eventually("the second request is out") { second.arrivals == 1 }
+        // The hub took them in the order they were made. The answers come back the other way
+        // round, before either announcement.
+        h.hub.on { $0.energySettings = { Self.californian } }
+        second.open(Self.californian)
+        #expect(try await two.value == Self.californian)
+        first.open(Self.german)
+        #expect(try await one.value == Self.german)
+        #expect(h.store.energySettings == Self.californian)
+        h.store.stop()
+    }
+
+    @Test func anAnswerAskedForBeforeAnOvertakenSaveDoesNotUndoIt() async throws {
+        let h = StoreHarness()
+        let connection = try await h.goLive()
+        let (answer, save) = try await priceSaveInFlight(h)
+        connection.send(.energySettings(Self.californian))          // someone else's, from before this save
+        try await eventually("the announcement is applied") { h.store.energySettings == Self.californian }
+        // Asked after that announcement, and answered by the hub before it took the save.
+        let usage = Gate<EnergyResponse>()
+        h.hub.on {
+            $0.energy = { _ in try await usage.wait() }
+            $0.energySettings = { Self.german }
+        }
+        let load = Task { try await h.store.loadEnergy(bounds: [1, 2]) }
+        try await eventually("the request is out") { usage.arrivals == 1 }
+        answer.open(Self.german)
+        #expect(try await save.value == Self.german)
+        #expect(h.store.energySettings == Self.german)
+        usage.open(EnergyResponse(bounds: [1, 2], settings: Self.californian))
+        #expect(try await load.value.settings == Self.californian)
+        #expect(h.store.energySettings == Self.german)
+        h.store.stop()
+    }
+
     // MARK: Alerts
 
     @Test func alertsAreLoadedKeptCurrentAndHandedToTheNotifier() async throws {
@@ -801,6 +911,235 @@ import Testing
         try await refresh.value
         // The store asked again rather than show a log without it.
         #expect(asked.count == 2 && h.store.alerts.events == [live] && h.store.alerts.isLoaded)
+        h.store.stop()
+    }
+
+    @Test func aPriceSavedDuringARefreshIsNotForgotten() async throws {
+        let h = StoreHarness()
+        let connection = try await h.goLive()
+        let stale = Gate<AlertsResponse>(), asked = Counter()
+        h.hub.on {
+            $0.alerts = {
+                if asked.increment() == 1 { return try await stale.wait() }
+                return AlertsResponse(priceSet: true)
+            }
+        }
+        let refresh = Task { try await h.store.refreshAlerts() }
+        try await eventually("the request is out") { stale.arrivals == 1 }
+        connection.send(.energySettings(Self.german))
+        try await eventually("the price is announced") { h.store.alerts.priceSet }
+        stale.open(AlertsResponse(priceSet: false))                // put together before the price was saved
+        try await refresh.value
+        #expect(asked.count == 2 && h.store.alerts.priceSet && h.store.alerts.isLoaded)
+        h.store.stop()
+    }
+
+    nonisolated static let rules = AlertSettings(rules: [AlertRule(id: "0123456789ab", type: .cpu, threshold: 90, minutes: 0)])
+    nonisolated static let firing = ActiveAlert(ruleId: "0123456789ab", type: .cpu, device: "a")
+
+    /// Starts saving `rules` and holds the hub's answer back.
+    func rulesSaveInFlight(_ h: StoreHarness) async throws -> (answer: Gate<AlertsUpdate>, save: Task<Void, any Error>) {
+        let answer = Gate<AlertsUpdate>()
+        h.hub.on { $0.saveAlerts = { _ in try await answer.wait() } }
+        let save = Task { try await h.store.saveAlerts(Self.rules) }
+        try await eventually("the request is out") { answer.arrivals == 1 }
+        return (answer, save)
+    }
+
+    @Test func aSaveAnswerDoesNotClearAnAlertThatFiredMeanwhile() async throws {
+        let h = StoreHarness()
+        let connection = try await h.goLive()
+        let (answer, save) = try await rulesSaveInFlight(h)
+        // The hub stored the rules, announced them and answered. Then the rule fired, and word of
+        // that got here before the answer.
+        let fired = F.alert("e1", t: 1)
+        connection.send([.alerts(settings: Self.rules, active: []), .alert(event: fired, notify: false, active: [Self.firing])])
+        try await eventually("the alert is in") { h.store.alerts.active == [Self.firing] }
+        h.hub.on { $0.alerts = { AlertsResponse(settings: Self.rules, active: [Self.firing], events: [fired]) } }   // what the hub has when asked
+        answer.open(AlertsUpdate(settings: Self.rules, active: []))
+        try await save.value
+        #expect(h.store.alerts.settings == Self.rules && h.store.alerts.active == [Self.firing] && h.store.alerts.events == [fired])
+        #expect(h.hub.calls("alerts").count == 2)
+        h.store.stop()
+    }
+
+    @Test func rulesAnnouncedBeforeTheSaveIsAnsweredAreNotAskedAbout() async throws {
+        let h = StoreHarness()
+        let connection = try await h.goLive()
+        let (answer, save) = try await rulesSaveInFlight(h)
+        connection.send(.alerts(settings: Self.rules, active: [Self.firing]))   // the usual order: the announcement is written first
+        try await eventually("the announcement is applied") { h.store.alerts.settings == Self.rules }
+        answer.open(AlertsUpdate(settings: Self.rules, active: [Self.firing]))
+        try await save.value
+        #expect(h.store.alerts.settings == Self.rules && h.store.alerts.active == [Self.firing])
+        #expect(h.hub.calls("alerts").count == 1)
+        h.store.stop()
+    }
+
+    @Test func aSaveAnswerDoesNotBringBackAnAlertForARemovedDevice() async throws {
+        let h = StoreHarness()
+        let connection = try await h.goLive()
+        let (answer, save) = try await rulesSaveInFlight(h)
+        // The new rule fired for "a" as it was saved; then someone removed "a", and the hub
+        // forgot the alert without a word.
+        connection.send(.removed("a"))
+        try await eventually("a is gone") { h.store.device("a") == nil }
+        h.hub.on { $0.alerts = { AlertsResponse(settings: Self.rules) } }
+        answer.open(AlertsUpdate(settings: Self.rules, active: [Self.firing]))
+        try await save.value
+        #expect(h.store.alerts.settings == Self.rules && h.store.alerts.active.isEmpty)
+        h.store.stop()
+    }
+
+    @Test func savedRulesStandWhenTheHubCannotBeAskedAgain() async throws {
+        let h = StoreHarness()
+        let connection = try await h.goLive()
+        let (answer, save) = try await rulesSaveInFlight(h)
+        connection.send([.alerts(settings: Self.rules, active: []), .alert(event: F.alert("e1", t: 1), notify: false, active: [Self.firing])])
+        try await eventually("the alert is in") { h.store.alerts.active == [Self.firing] }
+        h.hub.on { $0.alerts = { throw HubError.unreachable("The hub did not answer in time.") } }
+        answer.open(AlertsUpdate(settings: Self.rules, active: []))
+        try await save.value                                       // the save itself went through
+        #expect(h.store.alerts.settings == Self.rules && h.store.alerts.active == [Self.firing] && h.store.connection == .live)
+        h.store.stop()
+    }
+
+    /// A store whose log holds two entries, with the request to clear it held back at the hub.
+    func clearInFlight(_ h: StoreHarness) async throws -> (connection: ScriptedHub.Connection, answer: Gate<Bool>, clear: Task<Void, any Error>) {
+        h.hub.on { $0.alerts = { AlertsResponse(events: [F.alert("e2", t: 2000), F.alert("e1", t: 1000)]) } }
+        let connection = try await h.goLive()
+        #expect(h.store.alerts.events.map(\.id) == ["e2", "e1"])
+        let answer = Gate<Bool>()
+        h.hub.on { $0.clearAlertLog = { _ = try await answer.wait() } }
+        let clear = Task { try await h.store.clearAlertLog() }
+        try await eventually("the request is out") { answer.arrivals == 1 }
+        return (connection, answer, clear)
+    }
+
+    @Test func anAlertLoggedAfterTheLogWasClearedIsKept() async throws {
+        let h = StoreHarness()
+        let (connection, answer, clear) = try await clearInFlight(h)
+        // The hub emptied its log and answered. Then an alert fired, and it got here first.
+        let fresh = F.alert("e3", t: 3000)
+        connection.send(.alert(event: fresh, notify: false, active: []))
+        try await eventually("the alert is logged") { h.store.alerts.events.first == fresh }
+        h.hub.on { $0.alerts = { AlertsResponse(events: [fresh]) } }
+        answer.open(true)
+        try await clear.value
+        #expect(h.store.alerts.events == [fresh] && h.hub.calls("alerts").count == 2)
+        h.store.stop()
+    }
+
+    @Test func anAlertLoggedJustBeforeTheLogWasClearedGoesWithIt() async throws {
+        let h = StoreHarness()
+        let (connection, answer, clear) = try await clearInFlight(h)
+        // From here the two cannot be told apart, so the hub is asked.
+        connection.send(.alert(event: F.alert("e3", t: 3000), notify: false, active: []))
+        try await eventually("the alert is logged") { h.store.alerts.events.count == 3 }
+        h.hub.on { $0.alerts = { AlertsResponse() } }
+        answer.open(true)
+        try await clear.value
+        #expect(h.store.alerts.events.isEmpty && h.hub.calls("alerts").count == 2)
+        h.store.stop()
+    }
+
+    @Test func whatWasInTheLogWhenItWasClearedGoesEvenIfTheHubCannotBeAsked() async throws {
+        let h = StoreHarness()
+        let (connection, answer, clear) = try await clearInFlight(h)
+        let fresh = F.alert("e3", t: 3000)
+        connection.send(.alert(event: fresh, notify: false, active: []))
+        try await eventually("the alert is logged") { h.store.alerts.events.first == fresh }
+        h.hub.on { $0.alerts = { throw HubError.unreachable("The hub did not answer in time.") } }
+        answer.open(true)
+        try await clear.value                                      // the log was cleared: that is not a failure
+        #expect(h.store.alerts.events == [fresh] && h.store.connection == .live)
+        h.store.stop()
+    }
+
+    @Test func clearingALogNothingWasAddedToAsksNothingMore() async throws {
+        let h = StoreHarness()
+        let (connection, answer, clear) = try await clearInFlight(h)
+        // Other news on the stream is no reason to doubt the log.
+        connection.send(.alerts(settings: Self.rules, active: [Self.firing]))
+        try await eventually("the announcement is applied") { h.store.alerts.settings == Self.rules }
+        answer.open(true)
+        try await clear.value
+        #expect(h.store.alerts.events.isEmpty && h.store.alerts.active == [Self.firing])
+        #expect(h.hub.calls("alerts").count == 1 && h.hub.calls("clearAlertLog").count == 1)
+        h.store.stop()
+    }
+
+    @Test func aRefreshAskedForBeforeASaveWasAnsweredDoesNotUndoIt() async throws {
+        let h = StoreHarness()
+        try await h.goLive()
+        let stale = Gate<AlertsResponse>(), asked = Counter()
+        h.hub.on {
+            $0.alerts = {
+                if asked.increment() == 1 { return try await stale.wait() }
+                return AlertsResponse(settings: Self.rules)
+            }
+        }
+        let refresh = Task { try await h.store.refreshAlerts() }
+        try await eventually("the request is out") { stale.arrivals == 1 }
+        try await h.store.saveAlerts(Self.rules)
+        #expect(h.store.alerts.settings == Self.rules)
+        stale.open(AlertsResponse())                               // put together before the save
+        try await refresh.value
+        #expect(asked.count == 2 && h.store.alerts.settings == Self.rules)
+        h.store.stop()
+    }
+
+    @Test func rulesSavedAfterOtherNewsOfTheAlertsAreWhatTheHubHasNow() async throws {
+        let h = StoreHarness()
+        let connection = try await h.goLive()
+        let (answer, save) = try await rulesSaveInFlight(h)
+        // An alert from just before the save reached the hub. The announcement of the new rules
+        // is still on its way when the answer arrives.
+        let older = F.alert("e0", t: 1, firing: false)
+        connection.send(.alert(event: older, notify: false, active: []))
+        try await eventually("the alert is logged") { h.store.alerts.events == [older] }
+        // Asked after that alert, and answered by the hub before it took the save.
+        let stale = Gate<AlertsResponse>(), asked = Counter()
+        h.hub.on {
+            $0.alerts = {
+                if asked.increment() == 1 { return try await stale.wait() }
+                return AlertsResponse(settings: Self.rules, events: [older])
+            }
+        }
+        let refresh = Task { try await h.store.refreshAlerts() }
+        try await eventually("the request is out") { stale.arrivals == 1 }
+
+        answer.open(AlertsUpdate(settings: Self.rules))
+        try await save.value
+        #expect(h.store.alerts.settings == Self.rules && asked.count == 2)   // the save asked what the hub has
+        stale.open(AlertsResponse(events: [older]))                // the rules as they were
+        try await refresh.value
+        #expect(h.store.alerts.settings == Self.rules && h.store.alerts.events == [older] && asked.count == 3)
+        h.store.stop()
+    }
+
+    @Test func aRefreshAskedForBeforeTheLogWasClearedDoesNotBringItBack() async throws {
+        let h = StoreHarness()
+        let old = [F.alert("e2", t: 2000), F.alert("e1", t: 1000)]
+        let stale = Gate<AlertsResponse>(), asked = Counter()
+        h.hub.on {
+            $0.alerts = {
+                switch asked.increment() {
+                case 1: return AlertsResponse(events: old)         // at the start
+                case 2: return try await stale.wait()
+                default: return AlertsResponse()
+                }
+            }
+        }
+        try await h.goLive()
+        #expect(h.store.alerts.events == old)
+        let refresh = Task { try await h.store.refreshAlerts() }
+        try await eventually("the request is out") { stale.arrivals == 1 }
+        try await h.store.clearAlertLog()
+        #expect(h.store.alerts.events.isEmpty)
+        stale.open(AlertsResponse(events: old))                    // put together before the log was cleared
+        try await refresh.value
+        #expect(asked.count == 3 && h.store.alerts.events.isEmpty)
         h.store.stop()
     }
 
