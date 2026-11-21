@@ -9,8 +9,8 @@
 # It starts the fixture hub (build/test/mobile-hub.js: the real server.js behind TLS on
 # localhost), trusts the fixture's CA in the simulator, builds the app and the UI tests, asks the
 # hub for a fresh invitation and runs HubFlowUITests with it: pair, go live, relaunch, survive two
-# TLS key rotations, be revoked, pair again, disconnect. The hub and a running xcodebuild are
-# stopped when the script ends, also when it is interrupted or terminated.
+# TLS key rotations, be revoked, pair again, disconnect. The hub and whatever command is running
+# (xcodebuild, simctl) are stopped when the script ends, also when it is interrupted or terminated.
 #
 #   --sim           the simulator to use (default: the first booted one)
 #   --port          the hub's HTTPS port; its origin is https://localhost:<port>
@@ -18,17 +18,19 @@
 #   --hub-dir       where the fixture's CA is kept, so one CA stays trusted across runs
 #                   (default: ios/.build/e2e-hub). The hub's data is fresh every run.
 #   --derived-data  passed to xcodebuild as -derivedDataPath
-#   --result        passed to xcodebuild as -resultBundlePath (must not exist yet)
+#   --result        passed to xcodebuild as -resultBundlePath. The .xcresult bundle an earlier
+#                   run left there is replaced; anything else in its place is refused.
 #   --skip-build    run the tests that were built last time
 #
-# Exit status: xcodebuild's, 1 when the hub could not be started, 130 when interrupted.
+# Exit status: xcodebuild's, 1 when the hub could not be started, 2 for arguments that cannot be
+# used, 130 when interrupted. ios/Tools/e2e-selftest.sh checks this script without a simulator.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SIM="" PORT=8543 CONTROL="" HUB_DIR="$ROOT/ios/.build/e2e-hub" DERIVED="" RESULT="" SKIP_BUILD=0
 EXTRA=()
 
-usage() { sed -n '2,24p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,26p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; }
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -47,14 +49,19 @@ done
 CONTROL="${CONTROL:-$((PORT + 1))}"
 CONTROL_URL="http://127.0.0.1:$CONTROL"
 
+# xcodebuild refuses a result path that exists, and would do so only after the hub was started
+# and everything built. What an earlier run left there is replaced, just before the tests run;
+# anything else is not this script's to delete.
+replaceable() { [ ! -e "$1" ] || { [ -d "$1" ] && [ "${1%.xcresult}" != "$1" ]; }; }
+RESULT="${RESULT%/}"
+if [ -n "$RESULT" ] && ! replaceable "$RESULT"; then
+  echo "e2e.sh: --result $RESULT exists and is not an .xcresult bundle" >&2
+  exit 2
+fi
+
 for tool in node openssl xcodebuild xcrun curl; do
   command -v "$tool" > /dev/null || { echo "e2e.sh: $tool is not on PATH" >&2; exit 1; }
 done
-
-if [ -z "$SIM" ]; then
-  SIM="$(xcrun simctl list devices booted | sed -nE 's/.*\(([0-9A-F-]{36})\) \(Booted\).*/\1/p' | head -1)"
-  [ -n "$SIM" ] || { echo "e2e.sh: no simulator is booted; boot one or pass --sim <udid>" >&2; exit 1; }
-fi
 
 LOGS="$(mktemp -d "${TMPDIR:-/tmp}/dm-e2e.XXXXXX")"
 HUB_PID="" JOB_PID=""
@@ -89,7 +96,8 @@ trap 'exit 130' INT TERM
 
 # run <command...>: runs it so that the script can be interrupted meanwhile. Bash acts on a
 # signal only once the command in the foreground has returned, and an xcodebuild that cannot
-# start its test session does not return for a long time.
+# start its test session does not return for a long time; neither does simctl when the
+# simulator is stuck. Every command that waits for something else goes through here.
 run() {
   "$@" &
   JOB_PID=$!
@@ -98,6 +106,12 @@ run() {
   JOB_PID=""
   return "$status"
 }
+
+if [ -z "$SIM" ]; then
+  run xcrun simctl list devices booted > "$LOGS/booted"
+  SIM="$(sed -nE 's/.*\(([0-9A-F-]{36})\) \(Booted\).*/\1/p' "$LOGS/booted" | head -1)"
+  [ -n "$SIM" ] || { echo "e2e.sh: no simulator is booted; boot one or pass --sim <udid>" >&2; exit 1; }
+fi
 
 # The hub prints one line, with an invitation in it, when it is ready. That line is not shown:
 # the invitation the test uses is asked for just before the test starts.
@@ -113,8 +127,8 @@ done
 [ "$ready" = 1 ] || { echo "e2e.sh: the fixture hub did not start on port $PORT (control $CONTROL)" >&2; exit 1; }
 echo "e2e.sh: fixture hub at https://localhost:$PORT (control $CONTROL_URL), pid $HUB_PID"
 
-xcrun simctl bootstatus "$SIM" -b > /dev/null
-xcrun simctl keychain "$SIM" add-root-cert "$HUB_DIR/ca.pem"
+run xcrun simctl bootstatus "$SIM" -b > /dev/null
+run xcrun simctl keychain "$SIM" add-root-cert "$HUB_DIR/ca.pem"
 echo "e2e.sh: simulator $SIM trusts the fixture's CA"
 
 XCODE=(xcodebuild -project "$ROOT/ios/DeviceMonitor.xcodeproj" -scheme DeviceMonitor -configuration Debug
@@ -127,10 +141,17 @@ fi
 
 # Single use and good for ten minutes, so it is fetched after the build. xcodebuild hands
 # TEST_RUNNER_<NAME> to the test runner as <NAME>. Exported rather than put on a command line,
-# where other users of this Mac could read it.
-TEST_RUNNER_DM_E2E_INVITATION="$(curl -fsS "$CONTROL_URL/invite")"
+# where other users of this Mac could read it; on its way it is a file only this user can reach.
+run curl -fsS -o "$LOGS/invitation" "$CONTROL_URL/invite"
+TEST_RUNNER_DM_E2E_INVITATION="$(cat "$LOGS/invitation")"
+rm -f "$LOGS/invitation"
 TEST_RUNNER_DM_E2E_CONTROL="$CONTROL_URL"
 export TEST_RUNNER_DM_E2E_INVITATION TEST_RUNNER_DM_E2E_CONTROL
 TEST=("${XCODE[@]}" -parallel-testing-enabled NO -only-testing:DeviceMonitorUITests/HubFlowUITests)
-[ -z "$RESULT" ] || TEST+=(-resultBundlePath "$RESULT")
+if [ -n "$RESULT" ]; then
+  # Looked at again: the build took a while.
+  replaceable "$RESULT" || { echo "e2e.sh: --result $RESULT exists and is not an .xcresult bundle" >&2; exit 2; }
+  rm -rf "$RESULT"
+  TEST+=(-resultBundlePath "$RESULT")
+fi
 run "${TEST[@]}" ${EXTRA[@]+"${EXTRA[@]}"} test-without-building
