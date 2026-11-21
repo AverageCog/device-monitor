@@ -48,6 +48,9 @@ final class AdvancedController {
     @ObservationIgnored private var energy: EnergyResponse?
     /// `adv.seq`: names the newest question; an answer to an older one is dropped.
     @ObservationIgnored private var sequence = 0
+    /// The question the hub has yet to answer, from the moment it is decided on; nil when
+    /// nothing is on its way.
+    @ObservationIgnored private var asking: Int?
     @ObservationIgnored private var isVisible = false
     @ObservationIgnored private var isSelected = true
     @ObservationIgnored private var isForeground = true
@@ -125,6 +128,7 @@ final class AdvancedController {
         } else {
             // Whatever is on its way would answer a screen nobody is looking at.
             sequence += 1
+            asking = nil
             watch += 1
             reloadTask?.cancel()
             reloadTask = nil
@@ -167,6 +171,12 @@ final class AdvancedController {
     /// (`if (!$('#advView').hidden) loadAdv()`), unless the totals on show already carry this price.
     func priceChanged() {
         guard isActive, let store else { return }
+        // Nothing is on show yet and the hub is being asked: there are no totals to compare the
+        // price with, and the answer will be at whatever price the hub has. Mostly this is the
+        // store hearing of the saved price for the first time, just after launch; asking again
+        // would only throw the first question away. `load` looks at the price once the answer
+        // is in.
+        if energy == nil, asking != nil { return }
         if energy == nil || energy?.settings != store.energySettings { startLoading() }
     }
 
@@ -192,10 +202,12 @@ final class AdvancedController {
         reloadTask?.cancel()
         reloadTask = nil
         guard isActive, let clock = store?.clock else { return nil }
+        // Named here, not when its task gets to run: from this line on the hub is being asked.
+        let question = nextQuestion()
         // A task of its own, so that whoever waits for the answer (pull to refresh) is not
         // waiting for the minutes after it.
         let first = Task { [weak self] in
-            _ = await self?.load()
+            _ = await self?.load(question)
         }
         reloadTask = Task { [weak self] in
             await withTaskCancellationHandler {
@@ -205,18 +217,27 @@ final class AdvancedController {
             }
             while !Task.isCancelled {
                 do { try await clock.sleep(milliseconds: AdvancedRefresh.reloadInterval * 1000) } catch { return }
-                guard let controller = self else { return }
-                await controller.load()
+                // Replaced just as the minute was up: the question is the new loop's to name.
+                guard !Task.isCancelled, let controller = self else { return }
+                await controller.load(controller.nextQuestion())
             }
         }
         return first
     }
 
-    // function loadAdv
-    private func load() async {
-        guard isActive, let store else { return }
+    /// `const seq = ++adv.seq`
+    private func nextQuestion() -> Int {
         sequence += 1
-        let ticket = sequence
+        asking = sequence
+        return sequence
+    }
+
+    // function loadAdv
+    /// - Parameter isSecondLook: this question is the one asked again because of the price.
+    private func load(_ ticket: Int, isSecondLook: Bool = false) async {
+        defer { if asking == ticket { asking = nil } }
+        // A question that was replaced before its task got to run is not put to the hub at all.
+        guard ticket == sequence, isActive, let store else { return }
         let bounds = range.requestBounds(now: store.clock.now)
         var answer: EnergyResponse?
         var problem: HubError?
@@ -236,6 +257,12 @@ final class AdvancedController {
         }
         isRetrying = false
         rebuild()
+        // The price was replaced while the hub was answering, and `priceChanged` let the question
+        // stand: these costs are the old price's. Once more is enough; a change after this one
+        // finds totals on show and is `priceChanged`'s again.
+        if !isSecondLook, let answer, answer.settings != store.energySettings {
+            await load(nextQuestion(), isSecondLook: true)
+        }
     }
 
     // MARK: Live figures

@@ -5,10 +5,13 @@ import SwiftUI
 /// tests where nothing can tap, drag or scroll its way there. Combine with `-dm-demo -dm-tab advanced`.
 ///
 ///     -dm-advanced-range <24h|7d|30d>     open on this range; the saved choice is left alone
-///     -dm-advanced-state <loading|failed|stale|empty|no-devices>
+///     -dm-advanced-state <loading|late|failed|stale|empty|no-devices>
 ///                                         loading:    the hub never answers
+///                                         late:       the hub's answers are two seconds on their way;
+///                                                     `-dm-advanced-then price` then saves the price
+///                                                     while the first one still is
 ///                                         failed:     every request for totals fails
-///                                         stale:      the first request is answered, the next fails
+///                                         stale:      one answer reaches the page, then every request fails
 ///                                         empty:      the hub has no totals for the range
 ///                                         no-devices: no totals and no devices either
 ///     -dm-advanced-price <guessed|tou>    work the page out as if no price were saved, or as if
@@ -30,7 +33,7 @@ import SwiftUI
 /// code that would replace the hub's answers is not compiled.
 nonisolated struct AdvancedDebugOptions: Sendable, Equatable {
     enum State: String, Sendable {
-        case loading, failed, stale, empty
+        case loading, late, failed, stale, empty
         case noDevices = "no-devices"
     }
 
@@ -119,14 +122,24 @@ extension AdvancedDebugOptions {
                 try await Task.sleep(for: .seconds(86_400))
                 throw HubError.cancelled
             }
+        case .late:
+            // The hub has worked its answer out, at the price it had then, before the wait.
+            inputs.energy = { store, bounds in
+                let answer = try await store.loadEnergy(bounds: bounds)
+                try await Task.sleep(for: .seconds(2))
+                return answer
+            }
         case .failed:
             inputs.energy = { _, _ in throw HubError.http(status: 503, message: "The hub is still reading its history.") }
         case .stale:
-            let asked = AdvancedDebugCounter()
+            let answered = AdvancedDebugCounter()
             inputs.energy = { store, bounds in
-                asked.count += 1
-                guard asked.count == 1 else { throw HubError.http(status: 503, message: "The hub is still reading its history.") }
-                return try await store.loadEnergy(bounds: bounds)
+                guard answered.count == 0 else { throw HubError.http(status: 503, message: "The hub is still reading its history.") }
+                let answer = try await store.loadEnergy(bounds: bounds)
+                // An answer to a question that was given up on the way goes nowhere: the state
+                // must not depend on how often the first one is asked.
+                if !Task.isCancelled { answered.count += 1 }
+                return answer
             }
         case .empty, .noDevices:
             inputs.energy = { store, bounds in EnergyResponse(bounds: bounds, settings: store.energySettings, devices: []) }
@@ -148,7 +161,7 @@ extension AdvancedDebugOptions {
     }
 }
 
-/// How often a scripted hub has been asked.
+/// How often a scripted hub has answered.
 @MainActor
 private final class AdvancedDebugCounter {
     var count = 0

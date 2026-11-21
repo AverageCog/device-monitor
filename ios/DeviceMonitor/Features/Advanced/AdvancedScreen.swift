@@ -115,6 +115,8 @@ struct AdvancedScreen: View {
             controller.select(range)
             await totals()
         case .price(let rate):
+            // With `late`, once the hub has been asked and before its answer is in.
+            if options.state == .late { try? await Task.sleep(for: .milliseconds(600)) }
             // Only ever a hub that exists in memory.
             if session.isDemo { _ = try? await store.saveEnergySettings(EnergySettings(region: PriceRegions.customCode, rate: rate, currency: "USD")) }
         case nil:

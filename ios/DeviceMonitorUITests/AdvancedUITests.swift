@@ -210,6 +210,38 @@ final class AdvancedUITests: XCTestCase {
         XCTAssertTrue(wait(upTo: 10) { change.isHittable }, "The sheet closes back to Advanced")
     }
 
+    /// The first number of a tile's value: 192 of "192 kWh, last 7 days", 19.16 of "$19.16, at $0.100/kWh".
+    @MainActor
+    private func figure(of tile: XCUIElement) -> Double? {
+        let text = value(of: tile)
+        guard let digits = text.range(of: "[0-9][0-9.,]*[0-9]|[0-9]", options: .regularExpression) else { return nil }
+        return Double(text[digits].replacingOccurrences(of: ",", with: ""))
+    }
+
+    /// The app does not ask twice because the store hears of the saved price while the first
+    /// totals are on their way, as it does at every launch. A price that really is replaced in
+    /// that time must reach the costs all the same.
+    @MainActor
+    func testAPriceSavedWhileTheFirstTotalsLoadReachesTheCosts() {
+        // The hub's answers are two seconds on their way, and $0.10 a kWh is saved meanwhile.
+        // The figures are read as numbers, so their notation is fixed.
+        let app = launch(["-dm-advanced-range", "7d", "-dm-advanced-state", "late", "-dm-advanced-then", "price", "-AppleLocale", "en_US"])
+        let price = app.element(withIdentifier: AdvancedID.priceText)
+        XCTAssertTrue(price.waitForExistence(timeout: 10))
+        XCTAssertTrue(wait(upTo: 20) { price.label.contains("$0.10") }, "The price saved at launch is on show: \(price.label)")
+        waitForTotals(in: app)
+
+        // A tenth of the energy, where the demo's own price makes it nearly a third.
+        let energy = app.element(withIdentifier: AdvancedID.tile("energy-used"))
+        let cost = app.element(withIdentifier: AdvancedID.tile("cost"))
+        func rate() -> Double? {
+            guard let kWh = figure(of: energy), let paid = figure(of: cost), kWh > 0 else { return nil }
+            return paid / kWh
+        }
+        let reached = wait(upTo: 20) { rate().map { $0 > 0.08 && $0 < 0.12 } ?? false }
+        XCTAssertTrue(reached, "The cost is still the old price's: \(value(of: cost)) for \(value(of: energy))")
+    }
+
     // MARK: Chart
 
     @MainActor
