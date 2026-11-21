@@ -26,17 +26,24 @@ final class AlertsUITests: XCTestCase {
         static let rulePrefix = "alert-rule-"
         static let addRuleButton = "alerts-add-rule-button"
         static let limitField = "alert-rule-limit-field"
+        static let ruleSummary = "alert-rule-summary"
         static let limitIssue = "alert-rule-limit-issue"
         static let deleteRule = "alert-rule-delete-button"
         static let deleteConfirm = "alert-rule-delete-confirm"
+        static let ntfyToggle = "alerts-ntfy-toggle"
+        static let topicField = "alerts-ntfy-topic-field"
         static let topicIssue = "alerts-ntfy-topic-field-issue"
+        static let hasErrors = "alerts-has-errors"
+        static let resolvedToggle = "alerts-notify-resolved-toggle"
         static let testButton = "alerts-test-button"
         static let webhookSaved = "alerts-webhook-saved"
         static let webhookReplace = "alerts-webhook-replace-button"
         static let webhookField = "alerts-webhook-url-field"
         static let setPrice = "alerts-set-price-button"
         static let notifyToggle = "alerts-notify-toggle"
+        static let notifyBanner = "alerts-notify-banner"
         static let blockedBanner = "alerts-blocked-banner"
+        static let blockedDismiss = "alerts-blocked-dismiss-button"
         static let openSettings = "alerts-open-settings-button"
         static let saveError = "alerts-save-error"
 
@@ -53,6 +60,45 @@ final class AlertsUITests: XCTestCase {
         app.launchArguments = ["-dm-demo", "-dm-tab", "alerts"] + arguments
         app.launch()
         return app
+    }
+
+    /// Without `-dm-demo`: a session "paired" with a demo hub, which the app treats as a real one.
+    @MainActor
+    private func launchPaired(_ arguments: String...) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments = ["-dm-phase", "live", "-dm-tab", "alerts"] + arguments
+        app.launch()
+        return app
+    }
+
+    /// Save, as the button it is. The toolbar wraps it in an element that carries the same
+    /// identifier and is enabled whatever the button is, so a lookup by identifier alone finds
+    /// the wrong one of the two.
+    @MainActor
+    private func saveButton(_ app: XCUIApplication) -> XCUIElement {
+        app.buttons[AlertsID.saveButton]
+    }
+
+    /// Whether a switch is on; nil for a value that is neither. A switch reports "1" or "0" to a
+    /// test, whatever the app has VoiceOver say for it, and both spellings are read here.
+    @MainActor
+    private func isOn(_ toggle: XCUIElement) -> Bool? {
+        switch toggle.value as? String {
+        case "1", "On": true
+        case "0", "Off": false
+        default: nil
+        }
+    }
+
+    /// The button of a confirmation that goes ahead. By its identifier; and should the system
+    /// not have been handed one (it is for a dialog made after a test first looked at the app,
+    /// which a test that found the button to tap has done), by its label, among the buttons
+    /// that are not the one that asked.
+    @MainActor
+    private func confirmation(in app: XCUIApplication, _ identifier: String, labelled label: String, askedBy asker: String) -> XCUIElement {
+        let byIdentifier = app.element(withIdentifier: identifier)
+        if byIdentifier.waitForExistence(timeout: 5) { return byIdentifier }
+        return app.buttons.matching(NSPredicate(format: "label == %@ AND identifier != %@", label, asker)).firstMatch
     }
 
     /// Every element whose identifier starts with `prefix`.
@@ -121,7 +167,7 @@ final class AlertsUITests: XCTestCase {
         edit.tap()
 
         XCTAssertTrue(app.element(withIdentifier: AlertsID.ruleScreen).waitForExistence(timeout: 10), "Edit rule opens the rule, over the editor")
-        XCTAssertTrue(app.element(withIdentifier: "alert-rule-summary").label.contains("Offline for 10 min"))
+        XCTAssertTrue(app.element(withIdentifier: AlertsID.ruleSummary).label.contains("Offline for 10 min"))
         XCTAssertTrue(app.navigationBars["Offline"].waitForExistence(timeout: 5), "The rule's screen carries its title")
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(app.element(withIdentifier: AlertsID.settingsScreen).waitForExistence(timeout: 10), "Back leads to the editor")
@@ -131,7 +177,8 @@ final class AlertsUITests: XCTestCase {
     func testAnAlertThatFiresShowsAtOnceAndIsAnnounced() {
         // The demo hub's Gaming PC fills its D: drive for eight seconds; the probe tells what the
         // notifier made of it (nothing can answer the system's permission question here).
-        let app = launch("-dm-alerts-probe", "-dm-alerts-script", "disk-alert")
+        // "Notify on this iPhone" is on for this run, to see that a demo keeps its alerts to itself.
+        let app = launch("-dm-alerts-probe", "-dm-alerts-script", "disk-alert", "-dm.notifications", "YES")
         let active = elements(in: app, withPrefix: AlertsID.activePrefix)
         XCTAssertTrue(wait(upTo: 30) { active.count == 3 }, "A third alert fires while the tab is open, found \(active.count)")
         let fired = active.matching(NSPredicate(format: "label CONTAINS %@", "Gaming PC: disk D:")).firstMatch
@@ -150,6 +197,8 @@ final class AlertsUITests: XCTestCase {
         // And clears by itself.
         XCTAssertTrue(wait(upTo: 40) { active.count == 2 }, "The alert clears when the disk has room again, found \(active.count)")
         XCTAssertTrue(wait(upTo: 10) { probe.label.contains("back under") }, "Its end is announced too: \(probe.label)")
+        XCTAssertTrue(probe.label.contains("kept back, a demo"), "A demo plans its notifications and keeps them back: \(probe.label)")
+        XCTAssertFalse(probe.label.contains("posted"), "Nothing about made-up devices goes to the system: \(probe.label)")
     }
 
     @MainActor
@@ -158,7 +207,7 @@ final class AlertsUITests: XCTestCase {
         let clear = app.element(withIdentifier: AlertsID.clearButton)
         XCTAssertTrue(clear.waitForExistence(timeout: 20))
         clear.tap()
-        let confirm = app.element(withIdentifier: AlertsID.clearConfirm)
+        let confirm = confirmation(in: app, AlertsID.clearConfirm, labelled: "Clear log", askedBy: AlertsID.clearButton)
         XCTAssertTrue(confirm.waitForExistence(timeout: 5), "Clearing the log is confirmed first")
         attachScreenshot(of: app, named: "alerts-clear-confirm")
         confirm.tap()
@@ -188,7 +237,7 @@ final class AlertsUITests: XCTestCase {
     func testARuleCanBeSwitchedOffAndSaved() {
         let app = launch()
         openSettings(app)
-        let save = app.element(withIdentifier: AlertsID.saveButton)
+        let save = saveButton(app)
         XCTAssertTrue(save.waitForExistence(timeout: 10))
         XCTAssertFalse(save.isEnabled, "Nothing to save yet")
         XCTAssertFalse(app.element(withIdentifier: AlertsID.cancelButton).exists)
@@ -196,9 +245,9 @@ final class AlertsUITests: XCTestCase {
         let toggles = elements(in: app, withPrefix: AlertsID.ruleTogglePrefix)
         XCTAssertTrue(wait(upTo: 10) { toggles.count == 4 }, "The demo hub has four rules, found \(toggles.count)")
         let first = toggles.element(boundBy: 0)
-        XCTAssertEqual(first.value as? String, "On")
+        XCTAssertEqual(isOn(first), true, "Switch value: \(String(describing: first.value))")
         first.tap()
-        XCTAssertTrue(wait(upTo: 5) { first.value as? String == "Off" })
+        XCTAssertTrue(wait(upTo: 5) { self.isOn(first) == false }, "Switch value: \(String(describing: first.value))")
         XCTAssertTrue(wait(upTo: 5) { save.isEnabled }, "An edit can be saved")
         XCTAssertTrue(app.element(withIdentifier: AlertsID.cancelButton).exists, "…or cancelled")
         attachScreenshot(of: app, named: "alert-settings-edited")
@@ -206,7 +255,7 @@ final class AlertsUITests: XCTestCase {
         save.tap()
         XCTAssertTrue(wait(upTo: 10) { save.exists && !save.isEnabled }, "Saved: nothing left to save")
         XCTAssertFalse(app.element(withIdentifier: AlertsID.saveError).exists)
-        XCTAssertEqual(first.value as? String, "Off", "The hub kept the rule switched off")
+        XCTAssertEqual(isOn(first), false, "The hub kept the rule switched off")
         XCTAssertFalse(app.element(withIdentifier: AlertsID.cancelButton).exists)
 
         // The offline rule is off now, so the Living Room PC's alert is gone: one left firing.
@@ -223,41 +272,72 @@ final class AlertsUITests: XCTestCase {
         XCTAssertTrue(wait(upTo: 10) { toggles.count == 4 })
         let second = toggles.element(boundBy: 1)
         second.tap()
-        XCTAssertTrue(wait(upTo: 5) { second.value as? String == "Off" })
+        XCTAssertTrue(wait(upTo: 5) { self.isOn(second) == false }, "Switch value: \(String(describing: second.value))")
 
         let cancel = app.element(withIdentifier: AlertsID.cancelButton)
         XCTAssertTrue(cancel.waitForExistence(timeout: 5))
         cancel.tap()
-        let discard = app.element(withIdentifier: AlertsID.discardConfirm)
+        let discard = confirmation(in: app, AlertsID.discardConfirm, labelled: "Discard changes", askedBy: AlertsID.cancelButton)
         XCTAssertTrue(discard.waitForExistence(timeout: 5), "Cancel asks before throwing edits away")
         discard.tap()
 
-        XCTAssertTrue(wait(upTo: 5) { second.value as? String == "On" }, "The rule is on again")
-        XCTAssertFalse(app.element(withIdentifier: AlertsID.saveButton).isEnabled)
+        XCTAssertTrue(wait(upTo: 5) { self.isOn(second) == true }, "The rule is on again")
+        XCTAssertFalse(saveButton(app).isEnabled)
         XCTAssertTrue(wait(upTo: 5) { !cancel.exists })
     }
 
     @MainActor
-    func testAnEditedRuleIsValidatedBeforeItIsSent() {
-        // The CPU temperature rule, opened with a limit the hub would refuse.
+    func testALimitTheHubWouldRefuseIsExplained() {
+        // The CPU temperature rule, opened with a limit out of the hub's range.
         let app = launch("-dm-alerts-rule", "cpuTemp", "-dm-alerts-script", "limit=500", "-dm-alerts-unit", "C")
         XCTAssertTrue(app.element(withIdentifier: AlertsID.ruleScreen).waitForExistence(timeout: 20))
         let issue = app.element(withIdentifier: AlertsID.limitIssue)
         XCTAssertTrue(issue.waitForExistence(timeout: 10), "A limit out of range is explained next to the field")
         XCTAssertTrue(issue.label.contains("The limit must be between 20°C and 150°C."), issue.label)
-        let save = app.element(withIdentifier: AlertsID.saveButton)
-        XCTAssertFalse(save.isEnabled, "Nothing invalid is sent")
+        let field = app.element(withIdentifier: AlertsID.limitField)
+        XCTAssertEqual(field.label, "Limit", "The field says which it is")
+        XCTAssertEqual(field.value as? String, "500 °C")
+        XCTAssertEqual(app.element(withIdentifier: "alert-rule-minutes-field").label, "Duration in minutes")
+        XCTAssertFalse(saveButton(app).isEnabled, "Nothing invalid is sent")
         attachScreenshot(of: app, named: "alert-rule-invalid")
+    }
+
+    @MainActor
+    func testAnEditedRuleIsValidatedBeforeItIsSent() {
+        // The same rule with its limit emptied, so that typing does not depend on where a tap
+        // puts the caret in a right-aligned number.
+        let app = launch("-dm-alerts-rule", "cpuTemp", "-dm-alerts-script", "limit=", "-dm-alerts-unit", "C")
+        XCTAssertTrue(app.element(withIdentifier: AlertsID.ruleScreen).waitForExistence(timeout: 20))
+        let issue = app.element(withIdentifier: AlertsID.limitIssue)
+        XCTAssertTrue(issue.waitForExistence(timeout: 10), "A missing limit is asked for next to the field")
+        XCTAssertTrue(issue.label.contains("Enter a limit between 20°C and 150°C."), issue.label)
+        let save = saveButton(app)
+        XCTAssertFalse(save.isEnabled, "Nothing invalid is sent")
 
         // Put right by typing.
         let field = app.element(withIdentifier: AlertsID.limitField)
+        XCTAssertEqual(field.value as? String, "Empty")
         field.tap()
-        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 6) + "80")
+        field.typeText("80")
         XCTAssertTrue(wait(upTo: 5) { !issue.exists }, "A limit in range has nothing to explain")
+        XCTAssertEqual(field.value as? String, "80 °C")
         XCTAssertTrue(wait(upTo: 5) { save.isEnabled })
         save.tap()
-        XCTAssertTrue(wait(upTo: 10) { save.exists && !save.isEnabled })
-        XCTAssertTrue(app.element(withIdentifier: "alert-rule-summary").label.contains("CPU temperature above 80°C"))
+        XCTAssertTrue(wait(upTo: 10) { save.exists && !save.isEnabled }, "Saved: nothing left to save")
+        XCTAssertTrue(app.element(withIdentifier: AlertsID.ruleSummary).label.contains("CPU temperature above 80°C"))
+    }
+
+    @MainActor
+    func testALimitEnteredInFahrenheitStaysShortInCelsius() {
+        // 195 °F, as the hub stores it. The field shows two decimals of it; the hub's own
+        // wording, in the summary, whole degrees.
+        let app = launch("-dm-alerts-rule", "cpuTemp", "-dm-alerts-script", "limit=90.55555555555556", "-dm-alerts-unit", "C")
+        XCTAssertTrue(app.element(withIdentifier: AlertsID.ruleScreen).waitForExistence(timeout: 20))
+        let field = app.element(withIdentifier: AlertsID.limitField)
+        XCTAssertTrue(wait(upTo: 10) { field.value as? String == "90.56 °C" }, "Limit field: \(String(describing: field.value))")
+        XCTAssertTrue(app.element(withIdentifier: AlertsID.ruleSummary).label.contains("CPU temperature above 91°C"))
+        XCTAssertFalse(app.element(withIdentifier: AlertsID.limitIssue).exists)
+        attachScreenshot(of: app, named: "alert-rule-long-decimal")
     }
 
     @MainActor
@@ -275,15 +355,15 @@ final class AlertsUITests: XCTestCase {
         power.tap()
 
         XCTAssertTrue(app.element(withIdentifier: AlertsID.ruleScreen).waitForExistence(timeout: 10), "A new rule opens for editing")
-        XCTAssertTrue(app.element(withIdentifier: "alert-rule-summary").label.contains("Power draw above 500 W for 5 min"))
-        XCTAssertTrue(app.element(withIdentifier: AlertsID.saveButton).isEnabled)
+        XCTAssertTrue(app.element(withIdentifier: AlertsID.ruleSummary).label.contains("Power draw above 500 W for 5 min"))
+        XCTAssertTrue(saveButton(app).isEnabled)
         attachScreenshot(of: app, named: "alert-rule-new")
 
         // And goes again.
         let delete = app.element(withIdentifier: AlertsID.deleteRule)
         XCTAssertTrue(app.scrollUp(app.element(withIdentifier: AlertsID.ruleScreen), until: delete))
         delete.tap()
-        let confirm = app.element(withIdentifier: AlertsID.deleteConfirm)
+        let confirm = confirmation(in: app, AlertsID.deleteConfirm, labelled: "Delete rule", askedBy: AlertsID.deleteRule)
         XCTAssertTrue(confirm.waitForExistence(timeout: 5), "Deleting a rule is confirmed first")
         confirm.tap()
         XCTAssertTrue(app.element(withIdentifier: AlertsID.settingsScreen).waitForExistence(timeout: 10), "Back in the editor")
@@ -312,9 +392,37 @@ final class AlertsUITests: XCTestCase {
         let issue = app.element(withIdentifier: AlertsID.topicIssue)
         XCTAssertTrue(issue.waitForExistence(timeout: 10))
         XCTAssertTrue(issue.label.contains("A topic is letters, digits, hyphens and underscores only."), issue.label)
-        XCTAssertFalse(app.element(withIdentifier: AlertsID.saveButton).isEnabled, "Nothing invalid is sent")
+        XCTAssertEqual(app.element(withIdentifier: AlertsID.topicField).label, "Topic", "The field says which it is")
+        XCTAssertFalse(saveButton(app).isEnabled, "Nothing invalid is sent")
         XCTAssertTrue(app.element(withIdentifier: AlertsID.cancelButton).exists)
         attachScreenshot(of: app, named: "alert-channels-invalid")
+    }
+
+    @MainActor
+    func testSwitchingAChannelOffTakesBackWhatTheHubWouldRefuse() {
+        // A topic and a webhook address the hub would refuse, typed and then given up by
+        // switching the channels off again. Their fields are gone with the switches, so nothing
+        // of them may be left to keep Save from working.
+        let app = launch(
+            "-dm-alerts-open", "settings", "-dm-alerts-scroll", "channels",
+            "-dm-alerts-script", "ntfy=on,topic=bad!,ntfy=off,webhook=on,url=foo,webhook=off,resolved=off"
+        )
+        XCTAssertTrue(app.element(withIdentifier: AlertsID.settingsScreen).waitForExistence(timeout: 20))
+        let save = saveButton(app)
+        XCTAssertTrue(wait(upTo: 15) { save.exists && save.isEnabled }, "The one edit that is left can be saved")
+        XCTAssertFalse(app.element(withIdentifier: AlertsID.hasErrors).exists, "No error is left where it cannot be seen")
+        XCTAssertFalse(app.element(withIdentifier: AlertsID.topicField).exists)
+        XCTAssertFalse(app.element(withIdentifier: AlertsID.webhookField).exists)
+        attachScreenshot(of: app, named: "alert-channels-given-up")
+
+        // Switched on again, the topic is the hub's (none), not the one that was refused.
+        let ntfy = app.element(withIdentifier: AlertsID.ntfyToggle)
+        XCTAssertTrue(app.scrollUp(app.element(withIdentifier: AlertsID.settingsScreen), until: ntfy))
+        ntfy.tap()
+        let issue = app.element(withIdentifier: AlertsID.topicIssue)
+        XCTAssertTrue(issue.waitForExistence(timeout: 5))
+        XCTAssertTrue(issue.label.contains("Enter a topic, or ntfy stays off."), issue.label)
+        XCTAssertTrue(save.isEnabled, "A channel without an address is a warning, not an error")
     }
 
     @MainActor
@@ -330,7 +438,32 @@ final class AlertsUITests: XCTestCase {
         let replace = app.element(withIdentifier: AlertsID.webhookReplace)
         XCTAssertTrue(app.scrollUp(app.element(withIdentifier: AlertsID.settingsScreen), until: replace))
         replace.tap()
-        XCTAssertTrue(app.element(withIdentifier: AlertsID.webhookField).waitForExistence(timeout: 5), "Replace brings up an empty field")
+        let field = app.element(withIdentifier: AlertsID.webhookField)
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "Replace brings up an empty field")
+        XCTAssertEqual(field.label, "Webhook URL")
+
+        // Typed in and emptied again, to start over: the field stays.
+        field.tap()
+        field.typeText("h")
+        XCTAssertTrue(app.element(withIdentifier: AlertsID.cancelButton).waitForExistence(timeout: 5), "A typed address is an edit")
+        field.typeText(XCUIKeyboardKey.delete.rawValue)
+        XCTAssertTrue(wait(upTo: 5) { !app.element(withIdentifier: AlertsID.cancelButton).exists }, "Emptied, the draft is the hub's again")
+        XCTAssertTrue(field.exists, "…and the field is still there to type in")
+        XCTAssertFalse(saved.exists)
+    }
+
+    @MainActor
+    func testTheReplaceFieldStaysWhenItIsEmptiedAgain() {
+        // The same without a keyboard: saved, Replace, one character, none.
+        let app = launch(
+            "-dm-alerts-open", "settings", "-dm-alerts-scroll", "channels",
+            "-dm-alerts-script", "webhook=on,url=https://chat.example/hooks/demo,save,replace=on,url=h,url="
+        )
+        XCTAssertTrue(app.element(withIdentifier: AlertsID.settingsScreen).waitForExistence(timeout: 20))
+        XCTAssertTrue(app.element(withIdentifier: AlertsID.webhookField).waitForExistence(timeout: 15), "The field Replace brought up stays")
+        XCTAssertFalse(app.element(withIdentifier: AlertsID.webhookSaved).exists)
+        XCTAssertFalse(app.element(withIdentifier: AlertsID.cancelButton).exists, "Nothing is edited")
+        attachScreenshot(of: app, named: "alert-webhook-replacing")
     }
 
     @MainActor
@@ -355,7 +488,7 @@ final class AlertsUITests: XCTestCase {
         XCTAssertTrue(app.element(withIdentifier: AlertsID.settingsScreen).waitForExistence(timeout: 20))
         let error = app.element(withIdentifier: AlertsID.saveError)
         XCTAssertTrue(error.waitForExistence(timeout: 10), "A save the hub never answered is reported")
-        XCTAssertTrue(app.element(withIdentifier: AlertsID.saveButton).isEnabled, "The edits are still there to send again")
+        XCTAssertTrue(saveButton(app).isEnabled, "The edits are still there to send again")
         XCTAssertTrue(app.element(withIdentifier: AlertsID.cancelButton).exists)
         attachScreenshot(of: app, named: "alert-save-error")
     }
@@ -363,15 +496,58 @@ final class AlertsUITests: XCTestCase {
     // MARK: This device
 
     @MainActor
-    func testNotificationsBlockedInSettingsLeadThere() {
-        let app = launch("-dm-alerts-notify", "blocked")
-        XCTAssertTrue(app.element(withIdentifier: AlertsID.blockedBanner).waitForExistence(timeout: 20), "The Alerts tab says when iOS is in the way")
+    func testNotificationsBlockedInSettingsLeadThereOrAreGivenUp() {
+        // iOS refuses, and "Notify on this iPhone" is still wanted.
+        let app = launch("-dm-alerts-notify", "blocked", "-dm.notifications", "YES")
+        let banner = app.element(withIdentifier: AlertsID.blockedBanner)
+        XCTAssertTrue(banner.waitForExistence(timeout: 20), "The Alerts tab says when iOS is in the way")
+        attachScreenshot(of: app, named: "alert-notifications-blocked")
+
+        // The switch is disabled for as long as iOS refuses, so the banner takes the wish back itself.
+        let dismiss = app.element(withIdentifier: AlertsID.blockedDismiss)
+        XCTAssertTrue(dismiss.exists, "The banner can be answered with a no")
+        dismiss.tap()
+        XCTAssertTrue(wait(upTo: 5) { !banner.exists }, "…and is gone then")
+
         openSettings(app)
-        XCTAssertTrue(app.element(withIdentifier: AlertsID.openSettings).waitForExistence(timeout: 5), "…and the editor leads to the Settings app")
+        XCTAssertTrue(app.element(withIdentifier: AlertsID.openSettings).waitForExistence(timeout: 5), "The editor still leads to the Settings app")
         let toggle = app.element(withIdentifier: AlertsID.notifyToggle)
         XCTAssertTrue(toggle.exists)
-        XCTAssertEqual(toggle.value as? String, "Off", "The switch does not claim what iOS forbids")
-        attachScreenshot(of: app, named: "alert-notifications-blocked")
+        XCTAssertEqual(isOn(toggle), false, "The switch does not claim what iOS forbids")
+        XCTAssertFalse(toggle.isEnabled)
+    }
+
+    @MainActor
+    func testTheDemoDoesNotOfferNotifications() {
+        // A demo's alerts are never shown as notifications, so it does not invite to them…
+        let demo = launch("-dm-alerts-notify", "undecided")
+        XCTAssertTrue(wait(upTo: 20) { self.elements(in: demo, withPrefix: AlertsID.activePrefix).count == 2 })
+        XCTAssertFalse(demo.element(withIdentifier: AlertsID.notifyBanner).exists)
+        demo.terminate()
+
+        // …where a paired app does.
+        let paired = launchPaired("-dm-alerts-notify", "undecided")
+        XCTAssertTrue(paired.element(withIdentifier: AlertsID.notifyBanner).waitForExistence(timeout: 20))
+        attachScreenshot(of: paired, named: "alert-notifications-offered")
+    }
+
+    // MARK: The hub goes away
+
+    @MainActor
+    func testADraftOutlivesAnOutage() {
+        // An edit in the editor, then the demo hub is gone for twenty seconds: after ten the tabs
+        // make way for the unreachable screen, and come back when the hub does.
+        let app = launch("-dm-alerts-open", "settings", "-dm-alerts-script", "resolved=off", "-dm-then", "outage")
+        XCTAssertTrue(app.element(withIdentifier: AlertsID.cancelButton).waitForExistence(timeout: 20), "The draft has an edit")
+        XCTAssertTrue(app.element(withIdentifier: ID.unreachable).waitForExistence(timeout: 30), "The hub is away")
+        // The tabs fade out as the unreachable screen fades in.
+        XCTAssertTrue(wait(upTo: 5) { !app.element(withIdentifier: AlertsID.settingsScreen).exists }, "…and so are the tabs, the editor with them")
+
+        XCTAssertTrue(app.element(withIdentifier: AlertsID.settingsScreen).waitForExistence(timeout: 40), "Back with the hub: the editor, not the list")
+        XCTAssertTrue(app.element(withIdentifier: AlertsID.cancelButton).waitForExistence(timeout: 5), "…with the edit still in it")
+        XCTAssertEqual(isOn(app.element(withIdentifier: AlertsID.resolvedToggle)), false)
+        XCTAssertTrue(wait(upTo: 5) { self.saveButton(app).isEnabled }, "…and still to be saved")
+        attachScreenshot(of: app, named: "alert-draft-after-outage")
     }
 
     @MainActor

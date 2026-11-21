@@ -7,12 +7,23 @@ import SwiftUI
 /// Its toolbar leads to the rules and channels (`AlertsSettingsScreen`).
 struct AlertsScreen: View {
     @Environment(HubStore.self) private var store
+
+    var body: some View {
+        // The draft of the alert settings is the hub's, not this screen's: it outlives a visit
+        // to the editor, and the tabs themselves when the hub is away for a while.
+        AlertsListScreen(model: AlertsDrafts.shared.model(for: store))
+    }
+}
+
+/// The tab's content, on the draft it was handed.
+private struct AlertsListScreen: View {
+    let model: AlertsEditorModel
+
+    @Environment(HubStore.self) private var store
     @Environment(AppRouter.self) private var router
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    /// The draft of the alert settings. Here, not in the editor, so it outlives a visit there.
-    @State private var model = AlertsEditorModel()
     @State private var directory = AlertsDirectory()
     @State private var dayStart: Double = 0
     @State private var loadFailure: String? = AlertsLaunch.loadFailure
@@ -382,6 +393,7 @@ private struct AlertsLogSection: View {
             .buttonStyle(.dm(size: .small))
             .disabled(isClearing)
             .accessibilityIdentifier("alerts-clear-log-button")
+            .alertsDebugConfirm(.clear, isPresented: $isConfirming)
             .confirmationDialog("Clear the alert log?", isPresented: $isConfirming, titleVisibility: .visible) {
                 Button("Clear log", role: .destructive) {
                     Task { await clear() }

@@ -38,6 +38,11 @@ struct AlertsChannelsSection: View {
                 AlertsWebhookRows(model: model, editor: editor, issue: issue(.webhookURL), focus: focus)
             }
         }
+        // "Replace" brings the webhook's field up, to be typed in. Its focus is set here, when the
+        // field has been made: set in the tap itself, it would find no field yet.
+        .onChange(of: model.isReplacingWebhook) { _, isReplacing in
+            if isReplacing { focus.wrappedValue = .webhook }
+        }
     }
 
     @ViewBuilder
@@ -105,12 +110,9 @@ private struct AlertsWebhookRows: View {
                 AlertsRowText(title: "A webhook URL is saved", description: "The hub keeps it to itself: it is never shown again.")
                     .accessibilityIdentifier("alerts-webhook-saved")
                 HStack(spacing: Theme.Spacing.s) {
-                    Button("Replace") {
-                        model.isReplacingWebhook = true
-                        focus.wrappedValue = .webhook
-                    }
-                    .buttonStyle(.dm(size: .small))
-                    .accessibilityIdentifier("alerts-webhook-replace-button")
+                    Button("Replace") { model.isReplacingWebhook = true }
+                        .buttonStyle(.dm(size: .small))
+                        .accessibilityIdentifier("alerts-webhook-replace-button")
                     Button("Remove") { model.edit { $0.removeWebhookURL() } }
                         .buttonStyle(.dm(.destructive, size: .small))
                         .accessibilityIdentifier("alerts-webhook-remove-button")
@@ -179,6 +181,9 @@ struct AlertsFieldRow<Accessory: View>: View {
         AlertsRow {
             AlertsRowText(title: title, description: hint)
             TextField(title, text: $text, prompt: Text(placeholder).foregroundStyle(Theme.textMuted))
+                // The title does not reach VoiceOver by itself: without this the field is
+                // announced by its content, or by its placeholder.
+                .accessibilityLabel(title)
                 .textFieldStyle(.plain)
                 .keyboardType(keyboard)
                 .textContentType(contentType)

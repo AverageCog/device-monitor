@@ -56,9 +56,30 @@ nonisolated enum AlertsTestState: Equatable, Sendable {
     case failed(String)
 }
 
+/// The draft of the alert settings for the hub the app is on. Kept here and not in the Alerts
+/// tab's own state: the shell takes the tabs away while the hub cannot be reached, and what was
+/// being edited (a webhook address, typed on a phone) has to be there when they come back.
+/// Another hub starts with a fresh draft.
+final class AlertsDrafts {
+    static let shared = AlertsDrafts()
+
+    private weak var store: HubStore?
+    private var model: AlertsEditorModel?
+
+    private init() {}
+
+    func model(for store: HubStore) -> AlertsEditorModel {
+        if let model, self.store === store { return model }
+        let fresh = AlertsEditorModel()
+        self.store = store
+        model = fresh
+        return fresh
+    }
+}
+
 /// The alert settings while they are being edited: the presentation layer's editor, plus what
-/// only a screen has (a save in flight, its error, the rule that is open). One per Alerts tab,
-/// so a draft survives leaving the editor and coming back.
+/// only a screen has (a save in flight, its error, the rule that is open). One per hub
+/// (`AlertsDrafts`), so a draft survives leaving the editor, and the tabs going away for a while.
 @Observable
 final class AlertsEditorModel {
     /// Nil until the hub's settings are known.
@@ -78,31 +99,20 @@ final class AlertsEditorModel {
 
     /// The editor is pushed over the Alerts tab.
     var isOpen = AlertsLaunch.opensSettings
-    /// The rule whose screen is pushed over the editor.
+    /// The rule whose screen is pushed over the editor, once the editor has arrived
+    /// (`AlertsSettingsScreen` sees to the order).
     var editedRuleID: String?
-    @ObservationIgnored private var ruleToOpen: String?
-    /// The webhook URL field is shown although the hub holds a URL.
+    /// The webhook URL field is shown although the hub holds a URL: "Replace" was chosen. Until
+    /// the draft is saved or reverted, or the saved URL is kept after all.
     var isReplacingWebhook = false
 
     var isDirty: Bool { editor?.isDirty ?? false }
     var canSave: Bool { (editor?.canSave ?? false) && !isSaving }
 
-    /// "Edit rule" on an alert: the editor, opened at the rule that raised it. The rule's screen
-    /// follows once the editor is on screen (`takeRuleToOpen()`): pushed in the same breath, the
-    /// second screen can come up without its title.
+    /// "Edit rule" on an alert: the editor, opened at the rule that raised it.
     func open(rule id: String) {
-        if isOpen {
-            editedRuleID = id
-        } else {
-            ruleToOpen = id
-            isOpen = true
-        }
-    }
-
-    /// The rule the editor was opened for, once.
-    func takeRuleToOpen() -> String? {
-        defer { ruleToOpen = nil }
-        return ruleToOpen
+        editedRuleID = id
+        isOpen = true
     }
 
     // MARK: The hub
@@ -121,7 +131,7 @@ final class AlertsEditorModel {
         editor = current
         // A test result is about the settings the hub had then.
         if test != .sending { test = .idle }
-        if !current.isDirty { settled() }
+        if !current.isDirty { changedElsewhere = false }
     }
 
     /// Sends the draft to the hub. Nothing is sent while the hub would refuse it.
@@ -169,6 +179,9 @@ final class AlertsEditorModel {
         settled()
     }
 
+    /// The draft is the hub's again, by a save or by giving the edits up. Not by an edit that
+    /// happens to end where it began: emptying the field "Replace" brought up, to start over,
+    /// must not take the field away.
     private func settled() {
         changedElsewhere = false
         isReplacingWebhook = false
@@ -180,10 +193,31 @@ final class AlertsEditorModel {
     func edit(_ change: (inout AlertSettingsEditor) -> Void) {
         guard var current = editor else { return }
         change(&current)
+        Self.takeBackWhatIsHidden(in: &current)
         guard current != editor else { return }
         editor = current
         saveFailure = nil
-        if !current.isDirty { settled() }
+        if !current.isDirty { changedElsewhere = false }
+    }
+
+    /// A channel that is off shows none of its fields, and the hub checks them all the same. What
+    /// it would refuse in them could neither be seen nor put right, and would keep Save from
+    /// working: switching a channel off takes such a field back to what the hub has.
+    private static func takeBackWhatIsHidden(in editor: inout AlertSettingsEditor) {
+        let channels = editor.settings.channels, saved = editor.saved.channels
+        let ntfy = !channels.ntfy.enabled
+            && (channels.ntfy.topic != saved.ntfy.topic || channels.ntfy.server != saved.ntfy.server || channels.ntfy.email != saved.ntfy.email)
+        let webhook = !channels.webhook.enabled && channels.webhook.url != saved.webhook.url
+        guard ntfy || webhook else { return }
+        for issue in editor.issues() where issue.severity == .error {
+            switch issue.field {
+            case .ntfyTopic where ntfy: editor.setNtfyTopic(saved.ntfy.topic)
+            case .ntfyServer where ntfy: editor.setNtfyServer(saved.ntfy.server)
+            case .ntfyEmail where ntfy: editor.setNtfyEmail(saved.ntfy.email)
+            case .webhookURL where webhook: editor.setWebhookURL(saved.webhook.url)
+            default: break
+            }
+        }
     }
 
     /// Adds a rule of `kind` with its defaults and opens it.

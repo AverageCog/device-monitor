@@ -131,6 +131,7 @@ struct AlertsRuleScreen: View {
         Button("Delete rule", role: .destructive) { isConfirmingDelete = true }
             .buttonStyle(.dm(.destructive, fillsWidth: true))
             .accessibilityIdentifier("alert-rule-delete-button")
+            .alertsDebugConfirm(.delete, isPresented: $isConfirmingDelete)
             .confirmationDialog("Delete this rule?", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
                 Button("Delete rule", role: .destructive) { model.deleteRule(ruleID) }
                     .accessibilityIdentifier("alert-rule-delete-confirm")
@@ -282,6 +283,8 @@ private struct AlertsNumberField: View {
 
     var body: some View {
         TextField(title, text: $text)
+            // The title does not reach VoiceOver by itself.
+            .accessibilityLabel(title)
             .textFieldStyle(.plain)
             .multilineTextAlignment(.trailing)
             .monospacedDigit()

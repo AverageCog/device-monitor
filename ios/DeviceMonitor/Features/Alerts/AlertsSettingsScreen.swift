@@ -6,15 +6,21 @@ import SwiftUI
 /// changes made elsewhere; with edits it keeps them and says that the hub has moved on.
 /// "This iPhone" at the top is the exception: it is this device's own and applies at once.
 struct AlertsSettingsScreen: View {
-    @Bindable var model: AlertsEditorModel
+    let model: AlertsEditorModel
     let directory: AlertsDirectory
 
     @Environment(HubStore.self) private var store
     @Environment(Preferences.self) private var preferences
     @Environment(\.horizontalSizeClass) private var sizeClass
     @FocusState private var focus: AlertsField?
+    /// False until this screen has been on show for a moment. A rule's screen pushed in the same
+    /// breath as the editor can come up without its title, so a rule that is already chosen
+    /// waits: after "Edit rule" on an alert, and when the tabs come back from an outage that
+    /// began on a rule's screen.
+    @State private var hasArrived = false
 
     var body: some View {
+        let ruleOnShow = hasArrived ? model.editedRuleID : nil
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(spacing: Theme.Spacing.xl) {
@@ -66,14 +72,17 @@ struct AlertsSettingsScreen: View {
             }
             AlertsSaveItem(model: model, store: store)
         }
-        .navigationDestination(item: $model.editedRuleID) { id in
+        .navigationDestination(item: Binding(get: { ruleOnShow }, set: { model.editedRuleID = $0 })) { id in
             AlertsRuleScreen(model: model, ruleID: id, directory: directory)
         }
         .task {
-            // Opened from "Edit rule" on an alert: on to the rule, once this screen has arrived.
-            guard let rule = model.takeRuleToOpen() else { return }
+            guard !hasArrived else { return }
             try? await Task.sleep(for: .milliseconds(450))
-            if !Task.isCancelled, model.isOpen, model.editor?.rule(rule) != nil { model.editedRuleID = rule }
+            guard !Task.isCancelled else { return }
+            // A rule that went while nobody was looking (deleted on the hub during an outage)
+            // is not opened.
+            if let id = model.editedRuleID, model.editor?.rule(id) == nil { model.editedRuleID = nil }
+            hasArrived = true
         }
         .modifier(AlertsPermissionRefresh())
         .modifier(AlertsFollowHub(model: model))
@@ -129,6 +138,7 @@ private struct AlertsCancelButton: View {
     var body: some View {
         Button("Cancel") { isConfirming = true }
             .accessibilityIdentifier("alerts-cancel-button")
+            .alertsDebugConfirm(.discard, isPresented: $isConfirming)
             .confirmationDialog("Discard your changes?", isPresented: $isConfirming, titleVisibility: .visible) {
                 Button("Discard changes", role: .destructive) { model.revert() }
                     .accessibilityIdentifier("alerts-discard-confirm")
@@ -377,6 +387,7 @@ private struct AlertsMessagesSection: View {
 /// "Send test alert", and how it went on each channel.
 private struct AlertsTestSection: View {
     @Environment(HubStore.self) private var store
+    @Environment(SessionController.self) private var session
     let model: AlertsEditorModel
 
     var body: some View {
@@ -409,8 +420,9 @@ private struct AlertsTestSection: View {
     }
 
     private var footer: String {
-        model.isDirty
-            ? "Save your changes first: a test uses the settings the hub has."
+        if model.isDirty { return "Save your changes first: a test uses the settings the hub has." }
+        return session.isDemo
+            ? "The demo shows no notifications, so its test only reports here."
             : "A test also shows on this \(AlertsLayout.deviceName) when \u{201C}\(AlertsDeviceNotifications.title)\u{201D} is on."
     }
 }

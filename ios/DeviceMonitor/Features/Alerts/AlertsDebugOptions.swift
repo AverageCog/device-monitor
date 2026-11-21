@@ -21,11 +21,24 @@ import UIKit
 //     -dm-alerts-scroll <history|iphone|rules|channels|messages|test>
 //                                 scrolled to that part (history: the tab; the others: the editor)
 //     -dm-alerts-notify <undecided|off|asking|on|blocked>
-//                                 "Notify on this iPhone" drawn in that state; neither the
-//                                 preference nor the system's permission is read or changed
+//                                 "Notify on this iPhone" drawn in that state, whatever the
+//                                 preference and the system's permission say. Two things on the
+//                                 Alerts tab still follow the real session and preference: the
+//                                 invitation (undecided, asking) is not shown in a demo, so look
+//                                 at it with `-dm-phase live`; and the blocked banner is there
+//                                 only while the preference is on (add `-dm.notifications YES`),
+//                                 which its "Don't notify" switches off
 //     -dm-alerts-confirm <clear|discard|delete>
 //                                 that confirmation is up: clear the log, discard the edits
 //                                 (needs an edit from the script), delete the rule on screen
+//     -dm-alerts-confirm-after <seconds>
+//                                 with -dm-alerts-confirm: the confirmation comes up that long
+//                                 after its button, as it does after a tap, and not with it.
+//                                 For reading identifiers: the system is handed the identifier
+//                                 of a dialog's button only for a dialog made after something
+//                                 first asked the app for its accessibility tree. Any UI test
+//                                 that found the button to tap has asked; a screenshot of a
+//                                 dialog that was up from the start has not
 //     -dm-alerts-script step,step,…
 //                                 done in order once the editor has the hub's settings, as taps
 //                                 and typing would do it. A step is an edit of the draft,
@@ -54,6 +67,9 @@ import UIKit
 //                                 did, e.g. "stream: up; log: 6 entries; notify: [] …; live:
 //                                 <title>; notify: [<title>] posted". The script step `disk-alert`
 //                                 has a demo hub raise an alert and clear it eight seconds later.
+//                                 In a demo the trace ends "kept back, a demo" whatever the
+//                                 preference; with `-dm-phase live -dm.notifications YES` it
+//                                 ends "posted".
 //
 // `save` and `test` in a script go through the store like the buttons do, so on a demo hub they
 // change that hub (which lives in memory, for this launch only).
@@ -71,6 +87,7 @@ nonisolated struct AlertsDebugOptions: Sendable {
     var scroll: AlertsAnchor?
     var notice: String?
     var confirm: String?
+    var confirmDelay: Double?
     var script: [String] = []
     var fails: String?
     var hasNoPrice = false
@@ -92,6 +109,7 @@ nonisolated struct AlertsDebugOptions: Sendable {
         scroll = value(after: "-dm-alerts-scroll").flatMap(AlertsAnchor.init(rawValue:))
         notice = value(after: "-dm-alerts-notify")
         confirm = value(after: "-dm-alerts-confirm")
+        confirmDelay = value(after: "-dm-alerts-confirm-after").flatMap(Double.init).flatMap { $0 > 0 && $0 <= 120 ? $0 : nil }
         script = value(after: "-dm-alerts-script")?.split(separator: ",").map(String.init) ?? []
         fails = value(after: "-dm-alerts-fail")
         hasNoPrice = value(after: "-dm-alerts-price") == "none"
@@ -147,6 +165,23 @@ extension View {
 }
 
 extension View {
+    /// `-dm-alerts-confirm-after`: brings a confirmation up a while after the button that asks
+    /// for it has appeared. The view itself in a release build.
+    @ViewBuilder
+    func alertsDebugConfirm(_ confirmation: AlertsLaunch.Confirmation, isPresented: Binding<Bool>) -> some View {
+        #if DEBUG
+        task {
+            guard let delay = AlertsLaunch.confirmDelay(confirmation) else { return }
+            try? await Task.sleep(for: delay)
+            if !Task.isCancelled { isPresented.wrappedValue = true }
+        }
+        #else
+        self
+        #endif
+    }
+}
+
+extension View {
     /// Adds the `-dm-alerts-probe` element in a DEBUG build that was asked for it.
     @ViewBuilder
     func alertsDebugProbe() -> some View {
@@ -193,7 +228,12 @@ nonisolated enum AlertsLaunch {
     }
 
     static func confirms(_ confirmation: Confirmation) -> Bool {
-        options.confirm == confirmation.rawValue
+        options.confirm == confirmation.rawValue && options.confirmDelay == nil
+    }
+
+    static func confirmDelay(_ confirmation: Confirmation) -> Duration? {
+        guard options.confirm == confirmation.rawValue else { return nil }
+        return options.confirmDelay.map { .seconds($0) }
     }
 
     static func unit(_ unit: TemperatureUnit) -> TemperatureUnit {
@@ -264,10 +304,8 @@ nonisolated enum AlertsLaunch {
             } else if let id = rules.first(where: { $0.type.rawValue == rule })?.id {
                 model.open(rule: id)
             }
-            // The script's edits are for the rule's screen: wait until it is up.
-            for _ in 0..<30 where model.editedRuleID == nil {
-                try? await Task.sleep(for: .milliseconds(100))
-            }
+            // The script's steps are for the rule's screen: wait until the editor has let it through.
+            try? await Task.sleep(for: .milliseconds(900))
         }
         let unit = unit(store.preferences.temperatureUnit)
         for step in options.script {
@@ -282,7 +320,8 @@ nonisolated enum AlertsLaunch {
             case "back":
                 model.editedRuleID = nil
             case "disk-alert":
-                AppModel.shared.session.demoHub?.simulateDiskAlert()
+                // The demo's hub, or the one behind a `-dm-phase` session.
+                (AppModel.shared.session.demoHub ?? AppModel.shared.debugHub)?.simulateDiskAlert()
             case "price":
                 AppModel.shared.router.showElectricityPrice()
             case "elsewhere":

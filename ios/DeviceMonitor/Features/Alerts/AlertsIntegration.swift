@@ -51,7 +51,8 @@ enum AlertsIntegration {
     }
 }
 
-/// Turns the hub's alerts into local notifications on this device.
+/// Turns the hub's alerts into local notifications on this device. A real hub's only: in demo
+/// mode everything is planned as it would be, and nothing is posted.
 ///
 /// Alerts reach it two ways. While the stream is connected the store hands over each alert the
 /// hub wants announced. Whatever happened while it was not (the app in the background, the hub
@@ -232,8 +233,12 @@ final class AlertsNotifier {
         // Remembered whether or not this device shows anything, so that switching notifications
         // on later does not bring up alerts from before.
         if let marker = plan.marker { remember(marker) }
-        note("notify: [\(plan.notifications.map(\.title).joined(separator: " + "))] \(preferences.notificationsEnabled ? "posted" : "kept back, off on this device")")
-        guard preferences.notificationsEnabled, !plan.notifications.isEmpty else { return }
+        // A demo's alerts are about devices that do not exist: they stay inside the app, and
+        // never reach the lock screen or Notification Centre.
+        let isDemo = session?.isDemo ?? false
+        let verdict = isDemo ? "kept back, a demo" : preferences.notificationsEnabled ? "posted" : "kept back, off on this device"
+        note("notify: [\(plan.notifications.map(\.title).joined(separator: " + "))] \(verdict)")
+        guard preferences.notificationsEnabled, !isDemo, !plan.notifications.isEmpty else { return }
         let notifications = plan.notifications
         let previous = posting
         posting = Task {

@@ -60,6 +60,12 @@ enum AlertsDeviceNotifications {
         preferences.notificationsEnabled = true
         AlertsNotificationCenter.shared.openSystemSettings()
     }
+
+    /// The wish is given up while iOS stands in its way. The switch cannot do this: it is off
+    /// and disabled for as long as iOS refuses.
+    static func withdraw(preferences: Preferences) {
+        preferences.notificationsEnabled = false
+    }
 }
 
 /// Looks the permission up when the view appears and whenever the app comes back to the front
@@ -81,33 +87,80 @@ struct AlertsPermissionRefresh: ViewModifier {
 /// put right: notifications were never set up, or iOS is blocking them.
 struct AlertsDeviceBanner: View {
     @Environment(Preferences.self) private var preferences
+    @Environment(SessionController.self) private var session
 
     var body: some View {
         let state = AlertsDeviceNotice.current(preferences, AlertsNotificationCenter.shared)
         switch state {
         case .undecided, .asking:
-            BannerView(
-                "Get a notification on this \(AlertsLayout.deviceName) when an alert fires.", kind: .info, systemImage: "bell.badge",
-                showsProgress: state == .asking, actionTitle: "Turn on"
-            ) {
-                Task { await AlertsDeviceNotifications.set(true, preferences: preferences) }
+            // Not offered in the demo, whose alerts are never shown as notifications.
+            if !session.isDemo {
+                BannerView(
+                    "Get a notification on this \(AlertsLayout.deviceName) when an alert fires.", kind: .info, systemImage: "bell.badge",
+                    showsProgress: state == .asking, actionTitle: "Turn on"
+                ) {
+                    Task { await AlertsDeviceNotifications.set(true, preferences: preferences) }
+                }
+                .disabled(state == .asking)
+                .accessibilityIdentifier("alerts-notify-banner")
+                .padding(.bottom, Theme.Spacing.l)
             }
-            .disabled(state == .asking)
-            .accessibilityIdentifier("alerts-notify-banner")
-            .padding(.bottom, Theme.Spacing.l)
         // Blocked, and the user did ask for notifications: otherwise there is nothing to put right.
-        case .blocked where preferences.notificationsEnabled || AlertsLaunch.notice != nil:
-            BannerView(
-                "Notifications for Device Monitor are turned off in Settings, so alerts cannot show on this \(AlertsLayout.deviceName).",
-                kind: .warning, systemImage: "bell.slash", actionTitle: "Settings"
-            ) {
-                AlertsDeviceNotifications.openSettings(preferences: preferences)
-            }
-            .accessibilityIdentifier("alerts-blocked-banner")
+        case .blocked where preferences.notificationsEnabled:
+            AlertsBlockedBanner(
+                openSettings: { AlertsDeviceNotifications.openSettings(preferences: preferences) },
+                withdraw: { AlertsDeviceNotifications.withdraw(preferences: preferences) }
+            )
             .padding(.bottom, Theme.Spacing.l)
         case .off, .on, .blocked:
             EmptyView()
         }
+    }
+}
+
+/// iOS is blocking the notifications the user asked for. There are two ways out: allow them in
+/// the Settings app, or stop asking for them here. Without the second the banner would stay for
+/// good on a phone whose owner turned notifications off in Settings on purpose.
+///
+/// Drawn like the design system's warning banner, which has room for one answer only.
+private struct AlertsBlockedBanner: View {
+    let openSettings: () -> Void
+    let withdraw: () -> Void
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.m) {
+            Image(systemName: "bell.slash")
+                .font(.system(size: 17, weight: .medium))
+                .foregroundStyle(Theme.warning)
+                .frame(width: 22)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: Theme.Spacing.m) {
+                Text("Notifications for Device Monitor are turned off in Settings, so alerts cannot show on this \(AlertsLayout.deviceName).")
+                    .dmFont(.callout)
+                    .foregroundStyle(Theme.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("alerts-blocked-banner")
+                // Side by side while they fit; one under the other at large text sizes.
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: Theme.Spacing.s) { answers }
+                    VStack(alignment: .leading, spacing: Theme.Spacing.m) { answers }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .dmSurface(Theme.warning.opacity(0.08), radius: Theme.Radius.banner, border: Theme.warning.opacity(0.35))
+    }
+
+    @ViewBuilder private var answers: some View {
+        Button("Open Settings", action: openSettings)
+            .buttonStyle(.dm(.primary, size: .small))
+            .accessibilityIdentifier("alerts-blocked-settings-button")
+        Button("Don't notify", action: withdraw)
+            .buttonStyle(.dm(size: .small))
+            .accessibilityHint("Switches \u{201C}\(AlertsDeviceNotifications.title)\u{201D} off")
+            .accessibilityIdentifier("alerts-blocked-dismiss-button")
     }
 }
 
@@ -158,10 +211,11 @@ struct AlertsDeviceSection: View {
         }
     }
 
-    /// The honest part: only an open app hears of an alert at once.
+    /// The honest part: only an open app hears of an alert at once, and a demo's alerts are
+    /// about devices that do not exist.
     private var footer: String {
         let timing = "While Device Monitor is open, alerts arrive at once. In the background iOS decides when the app may check the hub, so a notification can be late. For instant alerts, set up ntfy below."
-        return session.isDemo ? timing + " In the demo, alerts come from simulated devices." : timing
+        return session.isDemo ? timing + " The demo's devices are simulated: its alerts are never shown as notifications." : timing
     }
 }
 
