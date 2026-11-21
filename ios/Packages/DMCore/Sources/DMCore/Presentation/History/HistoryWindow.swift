@@ -83,6 +83,8 @@ public struct HistoryWindow: Sendable, Equatable {
     }
 
     public var span: Double { to - from }
+    public var fromDate: Date { Date(hubTime: from) }
+    public var toDate: Date { Date(hubTime: to) }
 
     /// The range whose button is lit: none while zoomed.
     public var selectedRange: HistoryRange? { isZoomed ? nil : range }

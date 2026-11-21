@@ -262,7 +262,7 @@ import Testing
                 let tooltip = model.tooltip(at: hover.t, locale: enUS, timeZone: zone)
                 guard let expected = hover.charts else {
                     // Nothing drawn: no point within reach, or no chart to draw on.
-                    if let tooltip, !model.charts.isEmpty { failures.append("\(name): a tooltip at \(tooltip.t) where the dashboard shows none") }
+                    if let tooltip { failures.append("\(name): a tooltip at \(tooltip.t) where the dashboard shows none") }
                     continue
                 }
                 guard let tooltip, tooltip.charts.count == expected.count, tooltip.charts.map(\.kind) == model.charts.map(\.kind) else {

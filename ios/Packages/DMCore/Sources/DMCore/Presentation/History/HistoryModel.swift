@@ -32,6 +32,8 @@ public struct HistoryModel: Sendable, Equatable {
     public var emptyText: String? { charts.isEmpty ? HistoryModel.emptyText : nil }
 
     public var span: Double { to - from }
+    public var fromDate: Date { Date(hubTime: from) }
+    public var toDate: Date { Date(hubTime: to) }
 
     public init(response: HistoryResponse, window: HistoryWindow, unit: TemperatureUnit) {
         self.init(points: response.points, resolution: response.resolution, from: window.from, to: window.to, unit: unit)
@@ -104,10 +106,10 @@ public struct HistoryModel: Sendable, Equatable {
     public var tooltipReach: Double { max(gap, span / 50) }
 
     /// What all charts show for a time under the pointer: a marker at the nearest point and that
-    /// point's readings. nil when no point is within reach.
+    /// point's readings. nil when no point is within reach, and when there is no chart to show it on.
     public func tooltip(at time: Double, locale: Locale = .current, timeZone: TimeZone = .current) -> HistoryTooltip? {
         // if (best && Math.abs(best.t - hv.hoverT) <= Math.max(gap, span / 50))
-        guard let best = nearestPoint(to: time), abs(best.t - time) <= tooltipReach else { return nil }
+        guard !charts.isEmpty, let best = nearestPoint(to: time), abs(best.t - time) <= tooltipReach else { return nil }
         return HistoryTooltip(
             t: best.t,
             title: Format.historyTooltipTime(best.t, resolution: resolution, locale: locale, timeZone: timeZone) + Format.historyResolutionSuffix(resolution),
@@ -131,6 +133,7 @@ public struct HistoryTimeTick: Sendable, Equatable, Identifiable {
     public let alignment: Alignment
 
     public var id: Int { index }
+    public var date: Date { Date(hubTime: t) }
 }
 
 /// A tile above the charts: the highest value in the window, with the average under it.
@@ -402,6 +405,8 @@ public struct HistoryChartPoint: Sendable, Equatable {
         self.t = t
         self.value = value
     }
+
+    public var date: Date { Date(hubTime: t) }
 }
 
 public struct HistoryChartBandPoint: Sendable, Equatable {
@@ -416,6 +421,8 @@ public struct HistoryChartBandPoint: Sendable, Equatable {
         self.low = low
         self.high = high
     }
+
+    public var date: Date { Date(hubTime: t) }
 }
 
 /// A horizontal line of a history chart.
@@ -445,6 +452,7 @@ public struct HistoryTooltip: Sendable, Equatable {
 
     /// Time of the point: where the vertical marker goes on every chart.
     public let t: Double
+    public var date: Date { Date(hubTime: t) }
     /// "Fri 2:17:44 PM" for raw samples, else without seconds and with the width of a point:
     /// "Fri 2:17 PM · 5 min avg", "Thu 9:00 AM · 2 h avg".
     public let title: String

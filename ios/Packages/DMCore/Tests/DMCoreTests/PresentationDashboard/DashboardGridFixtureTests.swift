@@ -146,6 +146,22 @@ import Testing
         DashFixture.report(failures, of: grid.cases.count)
     }
 
+    @Test func theWholePageAtOnce() {
+        for c in grid.cases {
+            let page = DashboardModel(devices: c.devices, unit: .fahrenheit, latestVersions: c.latestVersions, isReconnecting: false, now: c.now, locale: enUS)
+            #expect(page.cards.map(\.id) == c.expected.grid, "\(c.label)")
+            #expect(page.offline == OfflineDeviceList(devices: c.devices, latestVersions: c.latestVersions, now: c.now, locale: enUS), "\(c.label)")
+            #expect(page.summary == DashboardSummary(devices: c.devices), "\(c.label)")
+            #expect(page.cards.allSatisfy { $0.isOnline }, "\(c.label)")
+            for card in page.cards {
+                let device = c.devices.first { $0.id == card.id }
+                let alone = device.map { DeviceCardModel(device: $0, unit: .fahrenheit, latestVersions: c.latestVersions, now: c.now) }
+                #expect(alone == card)
+            }
+        }
+        #expect(DashboardModel(devices: [], unit: .celsius, isReconnecting: true).summary.text == DashboardSummary.reconnectingText)
+    }
+
     @Test func namesWithAccentsSortAsInABrowser() {
         var failures = [String]()
         for c in grid.accented {
@@ -178,7 +194,7 @@ import Testing
                 if expected.title != OfflineDeviceList.rowHint { failures.append("\(c.label), \(row.id): row hint \(expected.title)") }
                 if let wake = expected.wake {
                     wakeable += 1
-                    if wake.text != WakeButton.idle.title || wake.title != WakeButton.hint { failures.append("\(c.label), \(row.id): wake button \(wake.text) / \(wake.title)") }
+                    if wake.text != WakeButtonState.idle.title || wake.title != WakeButtonState.hint { failures.append("\(c.label), \(row.id): wake button \(wake.text) / \(wake.title)") }
                 }
                 guard let device = c.devices.first(where: { $0.id == row.id }) else { continue }
                 if row != OfflineDeviceRow(device: device, latestVersions: c.latestVersions, now: c.now) { failures.append("\(c.label), \(row.id): the list and the row initialiser disagree") }
@@ -190,8 +206,8 @@ import Testing
 
     @Test func wakeButtonTexts() {
         // $('#offPop') click handler: btn.disabled = true; btn.textContent = 'Sending…'; … btn.textContent = r?.ok ? 'Sent ✓' : 'Failed';
-        #expect(WakeButton.allCases.map(\.title) == ["Wake", "Sending\u{2026}", "Sent \u{2713}", "Failed"])
-        #expect(WakeButton.allCases.map(\.isEnabled) == [true, false, false, false])
+        #expect(WakeButtonState.allCases.map(\.title) == ["Wake", "Sending\u{2026}", "Sent \u{2713}", "Failed"])
+        #expect(WakeButtonState.allCases.map(\.isEnabled) == [true, false, false, false])
     }
 
     // MARK: Menu

@@ -52,6 +52,29 @@ public struct DashboardSummary: Sendable, Equatable {
     }
 }
 
+/// Everything the dashboard's main page shows for a set of devices (renderGrid): the summary, a
+/// card per online device and the list of offline ones.
+///
+/// A convenience for building the whole screen in one go. A view that redraws one card when its
+/// device reports can make that card's `DeviceCardModel` on its own.
+public struct DashboardModel: Sendable, Equatable {
+    public let summary: DashboardSummary
+    /// The online devices, in the order of the grid.
+    public let cards: [DeviceCardModel]
+    /// The offline devices; they have no card.
+    public let offline: OfflineDeviceList
+
+    public init(
+        devices: [Device], unit: TemperatureUnit, latestVersions: [String: String] = [:], isReconnecting: Bool = false,
+        now: Double = Date().hubTime, locale: Locale = .current
+    ) {
+        let sorted = DashboardOrder.sorted(devices, locale: locale)
+        summary = DashboardSummary(devices: devices, isReconnecting: isReconnecting)
+        cards = sorted.filter(\.online).map { DeviceCardModel(device: $0, unit: unit, latestVersions: latestVersions, now: now) }
+        offline = OfflineDeviceList(sorted: sorted.filter { !$0.online }, latestVersions: latestVersions, now: now)
+    }
+}
+
 /// What the grid shows in place of cards.
 public enum DashboardEmptyState: Sendable, Equatable {
     /// The hub knows no device.
@@ -156,12 +179,16 @@ public struct OfflineDeviceList: Sendable, Equatable {
 
     /// Takes all devices, in any order; keeps the offline ones and sorts them like the dashboard.
     public init(devices: [Device], latestVersions: [String: String] = [:], now: Double = Date().hubTime, locale: Locale = .current) {
-        rows = DashboardOrder.offline(devices, locale: locale).map { OfflineDeviceRow(device: $0, latestVersions: latestVersions, now: now) }
+        self.init(sorted: DashboardOrder.offline(devices, locale: locale), latestVersions: latestVersions, now: now)
+    }
+
+    init(sorted offline: [Device], latestVersions: [String: String], now: Double) {
+        rows = offline.map { OfflineDeviceRow(device: $0, latestVersions: latestVersions, now: now) }
     }
 }
 
 /// The Wake button of an offline row and what it says while and after sending.
-public enum WakeButton: Sendable, Equatable, CaseIterable {
+public enum WakeButtonState: Sendable, Equatable, CaseIterable {
     case idle, sending, sent, failed
 
     public static let hint = "Send a Wake-on-LAN signal"

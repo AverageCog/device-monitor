@@ -71,6 +71,8 @@ public struct CardChartPoint: Sendable, Equatable {
         self.t = t
         self.value = value
     }
+
+    public var date: Date { Date(hubTime: t) }
 }
 
 /// A horizontal line of a card's chart with its label ("0%", "50%", "100%").
@@ -107,6 +109,8 @@ public struct CardChartModel: Sendable, Equatable {
     public let start: Double
     /// Right edge of the window: the `now` the model was made with.
     public let end: Double
+    public var startDate: Date { Date(hubTime: start) }
+    public var endDate: Date { Date(hubTime: end) }
     /// Two samples further apart than this are not joined: `max(10 s, 3 × resolution)`.
     public let gap: Double
     /// The samples the model was made from, untouched: the tooltip looks through all of them.
@@ -197,6 +201,7 @@ public struct CardChartModel: Sendable, Equatable {
 public struct CardChartTooltip: Sendable, Equatable {
     /// Time of the sample: where the vertical marker goes.
     public let t: Double
+    public var date: Date { Date(hubTime: t) }
     /// "now", "12s ago", "3m 5s ago" on the ten-minute range; a clock time ("2:17 PM") on the others.
     public let time: String
     /// One row per reading the sample has, in the order CPU, GPU, Memory. Can be empty: the
