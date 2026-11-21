@@ -168,16 +168,26 @@ public struct AlertSettingsEditor: Sendable, Equatable {
     }
 
     /// The webhook URL field. A new URL replaces the stored one; an empty field keeps it (the
-    /// hub never shows a stored URL, so the field starts out empty).
+    /// hub never shows a stored URL, so the field starts out empty), unless it was removed.
     public mutating func setWebhookURL(_ url: String) {
         settings.channels.webhook.url = url
-        if url.isEmpty { settings.channels.webhook.keepUrl = hasStoredWebhook }
     }
 
     /// Forgets the stored webhook URL, which also switches the webhook off.
     public mutating func removeWebhookURL() {
         settings.channels.webhook.url = ""
         settings.channels.webhook.keepUrl = false
+    }
+
+    /// Takes `removeWebhookURL` back: the hub keeps the URL it has.
+    public mutating func keepStoredWebhookURL() {
+        settings.channels.webhook.url = ""
+        settings.channels.webhook.keepUrl = hasStoredWebhook
+    }
+
+    /// True when saving would make the hub forget the webhook URL it holds.
+    public var removesStoredWebhook: Bool {
+        hasStoredWebhook && settings.channels.webhook.url.isEmpty && !settings.channels.webhook.keepUrl
     }
 
     /// What the URL field shows while empty.

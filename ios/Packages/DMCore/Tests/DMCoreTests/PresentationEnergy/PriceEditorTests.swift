@@ -106,7 +106,7 @@ import Testing
 
     @Test func everythingSentPassesTheHubsCheck() throws {
         // Free-form abuse of the editor: whatever comes out must be something the hub stores.
-        var generator = SplitMix(seed: 0x5EED)
+        var generator = PresentationTestRandom(seed: 0x5EED)
         let texts = ["0.25", "0", "", "x", "1000", "1000.5", "0.00001", "0.00004", "0.00005", "1e-9", "-2", "31", "0.1234567", "5e2", "Infinity", "NaN"]
         let hours: [Double] = [0, 1, 5.5, 12, 16.01, 16.02, 23, 23.99, 24, 25, -1, .nan, .infinity]
         for round in 0..<60 {
@@ -238,7 +238,7 @@ import Testing
 }
 
 /// A small deterministic generator, so the free-form test does the same thing on every run.
-struct SplitMix: RandomNumberGenerator {
+struct PresentationTestRandom: RandomNumberGenerator {
     private var state: UInt64
 
     init(seed: UInt64) {

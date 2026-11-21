@@ -22,7 +22,7 @@ reproduces the list (`AdvancedRange.bounds`) and offers `requestBounds` without 
 
 ## render.json
 
-59 scenarios: the hub payloads captured under `../../models` (`devices.json`,
+60 scenarios: the hub payloads captured under `../../models` (`devices.json`,
 `devices-after-restart.json`, the three `energy-*.json`), and generated fleets and summaries shaped
 like `usageSummary`'s for what the capture does not reach (eleven devices, months, other zones and
 currencies, clock changes inside the range, first data minutes or days ago, no energy, loading).

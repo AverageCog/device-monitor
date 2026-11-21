@@ -15,7 +15,7 @@ are those named in each row.
 | `hours.json` | the options of the two hour pickers and the editor's fixed wording, read from the markup |
 | `numbers.json` | `parseFloat` over what people type into a rate field |
 | `hub-stored.json` | bodies and what `validEnergySettings` makes of them (null: refused) |
-| `editor.json` | the editor driven action by action: 25 scripted scenarios and 30 seeded random walks. Each step has the action, the body the dashboard PUT (if any), the hub's answer (`"same"`, a rounded/sorted version, or null when it refused or nothing was sent), the saved price afterwards and what the controls then show (hint, mode, pickers, rate field, period rows with their "bad" marks, the remembered periods) |
+| `editor.json` | the editor driven action by action: 15 scripted scenarios and 30 seeded random walks. Each step has the action, the body the dashboard PUT (if any), the hub's answer (`"same"`, a rounded/sorted version, or null when it refused or nothing was sent), the saved price afterwards and what the controls then show (hint, mode, pickers, rate field, period rows with their "bad" marks, the remembered periods) |
 
 `focus` in an editor step says where the keyboard focus was while the page re-rendered: the
 dashboard does not refill a field the user is still in.

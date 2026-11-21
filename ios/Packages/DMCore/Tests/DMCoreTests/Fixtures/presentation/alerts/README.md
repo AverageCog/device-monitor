@@ -7,7 +7,7 @@ A script required `alerts.js` as it is and drove real `Alerts` instances with st
 | File | What |
 |---|---|
 | `types.json` | `TYPES`, the rules and settings a fresh hub starts with, and how many rules it keeps |
-| `urls.json` | `httpUrl`, seen through the ntfy server field: 310 addresses and what the hub stores for each (null: refused). Ports, odd slashes, credentials, percent-encoding, international names, every spelling of an IPv4 address, IPv6, and the hosts the hub will not post to |
+| `urls.json` | `httpUrl`, seen through the ntfy server field: some 330 addresses and what the hub stores for each (null: refused). Ports, odd slashes, credentials, percent-encoding, international names, every spelling of an IPv4 address, IPv6, and the hosts the hub will not post to |
 | `validation.json` | `PUT /api/alerts` bodies and the hub's answers. `ruleRows` are the base settings with one rule that has one field off (`field` names it; null when nothing is wrong); `channelRows` the base rule with other channels, asked of a hub that does or does not already hold a webhook URL (`prevWebhook`); `rows` are whole bodies (many rules) |
 | `values.json` | `fmt()` and `temp()`: `[unit, type, value, currency, text]` |
 | `texts.json` | `text()` for every kind of rule, firing and resolved, in both units, with `fmt()` of the rule's limit |

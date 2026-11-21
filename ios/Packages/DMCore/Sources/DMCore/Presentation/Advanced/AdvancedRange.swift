@@ -91,6 +91,12 @@ public enum AdvancedRange: String, Sendable, Hashable, CaseIterable, Codable, Id
         }
         return out
     }
+
+    /// `requestBounds` as the value of the `bounds` query parameter: whole milliseconds joined by
+    /// commas (`advBounds().join(',')`).
+    public func requestQuery(now: Double, timeZone: TimeZone = .current) -> String {
+        requestBounds(now: now, timeZone: timeZone).map(JS.string).joined(separator: ",")
+    }
 }
 
 /// When the Advanced screen refreshes itself (openAdvanced and advLive in public/index.html).

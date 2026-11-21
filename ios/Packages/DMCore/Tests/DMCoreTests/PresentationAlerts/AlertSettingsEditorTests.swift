@@ -213,15 +213,31 @@ import Testing
         editor.setWebhookURL("")
 
         // Removing it: nothing to keep, and a webhook that is still switched on gets a warning.
+        #expect(!editor.removesStoredWebhook)
         editor.removeWebhookURL()
+        #expect(editor.removesStoredWebhook)
         #expect(try json(editor) == #"{"enabled":true,"url":""}"#)
+        // Typing something and clearing it again does not bring the removed URL back…
+        editor.setWebhookURL("https://exam")
+        #expect(!editor.removesStoredWebhook)
+        editor.setWebhookURL("")
+        #expect(editor.removesStoredWebhook)
+        #expect(try json(editor) == #"{"enabled":true,"url":""}"#)
+        // …only saying so does.
+        editor.keepStoredWebhookURL()
+        #expect(!editor.removesStoredWebhook && !editor.isDirty)
+        #expect(try json(editor) == #"{"enabled":true,"keepUrl":true}"#)
+        editor.removeWebhookURL()
         #expect(editor.issues().map(\.field) == [.webhookURL] && editor.issues()[0].severity == .warning)
         #expect(editor.webhookPlaceholder == "https://…")
         let removed = try #require(editor.body)
         let stored = try #require(AlertValidation.hubStored(removed, hasStoredWebhook: true))
         #expect(stored.channels.webhook == AlertChannels.Webhook(enabled: false, url: "", keepUrl: false))
         editor.hubSaved(stored)
-        #expect(!editor.hasStoredWebhook && !editor.isDirty && editor.issues().isEmpty)
+        #expect(!editor.hasStoredWebhook && !editor.isDirty && editor.issues().isEmpty && !editor.removesStoredWebhook)
+        // With nothing stored there is nothing to keep.
+        editor.keepStoredWebhookURL()
+        #expect(!editor.isDirty && editor.settings.channels.webhook.keepUrl == false)
 
         // Nothing stored: switching it on without a URL warns; with one it is fine.
         editor.setWebhookEnabled(true)
@@ -253,7 +269,7 @@ import Testing
     }
 
     @Test func whateverTheEditorOffersTheHubAccepts() throws {
-        var generator = SplitMix(seed: 0xA1E27)
+        var generator = PresentationTestRandom(seed: 0xA1E27)
         func pick<T>(_ items: [T]) -> T {
             items[Int(generator.next() % UInt64(items.count))]
         }
@@ -283,7 +299,7 @@ import Testing
                 case 11: editor.setNtfyServer(pick(servers))
                 case 12: editor.setWebhookEnabled(pick([true, false]))
                 case 13: editor.setWebhookURL(pick(hooks))
-                case 14: editor.removeWebhookURL()
+                case 14: if generator.next() % 2 == 0 { editor.removeWebhookURL() } else { editor.keepStoredWebhookURL() }
                 case 15: editor.setTemperatureUnit(unit)
                 case 16: editor.revert()
                 default:

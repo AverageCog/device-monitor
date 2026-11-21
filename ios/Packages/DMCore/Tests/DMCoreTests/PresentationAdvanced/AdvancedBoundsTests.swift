@@ -155,6 +155,21 @@ import Testing
         #expect(AdvancedRange.day.bounds(now: hour, timeZone: tz).last == hour + 3_600_000)
     }
 
+    @Test func queryIsWholeMillisecondsJoinedByCommas() throws {
+        let tz = try #require(TimeZone(identifier: "America/Los_Angeles"))
+        let now = 1_795_214_200_000.0
+        let query = AdvancedRange.week.requestQuery(now: now, timeZone: tz)
+        // The local midnights of Nov 14…21, as the hub's fixture hub was asked for them.
+        let captured = try HubJSON.decode(EnergyResponse.self, from: try Fixture.data("models/energy-7d-flat.json"))
+        #expect(query.split(separator: ",").map { Double($0) } == captured.bounds)
+        #expect(query.hasPrefix("1794643200000,") && !query.contains(".") && !query.contains("e"))
+        #expect(AdvancedRange.day.requestQuery(now: now, timeZone: tz).split(separator: ",").count == 25)
+        // A skipped hour's repeated edge is not sent.
+        let spring = 1_772_985_600_000.0   // the afternoon after clocks went forward in Los Angeles
+        #expect(AdvancedRange.day.bounds(now: spring, timeZone: tz).count == 25)
+        #expect(AdvancedRange.day.requestQuery(now: spring, timeZone: tz).split(separator: ",").count == 24)
+    }
+
     @Test func liveFiguresRedrawAtMostOnceASecond() {
         #expect(AdvancedRefresh.reloadInterval == 60)
         #expect(AdvancedRefresh.liveInterval == 1)
