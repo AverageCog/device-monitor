@@ -49,7 +49,7 @@ struct DemoMachine: Sendable {
     var offFor: Double?
     /// Was off between these two moments before the demo began (ms before, earlier first).
     var outage: (from: Double, to: Double)?
-    /// Had its lid closed before seven in the morning.
+    /// Had its lid closed before seven in the morning, except in the hour before the demo began.
     var sleepsAtNight = false
 
     static let currentAppVersion = "1.2.33"
@@ -163,22 +163,56 @@ struct DemoModel: Sendable {
 
     static func clamp(_ value: Double) -> Double { max(0, min(100, value)) }
 
+    /// What a reading stands for. A stored minute is thirty raw samples summed up, so its noise
+    /// is drawn as theirs would come out: an average strays √30 times less than one sample, and
+    /// a peak is the highest of thirty. Otherwise a chart whose last hour is built from raw
+    /// samples (as `query` does for buckets under a minute) changes character an hour ago.
+    enum Draw: Sendable {
+        /// One two-second sample.
+        case sample
+        /// The average of a minute of samples.
+        case average
+        /// The highest of a minute of samples.
+        case peak
+
+        var grain: Double { self == .sample ? DemoModel.rawInterval : DemoModel.minute }
+        /// Keeps the three kinds' noise apart.
+        var family: Int {
+            switch self {
+            case .sample: 0
+            case .average: 100
+            case .peak: 200
+            }
+        }
+
+        /// Where in its range (0..<1) a reading falls, for a uniform draw `u`.
+        func level(_ u: Double) -> Double {
+            let samples = DemoModel.minute / DemoModel.rawInterval
+            return switch self {
+            case .sample: u
+            case .average: 0.5 + (u - 0.5) / samples.squareRoot()
+            // The highest of n uniform draws is distributed as u^(1/n).
+            case .peak: pow(u, 1 / samples)
+            }
+        }
+    }
+
     /// `wave` in build/screenshots.js: a smooth, slightly noisy load curve.
-    private func wave(_ t: Double, base: Double, swing: Double, phase: Double, noise: Double) -> Double {
-        Self.clamp(base + swing * (0.6 * sin(t / 2.1e6 + phase) + 0.4 * sin(t / 5.3e5 + phase * 3)) + (noise - 0.5) * swing * 0.3)
+    private func wave(_ t: Double, base: Double, swing: Double, phase: Double, level: Double) -> Double {
+        Self.clamp(base + swing * (0.6 * sin(t / 2.1e6 + phase) + 0.4 * sin(t / 5.3e5 + phase * 3)) + (level - 0.5) * swing * 0.3)
     }
 
     // MARK: Readings
 
-    /// `sample(d, t, i)` in build/test/mobile-hub.js, with every GPU. `grain` is the width of a
-    /// noise slot: two seconds for a live reading, a minute for a stored average.
-    func reading(_ machine: DemoMachine, index: Int, at t: Double, grain: Double) -> DemoReading {
-        let slot = (t / grain).rounded(.down), family = grain == Self.rawInterval ? 0 : 100
-        let cpu = wave(t, base: machine.cpu.base, swing: machine.cpu.swing, phase: Double(index), noise: noise(index, family, slot))
+    /// `sample(d, t, i)` in build/test/mobile-hub.js, with every GPU: one raw sample, or what a
+    /// minute of them averages or peaks at.
+    func reading(_ machine: DemoMachine, index: Int, at t: Double, draw: Draw) -> DemoReading {
+        let slot = (t / draw.grain).rounded(.down), family = draw.family
+        let cpu = wave(t, base: machine.cpu.base, swing: machine.cpu.swing, phase: Double(index), level: draw.level(noise(index, family, slot)))
         var usage: [Double] = [], temps: [Double?] = [], powers: [Double?] = []
         for (n, gpu) in machine.gpus.enumerated() {
             let phase = Double(n == 0 ? index + 1 : index + n + 2)
-            let load = wave(t, base: gpu.base, swing: gpu.swing, phase: phase, noise: noise(index, family + 1 + n, slot))
+            let load = wave(t, base: gpu.base, swing: gpu.swing, phase: phase, level: draw.level(noise(index, family + 1 + n, slot)))
             usage.append(load)
             temps.append(gpu.temp.map { $0 - 20 + load * 0.25 })
             powers.append(gpu.power.map { $0 * (0.12 + 0.85 * load / 100) })
@@ -218,17 +252,17 @@ struct DemoModel: Sendable {
             cpuMeasured: measuredCPU != nil, gpuMeasured: measured, gpuEstimated: estimated)
     }
 
-    private func traffic(_ machine: DemoMachine, index: Int, slot: Double, family: Int) -> (rx: Double, tx: Double, read: Double, write: Double) {
-        let scale = machine.networkScale
-        return (
-            rx: 1e5 + noise(index, family + 20, slot) * 8e5 * scale, tx: 4e4 + noise(index, family + 21, slot) * 2e5 * scale,
-            read: noise(index, family + 22, slot) * 3e6, write: noise(index, family + 23, slot) * 2e6)
+    /// Network and disk rates, which have no peaks of their own (MAX_FIELDS in history.js).
+    private func traffic(_ machine: DemoMachine, index: Int, at t: Double, draw: Draw) -> (rx: Double, tx: Double, read: Double, write: Double) {
+        let scale = machine.networkScale, slot = (t / draw.grain).rounded(.down)
+        let level = { (channel: Int) in draw.level(noise(index, draw.family + channel, slot)) }
+        return (rx: 1e5 + level(20) * 8e5 * scale, tx: 4e4 + level(21) * 2e5 * scale, read: level(22) * 3e6, write: level(23) * 2e6)
     }
 
     /// The history sample of a report: the fields `handleReport` in server.js keeps.
     func rawPoint(_ machine: DemoMachine, index: Int, at t: Double) -> HistoryPoint {
-        let r = reading(machine, index: index, at: t, grain: Self.rawInterval)
-        let io = traffic(machine, index: index, slot: (t / Self.rawInterval).rounded(.down), family: 0)
+        let r = reading(machine, index: index, at: t, draw: .sample)
+        let io = traffic(machine, index: index, at: t, draw: .sample)
         return HistoryPoint(
             t: t, cpu: r.cpu, gpu: r.gpuUsage.first, mem: r.memory, cpuTemp: r.cpuTemp, gpuTemp: r.gpuTemp.first ?? nil,
             gpuPower: r.gpuPower.first ?? nil, power: r.power.watts, rx: io.rx, tx: io.tx, dr: io.read, dw: io.write)
@@ -236,15 +270,17 @@ struct DemoModel: Sendable {
 
     /// A stored one-minute average with its peaks, as `aggregate` in history.js writes them.
     func minutePoint(_ machine: DemoMachine, index: Int, at t: Double) -> HistoryPoint {
-        let r = reading(machine, index: index, at: t, grain: Self.minute)
-        let io = traffic(machine, index: index, slot: (t / Self.minute).rounded(.down), family: 100)
+        let r = reading(machine, index: index, at: t, draw: .average), top = reading(machine, index: index, at: t, draw: .peak)
+        let io = traffic(machine, index: index, at: t, draw: .average)
         let gpu = r.gpuUsage.first, gpuTemp = r.gpuTemp.first ?? nil
+        // Drawn apart, a peak could come out under its average, which no thirty samples can do.
+        let peak = { (average: Double, highest: Double?) in Self.cents(max(average, highest ?? average)) }
         return HistoryPoint(
             t: t, cpu: Self.cents(r.cpu), gpu: gpu.map(Self.cents), mem: Self.cents(r.memory), cpuTemp: Self.cents(r.cpuTemp),
             gpuTemp: gpuTemp.map(Self.cents), gpuPower: (r.gpuPower.first ?? nil).map(Self.cents), power: r.power.watts,
             rx: Self.cents(io.rx), tx: Self.cents(io.tx), dr: Self.cents(io.read), dw: Self.cents(io.write),
-            cpuMax: Self.cents(min(100, r.cpu + 15)), gpuMax: gpu.map(Self.cents), cpuTempMax: Self.cents(r.cpuTemp + 4),
-            gpuTempMax: gpuTemp.map { Self.cents($0 + 3) }, powerMax: Self.cents(r.power.watts * 1.06), n: 30)
+            cpuMax: peak(r.cpu, top.cpu), gpuMax: gpu.map { peak($0, top.gpuUsage.first) }, cpuTempMax: peak(r.cpuTemp, top.cpuTemp),
+            gpuTempMax: gpuTemp.map { peak($0, top.gpuTemp.first ?? nil) }, powerMax: peak(r.power.watts, top.power.watts), n: 30)
     }
 
     /// `+x.toFixed(2)`
@@ -253,9 +289,9 @@ struct DemoModel: Sendable {
     /// The report a machine's agent would send at `t`, as the hub hands it on
     /// (`report(d, i)` in build/test/mobile-hub.js, then `handleReport` in server.js).
     func report(_ machine: DemoMachine, index: Int, name: String, at t: Double, diskOverride: [String: Double] = [:]) -> Report {
-        let r = reading(machine, index: index, at: t, grain: Self.rawInterval)
+        let r = reading(machine, index: index, at: t, draw: .sample)
         let slot = (t / Self.rawInterval).rounded(.down)
-        let io = traffic(machine, index: index, slot: slot, family: 0)
+        let io = traffic(machine, index: index, at: t, draw: .sample)
         let cores = (0..<machine.cpu.threads).map { core -> Double? in Self.clamp(r.cpu + (noise(index, 1000 + core, slot) - 0.5) * 30) }
         let gpus = machine.gpus.enumerated().map { n, gpu in
             Report.GPU(
@@ -290,7 +326,9 @@ struct DemoModel: Sendable {
         guard t >= start - historySpan else { return false }
         if let off = machine.offFor, t >= start - off { return false }
         if let outage = machine.outage, t > start - outage.from, t < start - outage.to { return false }
-        if machine.sleepsAtNight {
+        // It reports from the moment the demo begins, so if that is before seven it was opened
+        // an hour earlier: an online device with nothing behind it would show an empty card.
+        if machine.sleepsAtNight, t < start - Self.rawWindow {
             let local = t / 1000 + Double(timeZone.secondsFromGMT(for: Date(hubTime: t)))
             if local.truncatingRemainder(dividingBy: 86400) < 7 * 3600 { return false }
         }

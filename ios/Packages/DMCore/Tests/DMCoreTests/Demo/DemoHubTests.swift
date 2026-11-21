@@ -245,6 +245,54 @@ final class StreamListener: Sendable {
         #expect(await hubError { _ = try await hub.history(device: ID.gamingPC, from: 1000, to: 1000, points: 10) } == .http(status: 400, message: "bad range"))
     }
 
+    /// A demo opened before seven: the laptop is online, so it was opened a while before, and
+    /// has what any online device has behind it. The nights before stay dark.
+    @Test func aDemoOpenedAtNightFindsTheLaptopAwakeWithItsRecentPast() async throws {
+        let five = Self.noon - 7 * Self.hour
+        let (hub, _) = Self.make(at: five)
+        let laptop = try #require(try await hub.devices().first { $0.id == ID.macBookPro })
+        #expect(laptop.online && laptop.history.count == 301 && laptop.history.first?.t == five - 600_000)
+        #expect(try await hub.history(device: ID.macBookPro, range: .hour, points: 360).points.count == 361)
+
+        let night = try await hub.history(device: ID.macBookPro, from: five - 6 * Self.hour, to: five, points: 360).points
+        let midnight = five - 5 * Self.hour
+        #expect(night.contains { $0.t < midnight } && night.allSatisfy { $0.t <= midnight || $0.t >= five - Self.hour })
+        #expect(try await hub.history(device: ID.macBookPro, from: five - Self.day - 3 * Self.hour, to: five - Self.day, points: 180).points.isEmpty)
+    }
+
+    /// A stored minute stands for thirty raw samples, so a window whose last hour is built from
+    /// raw samples (narrower buckets than a minute: six hours on a phone) must not change
+    /// character an hour ago: neither in how far traffic strays nor in how high the peaks reach.
+    @Test func aWindowLooksTheSameEitherSideOfWhereRawSamplesBegin() async throws {
+        let (hub, _) = Self.make()
+        let six = try await hub.history(device: ID.gamingPC, range: .sixHours, points: 370)
+        #expect(six.resolution == 60_000 && six.points.allSatisfy { $0.t >= Self.noon - 6 * Self.hour })
+        // Only stored minutes carry a sample count.
+        let minutes = six.points.filter { $0.n == 30 }, raw = six.points.filter { $0.n == nil }
+        #expect(minutes.count == 300 && raw.count > 60 && minutes.count + raw.count == six.points.count)
+        #expect(minutes.allSatisfy { $0.t < Self.noon - Self.hour } && raw.allSatisfy { $0.t > Self.noon - Self.hour - 60_000 })
+
+        func spread(_ points: [HistoryPoint], _ value: (HistoryPoint) -> Double?) -> (mean: Double, deviation: Double) {
+            let values = points.compactMap(value), mean = values.reduce(0, +) / Double(values.count)
+            return (mean, (values.map { ($0 - mean) * ($0 - mean) }.reduce(0, +) / Double(values.count)).squareRoot())
+        }
+        func similar(_ a: Double, _ b: Double) -> Bool { a > 0 && b > 0 && (0.67...1.5).contains(a / b) }
+        let traffic: [(String, (HistoryPoint) -> Double?)] = [("rx", \.rx), ("tx", \.tx), ("dr", \.dr), ("dw", \.dw)]
+        for (name, value) in traffic {
+            let old = spread(minutes, value), recent = spread(raw, value)
+            #expect(similar(old.mean, recent.mean) && similar(old.deviation, recent.deviation), "\(name): \(old) before, \(recent) since")
+        }
+        let peaks: [(String, (HistoryPoint) -> Double?)] = [
+            ("cpu", { p in p.cpuMax.flatMap { top in p.cpu.map { top - $0 } } }), ("gpu", { p in p.gpuMax.flatMap { top in p.gpu.map { top - $0 } } }),
+            ("cpuTemp", { p in p.cpuTempMax.flatMap { top in p.cpuTemp.map { top - $0 } } }), ("gpuTemp", { p in p.gpuTempMax.flatMap { top in p.gpuTemp.map { top - $0 } } }),
+            ("power", { p in p.powerMax.flatMap { top in p.power.map { top - $0 } } }),
+        ]
+        for (name, band) in peaks {
+            let old = spread(minutes, band).mean, recent = spread(raw, band).mean
+            #expect(similar(old, recent), "\(name): peaks \(old) above the average before, \(recent) since")
+        }
+    }
+
     // MARK: Energy
 
     @Test func energyAgreesWithTheHistoryItSummarises() async throws {
