@@ -19,7 +19,8 @@ struct OnboardingScannerSheet: View {
         NavigationStack {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.black.ignoresSafeArea())
+                // Black around the picture; the page's own colour around a notice.
+                .background((showsViewfinder ? Color.black : Theme.page).ignoresSafeArea())
                 .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("screen-pair-scanner")
                 .navigationTitle(OnboardingCopy.scan)
@@ -46,14 +47,22 @@ struct OnboardingScannerSheet: View {
             default: break
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: AVCaptureSession.wasInterruptedNotification).receive(on: RunLoop.main)) { _ in
+        // Posted on whichever thread the capture system is on.
+        .onReceive(NotificationCenter.default.publisher(for: AVCaptureSession.wasInterruptedNotification).receive(on: DispatchQueue.main)) { _ in
             model.interrupted()
         }
-        .onReceive(NotificationCenter.default.publisher(for: AVCaptureSession.interruptionEndedNotification).receive(on: RunLoop.main)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: AVCaptureSession.interruptionEndedNotification).receive(on: DispatchQueue.main)) { _ in
             model.interruptionEnded()
         }
-        .onReceive(NotificationCenter.default.publisher(for: AVCaptureSession.runtimeErrorNotification).receive(on: RunLoop.main)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: AVCaptureSession.runtimeErrorNotification).receive(on: DispatchQueue.main)) { _ in
             model.runtimeFailure()
+        }
+    }
+
+    private var showsViewfinder: Bool {
+        switch model.status {
+        case .preparing, .scanning, .interrupted, .accepted: true
+        case .denied, .restricted, .unavailable, .failed: false
         }
     }
 

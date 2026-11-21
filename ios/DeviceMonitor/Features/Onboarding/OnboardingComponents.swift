@@ -67,7 +67,7 @@ struct OnboardingPhaseLayout<Content: View>: View {
 
 /// The places a phase screen scrolls itself to.
 enum OnboardingAnchor: Hashable {
-    /// The pairing form's fields, its error and Connect.
+    /// The card that holds the pairing form: its lower edge is just under Connect.
     case fields
     /// The last thing on the screen.
     case end
@@ -195,6 +195,8 @@ extension View {
         dmFont(.body)
             .foregroundStyle(Theme.textPrimary)
             .padding(.horizontal, Theme.Spacing.m)
+            // 44 points at the standard text size, and taller as the text grows.
+            .padding(.vertical, Theme.Spacing.s)
             .frame(minHeight: 44)
             .background(Theme.inset, in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
             .overlay {

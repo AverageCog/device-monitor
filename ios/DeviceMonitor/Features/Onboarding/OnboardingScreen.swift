@@ -32,6 +32,9 @@ struct OnboardingScreen: View {
                 }
                 .padding(Theme.Spacing.l + 2)
                 .dmSurface()
+                // The form scrolls here: the card's lower edge, which leaves its padding
+                // between Connect and the keyboard.
+                .id(OnboardingAnchor.fields)
                 .frame(maxWidth: .infinity)
 
                 if !isWide {

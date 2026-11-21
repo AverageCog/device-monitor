@@ -56,12 +56,7 @@ struct OnboardingPairingForm: View {
                 }
                 connectButton
             }
-            // The anchor reaches a little below Connect, so that scrolling to it leaves a margin
-            // over the keyboard.
-            .padding(.bottom, Self.margin)
             .onGeometryChange(for: CGFloat.self, of: { $0.size.height }, action: { fieldsHeight = $0 })
-            .id(OnboardingAnchor.fields)
-            .padding(.bottom, -Self.margin)
         }
         .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: error)
         .sheet(isPresented: $isScannerPresented) {
@@ -90,8 +85,6 @@ struct OnboardingPairingForm: View {
         }
         #endif
     }
-
-    private static let margin = Theme.Spacing.m
 
     // MARK: - Parts
 
@@ -135,7 +128,6 @@ struct OnboardingPairingForm: View {
                         .submitLabel(.go)
                         .focused($focus, equals: .invitation)
                         .onSubmit { connect(with: invitation) }
-                        .frame(minHeight: 44)
                         .accessibilityLabel(OnboardingCopy.invitationLabel)
                         .accessibilityIdentifier("pair-invitation-field")
                     if !invitation.isEmpty, !isBusy {
@@ -149,12 +141,15 @@ struct OnboardingPairingForm: View {
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
+                        // The glyph sits in the field's padding; its touch target reaches past it.
                         .padding(.trailing, -Theme.Spacing.s)
+                        .padding(.vertical, -Theme.Spacing.s)
                         .accessibilityLabel(OnboardingCopy.clearInvitation)
                         .accessibilityIdentifier("pair-clear-button")
                     }
                 }
-                .onboardingField(isFocused: focus == .invitation, isInvalid: error != nil)
+                // Marked only when the text itself is the problem; an unreachable hub is not.
+                .onboardingField(isFocused: focus == .invitation, isInvalid: error != nil && invitedOrigin == nil)
                 // The system's own button: it reads the pasteboard without the "Allow Paste" question.
                 // Its handler makes no promise about the thread it is called on.
                 PasteButton(payloadType: String.self) { @Sendable strings in
@@ -293,7 +288,7 @@ struct OnboardingPairingForm: View {
         Task {
             // After the keyboard has taken its room and the system has scrolled to the caret.
             try? await Task.sleep(for: .milliseconds(350))
-            guard focus != nil, fieldsHeight > 0, fieldsHeight + Theme.Spacing.xl <= visibleHeight else { return }
+            guard focus != nil, fieldsHeight > 0, fieldsHeight + 2 * Theme.Spacing.xl <= visibleHeight else { return }
             withAnimation(reduceMotion ? nil : .easeOut(duration: 0.25)) {
                 viewport.scroll.scrollTo(OnboardingAnchor.fields, anchor: .bottom)
             }

@@ -49,13 +49,13 @@ struct UnreachableScreen: View {
                     .buttonStyle(.dm())
                     .disabled(session.isDisconnecting)
                     .accessibilityIdentifier("unreachable-change-button")
-                }
-                // On the row, not on the button: the row is laid out twice (see OnboardingActionRow).
-                .confirmationDialog(OnboardingCopy.changeSetupQuestion, isPresented: $isConfirmingChange, titleVisibility: .visible) {
-                    Button(OnboardingCopy.forgetHub, role: .destructive, action: leave)
-                    Button(OnboardingCopy.cancel, role: .cancel) {}
-                } message: {
-                    Text(OnboardingCopy.changeSetupConsequence)
+                    // On the button, so that where the question is a popover it points at it.
+                    .confirmationDialog(OnboardingCopy.changeSetupQuestion, isPresented: $isConfirmingChange, titleVisibility: .visible) {
+                        Button(OnboardingCopy.forgetHub, role: .destructive, action: leave)
+                        Button(OnboardingCopy.cancel, role: .cancel) {}
+                    } message: {
+                        Text(OnboardingCopy.changeSetupConsequence)
+                    }
                 }
                 Text(OnboardingCopy.unreachableHint)
                     .dmFont(.caption)
@@ -65,6 +65,10 @@ struct UnreachableScreen: View {
             }
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("phase-unreachable")
+        }
+        .onChange(of: session.isRetrying) { wasRetrying, isRetrying in
+            // "Try again" came to nothing. When it works this screen is gone before it could say so.
+            if wasRetrying, !isRetrying, case .unreachable = session.phase { OnboardingHaptics.failure() }
         }
     }
 
@@ -77,6 +81,8 @@ struct UnreachableScreen: View {
             ProgressView()
                 .controlSize(.small)
                 .tint(Theme.textSecondary)
+                // The message above already says that the app keeps trying.
+                .accessibilityHidden(true)
             Text(reason ?? OnboardingCopy.stillTrying)
                 .dmFont(.callout)
                 .foregroundStyle(Theme.textSecondary)

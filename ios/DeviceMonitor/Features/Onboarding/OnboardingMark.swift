@@ -37,6 +37,8 @@ struct OnboardingMark: View {
             .frame(width: size, height: size)
             .background(LinearGradient(colors: [Theme.surface1, Theme.page], startPoint: .top, endPoint: .bottom), in: shape)
             .overlay { shape.strokeBorder(Theme.border, lineWidth: Theme.Layout.hairline) }
+            // A lit dial throws a little of its light on the page.
+            .shadow(color: Theme.accent.opacity(mode == .idle ? 0 : 0.22), radius: size * 0.3, y: size * 0.08)
             .overlay(alignment: .bottomTrailing) {
                 if let badge {
                     Image(systemName: badge.systemImage)
