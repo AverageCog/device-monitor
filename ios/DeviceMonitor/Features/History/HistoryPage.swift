@@ -28,35 +28,39 @@ struct HistoryPage: View {
     let controller: HistoryController
 
     @Environment(\.horizontalSizeClass) private var sizeClass
-    @State private var columnWidth: CGFloat = 0
 
     var body: some View {
         let padding = Theme.Layout.screenPadding(for: sizeClass)
         ScrollViewReader { proxy in
             ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    if controller.deviceID == nil {
-                        HistoryNoDevices()
-                    } else {
-                        HistoryControls(controller: controller)
-                            .padding(.bottom, 12)
-                            .id(HistoryAnchor.top)
-                        HistoryHeader(controller: controller)
-                            .padding(.bottom, 14)
-                        HistoryResults(controller: controller, columnWidth: columnWidth)
+                VStack(spacing: 0) {
+                    // The very top, above the padding: scrolling here leaves the large title as it is.
+                    Color.clear
+                        .frame(height: 0)
+                        .id(HistoryAnchor.top)
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 0) {
+                        if controller.deviceID == nil {
+                            HistoryNoDevices()
+                        } else {
+                            HistoryControls(controller: controller)
+                                .padding(.bottom, 12)
+                            HistoryHeader(controller: controller)
+                                .padding(.bottom, 14)
+                            HistoryResults(controller: controller)
+                        }
                     }
+                    .frame(maxWidth: Theme.Layout.maxContentWidth, alignment: .leading)
+                    .onGeometryChange(for: CGFloat.self) { proxy in
+                        proxy.size.width
+                    } action: { width in
+                        controller.setColumnWidth(Double(width))
+                    }
+                    .padding(.horizontal, padding)
+                    .padding(.top, Theme.Spacing.s)
+                    .padding(.bottom, Theme.Spacing.xxl)
+                    .frame(maxWidth: .infinity)
                 }
-                .frame(maxWidth: Theme.Layout.maxContentWidth, alignment: .leading)
-                .onGeometryChange(for: CGFloat.self) { proxy in
-                    proxy.size.width
-                } action: { width in
-                    columnWidth = width
-                    controller.setColumnWidth(Double(width))
-                }
-                .padding(.horizontal, padding)
-                .padding(.top, Theme.Spacing.s)
-                .padding(.bottom, Theme.Spacing.xxl)
-                .frame(maxWidth: .infinity)
             }
             // window.scrollTo(0, 0) in openHistory
             .onChange(of: controller.deviceID) {
@@ -79,16 +83,25 @@ private struct HistoryControls: View {
 
     var body: some View {
         if sizeClass == .regular {
-            HStack(spacing: Theme.Spacing.m) {
-                HistoryDeviceBar(controller: controller, bleedsToEdges: false)
-                HistoryRangeControl(controller: controller)
-                    .fixedSize()
+            // One row while every chip and the range buttons fit in it, as on the dashboard.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: Theme.Spacing.m) {
+                    HistoryDeviceBar(controller: controller, bleedsToEdges: false)
+                    Spacer(minLength: 0)
+                    HistoryRangeControl(controller: controller)
+                        .fixedSize()
+                }
+                stacked
             }
         } else {
-            VStack(alignment: .leading, spacing: Theme.Spacing.s) {
-                HistoryDeviceBar(controller: controller, bleedsToEdges: true)
-                HistoryRangeControl(controller: controller)
-            }
+            stacked
+        }
+    }
+
+    private var stacked: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.s) {
+            HistoryDeviceBar(controller: controller, bleedsToEdges: true)
+            HistoryRangeControl(controller: controller)
         }
     }
 }
@@ -179,10 +192,12 @@ private struct HistoryRangeControl: View {
             segments: HistoryPageRange.allCases.map { DMSegment(Optional($0), $0.label, identifier: $0.rawValue) },
             identifier: "history-range"
         )
-        // At the largest text sizes five labels are wider than a phone: the control then scrolls.
+        // At the largest text sizes five labels are wider than a phone: the control then scrolls,
+        // out to the screen's edge like the chips above it.
         ViewThatFits(in: .horizontal) {
             control
             ScrollView(.horizontal, showsIndicators: false) { control }
+                .scrollClipDisabled()
         }
     }
 }
@@ -200,7 +215,7 @@ private struct HistoryHeader: View {
     var body: some View {
         let header = HistoryHeaderModel(devices: store.devices, selected: controller.deviceID)
         let showsReset = controller.window.showsReset
-        let showsProgress = controller.showsProgress
+        let showsProgress = controller.isReplacingCharts
         HStack(alignment: .center, spacing: Theme.Spacing.m) {
             titles(header)
                 .accessibilityElement(children: .ignore)
@@ -259,7 +274,6 @@ private struct HistoryHeader: View {
 /// Everything under the header: tiles, charts and the note, or what stands in for them.
 private struct HistoryResults: View {
     let controller: HistoryController
-    let columnWidth: CGFloat
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -288,7 +302,7 @@ private struct HistoryResults: View {
                     .accessibilityIdentifier("history-empty")
             case .charts:
                 if let model = controller.model {
-                    HistoryCharts(model: model, controller: controller, columnWidth: columnWidth)
+                    HistoryCharts(model: model, controller: controller)
                 }
             }
         }
@@ -302,11 +316,10 @@ private struct HistoryResults: View {
 private struct HistoryCharts: View {
     let model: HistoryModel
     let controller: HistoryController
-    let columnWidth: CGFloat
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HistoryTileGrid(tiles: model.tiles, width: columnWidth)
+            HistoryTileGrid(tiles: model.tiles)
                 .padding(.bottom, 18)
                 .id(HistoryAnchor.tiles)
             VStack(spacing: 14) {
@@ -330,20 +343,38 @@ private struct HistoryCharts: View {
 /// Laid out eagerly, so the page knows its height before it is scrolled.
 private struct HistoryTileGrid: View {
     let tiles: [HistoryTileModel]
-    let width: CGFloat
 
+    /// A tile's narrowest width grows with the text in it, so large text gets fewer columns.
     @ScaledMetric(relativeTo: .title3) private var minimumWidth: CGFloat = Theme.Layout.tileMinWidth
 
     var body: some View {
-        let spacing = Theme.Layout.tileSpacing
-        // repeat(auto-fill, minmax(…, 1fr)); two columns until the width is known.
-        let columns = width > 0 ? max(1, Int((width + spacing) / (minimumWidth + spacing))) : 2
-        EqualColumnsLayout(columns: columns, columnSpacing: spacing, rowSpacing: spacing) {
+        HistoryTileLayout(minimumWidth: minimumWidth, spacing: Theme.Layout.tileSpacing) {
             ForEach(tiles) { tile in
                 Tile(label: tile.label, value: tile.value, sub: tile.detail, tickColor: tile.tint.historyColor)
                     .accessibilityIdentifier("history-tile-\(tile.kind.rawValue)")
             }
         }
+    }
+}
+
+/// `grid-template-columns: repeat(auto-fill, minmax(…, 1fr))`: the design system's equal columns,
+/// as many as the width it is given has room for.
+private struct HistoryTileLayout: Layout {
+    var minimumWidth: CGFloat
+    var spacing: CGFloat
+
+    private func columns(for width: CGFloat?) -> EqualColumnsLayout {
+        // Two columns until the width is known: what every iPhone has room for.
+        let count = width.flatMap { $0.isFinite ? max(1, Int(($0 + spacing) / (minimumWidth + spacing))) : nil } ?? 2
+        return EqualColumnsLayout(columns: count, columnSpacing: spacing, rowSpacing: spacing)
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        columns(for: proposal.width).sizeThatFits(proposal: proposal, subviews: subviews, cache: &cache)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        columns(for: bounds.width).placeSubviews(in: bounds, proposal: proposal, subviews: subviews, cache: &cache)
     }
 }
 

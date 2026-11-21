@@ -126,7 +126,11 @@ final class HistoryController {
     }
 
     /// The charts on screen belong to another device than the heading, and its answer is slow.
-    var isStale: Bool { showsProgress && shownDeviceID != deviceID }
+    var isStale: Bool { showsProgress && model != nil && shownDeviceID != deviceID }
+
+    /// A slow answer is on its way while older charts are still on screen. Without charts the
+    /// page says that it is loading where they would be.
+    var isReplacingCharts: Bool { showsProgress && model != nil }
 
     /// Whether a touch on the charts means anything: they show the selected device.
     private var acceptsGestures: Bool { model != nil && shownDeviceID == deviceID }

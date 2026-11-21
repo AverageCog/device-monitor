@@ -178,8 +178,9 @@ struct HistoryTooltipView: View {
         .padding(.horizontal, 9)
         .padding(.vertical, 6)
         .dmSurface(Theme.inset, radius: Theme.Radius.control)
-        // The read-out floats over the chart; past this size it would cover it.
-        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+        // The read-out floats over the chart and grows as far as the axis text does; larger, it
+        // would cover the plot it is about.
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 }
 

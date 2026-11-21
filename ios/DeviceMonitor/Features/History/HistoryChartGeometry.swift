@@ -132,9 +132,9 @@ nonisolated struct HistoryTimeAxis: Equatable, Sendable {
             }
             if divisions <= 1 {
                 // Only the two ends are left: make them share the plot's width.
-                let needed = widths.reduce(0, +) + clearance
+                let room = max(1, geometry.plot.width - clearance)
                 ticks = candidate
-                self.fontSize = max(6, fontSize * min(1, geometry.plot.width / max(1, needed)))
+                self.fontSize = max(6, fontSize * min(1, room / max(1, widths.reduce(0, +))))
                 return
             }
             divisions -= 1
