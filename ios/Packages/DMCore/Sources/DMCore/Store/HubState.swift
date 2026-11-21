@@ -244,27 +244,16 @@ public struct HubState: Sendable, Equatable {
 
     /// The devices as the dashboard lists them (`renderGrid`): by `order` with unordered ones
     /// last, then by name the way people in `locale` sort text. Devices that tie on both keep the
-    /// order the hub mentioned them in.
-    public func sortedDevices(locale: Locale = .current) -> [Device] {
-        HubState.sorted(devices, locale: locale)
-    }
-
-    /// `[...].sort((a, b) => ((a.order ?? 1e9) - (b.order ?? 1e9)) || (a.name || '').localeCompare(b.name || ''))`
-    public static func sorted(_ devices: [Device], locale: Locale = .current) -> [Device] {
-        devices.enumerated().sorted { left, right in
-            let a = left.element, b = right.element
-            let ordered = (a.order ?? 1_000_000_000, b.order ?? 1_000_000_000)
-            if ordered.0 != ordered.1 { return ordered.0 < ordered.1 }
-            let named = (a.name ?? "").compare(b.name ?? "", options: [], range: nil, locale: locale)
-            if named != .orderedSame { return named == .orderedAscending }
-            return left.offset < right.offset
-        }.map(\.element)
+    /// order the hub mentioned them in. It is `DashboardOrder.sorted`, so the grid, its moves and
+    /// the offline list cannot disagree.
+    public func sortedDevices(locale: Locale = DashboardOrder.readingLocale) -> [Device] {
+        DashboardOrder.sorted(devices, locale: locale)
     }
 
     /// The full id list a reorder sends: `ids` as given (the cards the user can see, in their new
     /// order), followed by every other device in display order. In the dashboard the others are
     /// the offline devices, which have no card to drag (the end of `startDrag`).
-    public func completeOrder(ids: [String], locale: Locale = .current) -> [String] {
+    public func completeOrder(ids: [String], locale: Locale = DashboardOrder.readingLocale) -> [String] {
         var seen = Set<String>()
         let known = Set(devices.map(\.id))
         let visible = ids.filter { known.contains($0) && seen.insert($0).inserted }

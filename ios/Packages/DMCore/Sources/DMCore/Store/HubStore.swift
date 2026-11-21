@@ -140,10 +140,11 @@ public final class HubStore {
     ///   - preferences: where each card's range is kept, and what was last seen of the alert log.
     ///   - clock: the time source of the reconnect delay, the series refresh and every timestamp.
     ///   - alertNotifier: may also be set later.
-    ///   - locale: decides how names sort (`localeCompare`).
+    ///   - locale: decides how names sort (`localeCompare`). By default the language the user
+    ///     reads in, as everywhere names are ordered.
     public init(
         api: any HubAPI, preferences: Preferences, clock: any HubClock = SystemHubClock(),
-        alertNotifier: (any AlertNotifier)? = nil, locale: Locale = .current
+        alertNotifier: (any AlertNotifier)? = nil, locale: Locale = DashboardOrder.readingLocale
     ) {
         self.api = api
         self.preferences = preferences

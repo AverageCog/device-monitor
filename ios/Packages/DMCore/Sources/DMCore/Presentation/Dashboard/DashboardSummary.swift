@@ -52,29 +52,6 @@ public struct DashboardSummaryModel: Sendable, Equatable {
     }
 }
 
-/// Everything the dashboard's main page shows for a set of devices (renderGrid): the summary, a
-/// card per online device and the list of offline ones.
-///
-/// A convenience for building the whole screen in one go. A view that redraws one card when its
-/// device reports can make that card's `DeviceCardModel` on its own.
-public struct DashboardModel: Sendable, Equatable {
-    public let summary: DashboardSummaryModel
-    /// The online devices, in the order of the grid.
-    public let cards: [DeviceCardModel]
-    /// The offline devices; they have no card.
-    public let offline: OfflineDeviceListModel
-
-    public init(
-        devices: [Device], unit: TemperatureUnit, latestVersions: [String: String] = [:], isReconnecting: Bool = false,
-        now: Double = Date().hubTime, locale: Locale = .current
-    ) {
-        let sorted = DashboardOrder.sorted(devices, locale: locale)
-        summary = DashboardSummaryModel(devices: devices, isReconnecting: isReconnecting)
-        cards = sorted.filter(\.online).map { DeviceCardModel(device: $0, unit: unit, latestVersions: latestVersions, now: now) }
-        offline = OfflineDeviceListModel(sorted: sorted.filter { !$0.online }, latestVersions: latestVersions, now: now)
-    }
-}
-
 /// What the grid shows in place of cards.
 public enum DashboardEmptyState: Sendable, Equatable {
     /// The hub knows no device.
@@ -101,11 +78,16 @@ public enum DashboardEmptyState: Sendable, Equatable {
 
 /// The order devices appear in (renderGrid, offlineDevices).
 public enum DashboardOrder {
+    /// The language the user reads in, which is what a browser's `localeCompare` follows. Not
+    /// `Locale.current`: an app with only an English localization gets, for a Swede, "en_SE",
+    /// which orders "Ödla" before "Zeta" where Swedish puts it after.
+    public static var readingLocale: Locale { Locale(identifier: Locale.preferredLanguages.first ?? "en") }
+
     /// By the order the user dragged them into, devices without one last, then by name.
     ///
     /// `(a.order ?? 1e9) - (b.order ?? 1e9) || (a.name || '').localeCompare(b.name || '')`, stable
     /// like JavaScript's sort: devices equal in both keep the order they came in.
-    public static func sorted(_ devices: [Device], locale: Locale = .current) -> [Device] {
+    public static func sorted(_ devices: [Device], locale: Locale = readingLocale) -> [Device] {
         devices.enumerated().sorted { a, b in
             let byOrder = orderKey(a.element) - orderKey(b.element)
             if byOrder != 0 { return byOrder < 0 }
@@ -118,12 +100,12 @@ public enum DashboardOrder {
     }
 
     /// The cards of the grid: the online devices, in order.
-    public static func online(_ devices: [Device], locale: Locale = .current) -> [Device] {
+    public static func online(_ devices: [Device], locale: Locale = readingLocale) -> [Device] {
         sorted(devices, locale: locale).filter(\.online)
     }
 
     /// The offline list, in order.
-    public static func offline(_ devices: [Device], locale: Locale = .current) -> [Device] {
+    public static func offline(_ devices: [Device], locale: Locale = readingLocale) -> [Device] {
         sorted(devices, locale: locale).filter { !$0.online }
     }
 
@@ -161,7 +143,7 @@ public enum DashboardOrder {
     ///   or kana type alone.
     /// - Single letters in Faroese, Igbo and Turkmen, and "aå" against "ä" in Swedish and
     ///   Finnish, where Foundation's answer also depends on which of the two is given first.
-    public static func compareNames(_ a: String?, _ b: String?, locale: Locale = .current) -> ComparisonResult {
+    public static func compareNames(_ a: String?, _ b: String?, locale: Locale = readingLocale) -> ComparisonResult {
         // Composed first: forced ordering would tell two spellings of one text apart, localeCompare does not.
         let a = (a ?? "").precomposedStringWithCanonicalMapping, b = (b ?? "").precomposedStringWithCanonicalMapping
         // In Japanese ICU compares kana type and width on a fourth level, which localeCompare does not reach.
@@ -202,7 +184,7 @@ public struct OfflineDeviceListModel: Sendable, Equatable {
     public var isEmpty: Bool { rows.isEmpty }
 
     /// Takes all devices, in any order; keeps the offline ones and sorts them like the dashboard.
-    public init(devices: [Device], latestVersions: [String: String] = [:], now: Double = Date().hubTime, locale: Locale = .current) {
+    public init(devices: [Device], latestVersions: [String: String] = [:], now: Double = Date().hubTime, locale: Locale = DashboardOrder.readingLocale) {
         self.init(sorted: DashboardOrder.offline(devices, locale: locale), latestVersions: latestVersions, now: now)
     }
 
