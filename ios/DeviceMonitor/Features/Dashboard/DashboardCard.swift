@@ -109,14 +109,15 @@ struct DashboardCard: View, Equatable {
     /// The six-dot grip (`.grip`). The touch surface over it is laid on the card; this is what is
     /// seen, and what assistive technologies move the card with.
     private func grip(_ model: DeviceCardModel) -> some View {
-        DashboardGripGlyph()
-            .fill(Theme.textMuted)
-            .frame(width: 14, height: 18)
-            .opacity(0.7)
-            // What VoiceOver finds under a finger is as large as what takes the drag.
-            .padding(Self.gripReach)
-            .contentShape(.accessibility, Rectangle())
-            .background(Color.clear)
+        // What VoiceOver finds under a finger is as large as what takes the drag.
+        Color.clear
+            .frame(width: 14 + 2 * Self.gripReach, height: 18 + 2 * Self.gripReach)
+            .overlay {
+                DashboardGripGlyph()
+                    .fill(Theme.textMuted)
+                    .frame(width: 14, height: 18)
+                    .opacity(0.7)
+            }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(DeviceCardText.reorderHandleLabel)
             .accessibilityValue(DashboardStrings.position(index, of: count))
@@ -174,6 +175,8 @@ struct DashboardDeviceTitle: View {
         // Half the height of the name's capitals, measured up from the baseline.
         let capitalsMiddle = 0.35 * titleSize
         let isLarge = dynamicTypeSize.isAccessibilitySize
+        // From extra large on, one line no longer holds "… · v1.2.30 → 1.2.33" even shrunk.
+        let lines = dynamicTypeSize >= .xLarge ? max(2, subtitleLines) : subtitleLines
         HStack(alignment: .firstTextBaseline, spacing: 9) {
             StatusDot(isOnline: isOnline)
                 // Centre the dot on the capitals of the name, whatever the text size.
@@ -187,7 +190,9 @@ struct DashboardDeviceTitle: View {
                 Text(subtitle)
                     .dmFont(.caption)
                     .foregroundStyle(Theme.textMuted)
-                    .lineLimit(isLarge ? 4 : subtitleLines)
+                    .lineLimit(isLarge ? 4 : lines)
+                    // On a narrow phone it gets a little smaller before it is cut.
+                    .minimumScaleFactor(isLarge ? 1 : 0.85)
             }
             .fixedSize(horizontal: false, vertical: true)
         }
@@ -280,50 +285,85 @@ struct DashboardGaugeRow: View {
     }
 }
 
-/// The stats of a card (`.stats`): the design system's two-column grid of single-line cells. At
-/// accessibility text sizes a value no longer fits one line, so the cells come one under another
-/// and their values wrap.
+/// The stats of a card (`.stats`): the design system's two-column grid of single-line cells, as
+/// long as a column holds a reading. Where it does not (larger text, a narrow card) the cells
+/// come one under another and their values wrap.
 struct DashboardStats: View {
     let stats: [DeviceStat]
-    /// Cells per row at standard text sizes; the drives under Details take a row each.
+    /// Cells per row where they fit; the drives under Details take a row each.
     var columns = 2
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    /// The size of a value that has shrunk as far as it may.
+    @ScaledMetric(relativeTo: .callout) private var smallestValueSize: CGFloat = DMTextStyle.statValue.size * DashboardStats.shrink
+
+    /// How far a value shrinks before it is cut short ("GeForce RTX 5090 · 465 W").
+    private static let shrink: CGFloat = 0.9
+    /// About the longest reading a cell shows. A fixed text and not the values on show: the
+    /// layout must not change with the readings.
+    private static let longReading = "\u{2193} 999 KB/s \u{A0}\u{2191} 999 KB/s"
 
     var body: some View {
         if dynamicTypeSize.isAccessibilitySize {
-            VStack(alignment: .leading, spacing: 9) {
-                ForEach(stats) { stat in
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(stat.key)
-                            .dmFont(.statKey)
-                            .foregroundStyle(Theme.textMuted)
-                        Text(stat.value)
-                            .dmFont(.statValue)
-                            .foregroundStyle(Theme.textPrimary)
-                        if let percent = stat.percent {
-                            MeterBar(percent: percent, color: stat.tint.dashboardColor)
-                                .padding(.top, 5)
-                        }
-                    }
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(stat.key)
-                    .accessibilityValue(stat.percent.map { "\(stat.value), \(Theme.percentText(Theme.clampedPercent($0)))" } ?? stat.value)
-                }
-            }
+            stacked
         } else if columns == 1 {
             // The drives: one under another, eight points apart.
             VStack(alignment: .leading, spacing: Theme.Spacing.s) { cells }
         } else {
-            StatsGrid(columns: columns) { cells }
+            ViewThatFits(in: .horizontal) {
+                ZStack(alignment: .topLeading) {
+                    // As wide as two long readings side by side, and nothing else: this is what
+                    // has to fit for the grid to be chosen.
+                    HStack(spacing: Theme.Spacing.l) {
+                        reading
+                        reading
+                    }
+                    .frame(height: 0)
+                    .hidden()
+                    .accessibilityHidden(true)
+                    StatsGrid(columns: columns) { cells }
+                        .minimumScaleFactor(Self.shrink)
+                        .frame(minWidth: 0, idealWidth: 0, maxWidth: .infinity)
+                }
+                stacked
+            }
         }
+    }
+
+    private var reading: some View {
+        Text(Self.longReading)
+            .font(.system(size: smallestValueSize).monospacedDigit())
+            .lineLimit(1)
+            .fixedSize()
     }
 
     private var cells: some View {
         ForEach(stats) { stat in
             StatCell(stat.key, value: stat.value, percent: stat.percent, barColor: stat.tint.dashboardColor)
+        }
+    }
+
+    private var stacked: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            ForEach(stats) { stat in
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(stat.key)
+                        .dmFont(.statKey)
+                        .foregroundStyle(Theme.textMuted)
+                    Text(stat.value)
+                        .dmFont(.statValue)
+                        .foregroundStyle(Theme.textPrimary)
+                    if let percent = stat.percent {
+                        MeterBar(percent: percent, color: stat.tint.dashboardColor)
+                            .padding(.top, 5)
+                    }
+                }
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(stat.key)
+                .accessibilityValue(stat.percent.map { "\(stat.value), \(Theme.percentText(Theme.clampedPercent($0)))" } ?? stat.value)
+            }
         }
     }
 }

@@ -152,7 +152,7 @@ final class DashboardUITests: XCTestCase {
         for label in ["last 10 min", "last 60 min", "last 6 hours"] {
             XCTAssertTrue(app.element(labelled: label).waitForExistence(timeout: 5), "The range menu offers \(label)")
         }
-        app.buttons["last 60 min"].firstMatch.tap()
+        app.element(labelled: "last 60 min").tap()
         XCTAssertTrue(wait(upTo: 5) { range.value as? String == "last 60 min" }, "The card shows its new range: \(String(describing: range.value))")
         // The other cards keep theirs.
         XCTAssertEqual(app.element(withIdentifier: DashboardID.range("spark")).value as? String, "last 10 min")
@@ -235,11 +235,13 @@ final class DashboardUITests: XCTestCase {
         XCTAssertTrue(second.waitForExistence(timeout: 10))
         XCTAssertLessThan(first.frame.minY + first.frame.minX, second.frame.minY + second.frame.minX, "Gaming PC starts before DGX Spark")
 
-        // Hold the grip, then drag it onto the next card.
+        // Hold the grip, then drag it onto the next card: its top, which is on screen on a phone too.
         let grip = app.element(withIdentifier: DashboardID.grip("gaming"))
         XCTAssertTrue(grip.waitForExistence(timeout: 5))
+        XCTAssertEqual(grip.label, "Drag to reorder")
+        XCTAssertEqual(grip.value as? String, "1 of 5")
         let start = grip.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-        let target = second.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.6))
+        let target = second.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.12))
         start.press(forDuration: 0.6, thenDragTo: target, withVelocity: .slow, thenHoldForDuration: 0.4)
 
         XCTAssertTrue(

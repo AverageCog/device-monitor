@@ -349,6 +349,8 @@ private struct DashboardLiftedCardBody: View {
                 device: device, series: store.series(for: id), isDetailsOpen: DashboardMemory.shared.openDetails.contains(id),
                 index: 0, count: 1, role: .lifted
             )
+            // Redrawn when its device reports, not each time the finger moves.
+            .equatable()
             .frame(width: reorder.liftSize.width, height: reorder.liftSize.height)
             .overlay {
                 RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous)
