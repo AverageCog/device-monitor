@@ -89,7 +89,6 @@ struct DashboardGrid: View {
                 } action: { frame in
                     reorder.setFrame(frame, for: device.id)
                 }
-                .onDisappear { reorder.forgetFrame(of: device.id) }
                 .transition(.opacity)
             }
         }
@@ -102,7 +101,9 @@ struct DashboardGrid: View {
         .zIndex(1)
         .onChange(of: ids, initial: true) { _, ids in
             DashboardMemory.shared.keep(only: Set(ids))
+            reorder.cardsChanged(ids, store: store, failures: actions)
         }
+        .onDisappear { reorder.abandon() }
     }
 
     // MARK: Without cards
@@ -176,8 +177,17 @@ struct DashboardGrid: View {
         if let id = options.removeID, let device = store.device(id), device.online {
             actions.perform(.remove, on: device) {}
         }
+        if options.commits {
+            // Long enough for the question to be seen to come up.
+            try? await Task.sleep(for: .milliseconds(900))
+            if actions.renaming != nil { actions.commitRename(store: store) }
+            if actions.removing != nil { actions.commitRemove(store: store) }
+        }
         if let failure = options.failure {
             actions.report(DashboardStrings.renameFailed(store.devices.first?.displayName ?? ""), .unreachable(failure))
+        }
+        if let choice = options.range, let range = HistoryRange(rawValue: choice.range) {
+            store.setRange(range, for: choice.id)
         }
         if options.showsOfflineList { showsOfflineList = true }
         if let anchor = options.scrollAnchor {
@@ -192,9 +202,14 @@ struct DashboardGrid: View {
             // its own inside the grid's layout is not found.
             scroll.scrollTo(parts.first == "debug" ? DashboardID.debugAnchor : parts.first ?? anchor, anchor: edge)
         }
-        if let lift = options.lift {
+        let online = store.onlineDevices.map(\.id)
+        if let move = options.move {
             try? await Task.sleep(for: .milliseconds(300))
-            reorder.debugLift(id: lift.id, dx: lift.dx, dy: lift.dy, online: store.onlineDevices.map(\.id))
+            reorder.move(id: move.id, by: move.offset, online: online, store: store, failures: actions)
+        }
+        if let drag = options.drag {
+            try? await Task.sleep(for: .milliseconds(300))
+            await reorder.debugDrag(id: drag.id, over: drag.over, holds: drag.holds, online: online, store: store, failures: actions)
         }
     }
     #endif

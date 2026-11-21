@@ -73,8 +73,8 @@ struct DashboardCard: View, Equatable {
                     onBegan: { point, windowPoint, scrollView in
                         reorder.begin(id: device.id, at: point, windowPoint: windowPoint, scrollView: scrollView, online: store.onlineDevices.map(\.id))
                     },
-                    onMoved: { reorder.move(windowPoint: $0) },
-                    onEnded: { reorder.end(store: store, failures: actions) }
+                    onMoved: { reorder.move(id: device.id, windowPoint: $0) },
+                    onEnded: { reorder.end(id: device.id, store: store, failures: actions) }
                 )
                 .frame(width: DashboardReorderModel.gripReach.width, height: DashboardReorderModel.gripReach.height)
             }

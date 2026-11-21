@@ -62,13 +62,11 @@ final class DashboardReorderModel {
 
     // MARK: Layout
 
-    /// The grid reports where each card is.
+    /// The grid reports where each card is. A frame is kept after its card has gone: only the
+    /// cards of the order in hand are ever looked up, and a view that leaves the screen for a
+    /// moment (another tab) does not report again when it is back where it was.
     func setFrame(_ frame: CGRect, for id: String) {
         frames[id] = frame
-    }
-
-    func forgetFrame(of id: String) {
-        frames[id] = nil
     }
 
     /// The online devices in the order to show them: the store's, unless a drag says otherwise.
@@ -98,7 +96,8 @@ final class DashboardReorderModel {
     ///   - scrollView: the grid's scroll view, to scroll when the finger nears an edge.
     ///   - online: the ids of the cards in the grid, in the store's order.
     func begin(id: String, at point: CGPoint, windowPoint: CGPoint, scrollView: UIScrollView?, online: [String]) {
-        guard let frame = frames[id], online.contains(id) else { return }
+        // One card at a time: a second finger on another grip waits its turn.
+        guard liftedID == nil || isSettling, let frame = frames[id], online.contains(id) else { return }
         // A card still settling from the last drag is in its slot as far as layout goes.
         finishSettling()
         generation += 1
@@ -126,19 +125,19 @@ final class DashboardReorderModel {
         }
     }
 
-    /// The finger moved.
-    func move(windowPoint: CGPoint) {
-        guard liftedID != nil, !isSettling else { return }
+    /// The finger holding card `id` moved.
+    func move(id: String, windowPoint: CGPoint) {
+        guard liftedID == id, !isSettling else { return }
         lastWindowPoint = windowPoint
         follow()
     }
 
-    /// The finger lifted, or the system took the touch away: either way the card lands where it is,
-    /// as `pointerup` and `pointercancel` both end a drag on the dashboard.
-    func end(store: HubStore, failures: DashboardDeviceActionModel) {
+    /// The finger holding card `id` lifted, or the system took the touch away: either way the card
+    /// lands where it is, as `pointerup` and `pointercancel` both end a drag on the dashboard.
+    func end(id: String, store: HubStore, failures: DashboardDeviceActionModel) {
+        guard liftedID == id, !isSettling else { return }
         scroller?.cancel()
         scroller = nil
-        guard let id = liftedID, !isSettling else { return }
         drop.impactOccurred()
         let ids = order ?? []
         if let slot = frames[id], !isMotionReduced {
@@ -158,6 +157,26 @@ final class DashboardReorderModel {
     private func finishSettling() {
         liftedID = nil
         isSettling = false
+    }
+
+    /// The cards in the grid changed. A card that left while in the air (its device went offline,
+    /// or was removed) takes its touch surface with it, so the drag ends here, as a drop.
+    func cardsChanged(_ ids: [String], store: HubStore, failures: DashboardDeviceActionModel) {
+        guard let id = liftedID, !ids.contains(id) else { return }
+        scroller?.cancel()
+        scroller = nil
+        let dropped = order ?? []
+        finishSettling()
+        commit(dropped, store: store, failures: failures)
+    }
+
+    /// The grid itself went away (the last card left it): nothing is in the air any more.
+    func abandon() {
+        scroller?.cancel()
+        scroller = nil
+        generation += 1
+        finishSettling()
+        order = nil
     }
 
     /// `follow()`: the lifted card goes where the finger is, wherever its slot has moved to.
@@ -247,15 +266,23 @@ final class DashboardReorderModel {
     }
 
     #if DEBUG
-    /// Shows a card as it looks in the air, moved from its place. For screenshots.
-    func debugLift(id: String, dx: Double, dy: Double, online: [String]) {
-        guard let frame = frames[id], online.contains(id) else { return }
-        generation += 1
-        order = online
-        liftedID = id
-        liftSize = frame.size
-        liftOrigin = CGPoint(x: frame.minX + dx, y: frame.minY + dy)
-        isSettling = false
+    /// Drags card `id` onto card `target` the way a finger on its grip would, in steps, and drops
+    /// it there; or keeps it in the air (`holds`). Everything but the touch itself: the same
+    /// calls the grip's surface makes. For screenshots and for checking the path without a hand.
+    func debugDrag(id: String, over target: String, holds: Bool, online: [String], store: HubStore, failures: DashboardDeviceActionModel) async {
+        guard let from = frames[id], let to = frames[target] else { return }
+        let grip = CGPoint(x: 17, y: 26)
+        begin(id: id, at: grip, windowPoint: .zero, scrollView: nil, online: online)
+        // From the grip to a point well inside the other card, as window positions.
+        let travel = CGPoint(x: to.midX - (from.minX + grip.x), y: to.minY + min(120, to.height / 2) - (from.minY + grip.y))
+        for step in 1...16 {
+            let progress = Double(step) / 16
+            move(id: id, windowPoint: CGPoint(x: travel.x * progress, y: travel.y * progress))
+            try? await Task.sleep(for: .milliseconds(30))
+        }
+        guard !holds else { return }
+        try? await Task.sleep(for: .milliseconds(400))
+        end(id: id, store: store, failures: failures)
     }
     #endif
 }
@@ -343,7 +370,7 @@ private struct DashboardLiftedCardBody: View {
     @State private var isRaised = false
 
     var body: some View {
-        if let device = store.device(id) {
+        if let device = store.device(id), device.online {
             let raised = (isRaised || reduceMotion) && !reorder.isSettling
             DashboardCard(
                 device: device, series: store.series(for: id), isDetailsOpen: DashboardMemory.shared.openDetails.contains(id),
