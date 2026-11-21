@@ -55,7 +55,10 @@ struct DashboardCard: View, Equatable {
         }
         // Readings change in place every two seconds; equal-width digits keep them from shifting.
         .monospacedDigit()
-        // The grid makes every card of a row as tall as the tallest (CSS grid stretch).
+        // The grid makes every card of a row as tall as the tallest (CSS grid stretch). What is in
+        // the card keeps its own height: offered a height to share out, a stack shortens the texts
+        // that could wrap and leaves the rest of the room unused.
+        .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(Theme.Layout.cardPadding)
         .dmSurface(Theme.surface1, radius: Theme.Radius.card)
