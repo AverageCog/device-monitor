@@ -17,6 +17,9 @@ import Foundation
 ///     -dm-dashboard-rename-text <text>         …with this typed instead of the current name
 ///                                              (an underscore stands for a space)
 ///     -dm-dashboard-remove <device id>         open the remove confirmation for that device
+///     -dm-dashboard-removed-elsewhere          …and, while it is up, have the device removed as
+///                                              the web dashboard or another phone would (an
+///                                              online device; demo hub only)
 ///     -dm-dashboard-error <text>               show the failure alert with this explanation
 ///                                              (an underscore stands for a space)
 ///     -dm-dashboard-scrub <0…1>                every chart starts scrubbed at that fraction of
@@ -71,6 +74,7 @@ nonisolated struct DashboardDebugOptions: Sendable {
     var renameID: String?
     var renameText: String?
     var removeID: String?
+    var removedElsewhere = false
     var commits = false
     var failure: String?
     var scrub: Double?
@@ -99,6 +103,7 @@ nonisolated struct DashboardDebugOptions: Sendable {
         renameID = value(after: "-dm-dashboard-rename")
         renameText = value(after: "-dm-dashboard-rename-text")?.replacingOccurrences(of: "_", with: " ")
         removeID = value(after: "-dm-dashboard-remove")
+        removedElsewhere = arguments.contains("-dm-dashboard-removed-elsewhere")
         commits = arguments.contains("-dm-dashboard-commit")
         failure = value(after: "-dm-dashboard-error")?.replacingOccurrences(of: "_", with: " ")
         scrub = value(after: "-dm-dashboard-scrub").flatMap(Double.init).map { min(1, max(0, $0)) }

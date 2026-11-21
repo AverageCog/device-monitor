@@ -80,19 +80,15 @@ struct DashboardTitleBar: View {
     let placement: Placement
 
     @Environment(HubStore.self) private var store
-    /// The outage "Reconnecting to hub…" is shown for.
-    @State private var shownOutage: Double?
 
-    /// As long as the tab shell waits before its banner: coming back to the app reconnects in a
-    /// moment, and saying so each time would only flicker.
-    private static let reconnectingDelay: Duration = .milliseconds(1200)
     /// The height of the summary's plate, which is the tallest thing in the row.
     static let summaryHeight: CGFloat = 28
 
     var body: some View {
-        let outage = lostSince
-        let summary = DashboardSummaryModel(
-            total: store.counts.total, online: store.counts.online, isReconnecting: outage != nil && outage == shownOutage)
+        // The dashboard puts "Reconnecting to hub…" in place of this summary while its stream is
+        // down (`#summaryText`). Here the tab shell's banner says it, on every tab, so the summary
+        // keeps the last known count rather than say it a second time.
+        let summary = DashboardSummaryModel(total: store.counts.total, online: store.counts.online)
         ViewThatFits(in: .horizontal) {
             row(summary, text: summary.text, showsName: true)
             row(summary, text: summary.compactText, showsName: true)
@@ -106,18 +102,6 @@ struct DashboardTitleBar: View {
         // A bar does not grow with the text, and the pinned row only so far: what it takes, the
         // cards lose. Past this size the system's large-content viewer takes over.
         .dynamicTypeSize(...(placement == .navigationBar ? DynamicTypeSize.xLarge : .accessibility1))
-        .task(id: outage) {
-            guard let outage else {
-                shownOutage = nil
-                return
-            }
-            try? await Task.sleep(for: Self.reconnectingDelay)
-            if !Task.isCancelled { shownOutage = outage }
-        }
-    }
-
-    private var lostSince: Double? {
-        if case .reconnecting(let since) = store.connection { since } else { nil }
     }
 
     private func row(_ summary: DashboardSummaryModel, text: String, showsName: Bool) -> some View {

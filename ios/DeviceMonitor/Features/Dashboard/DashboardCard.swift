@@ -224,14 +224,25 @@ struct DashboardGaugeRow: View {
     let deviceID: String
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    /// How wide a gauge beside its line would like to be. The gauge draws its reading and label in
+    /// proportion to its width, so for them to grow with the text it has to: 96 points at the
+    /// first accessibility size, over 160 at the largest.
+    @ScaledMetric(relativeTo: .title3) private var scaledDiameter: CGFloat = 62
+    @State private var rowWidth: CGFloat = 0
+
+    /// The smallest a gauge beside its line is, as it is at the first accessibility size.
+    private static let smallestDiameter: CGFloat = 96
+    /// The most of the row a gauge takes, which leaves its line room for "30.1 / 60 GB".
+    private static let largestShare: CGFloat = 0.45
 
     var body: some View {
         if dynamicTypeSize.isAccessibilitySize {
+            let diameter = min(scaledDiameter, max(Self.smallestDiameter, rowWidth * Self.largestShare))
             VStack(alignment: .leading, spacing: Theme.Spacing.s) {
                 ForEach(gauges) { gauge in
                     HStack(spacing: Theme.Spacing.l) {
                         GaugeView(value: gauge.value, label: gauge.label, color: gauge.tint.dashboardColor)
-                            .frame(width: 96)
+                            .frame(width: diameter)
                         caption(gauge.caption)
                         Spacer(minLength: 0)
                     }
@@ -241,6 +252,9 @@ struct DashboardGaugeRow: View {
                     .accessibilityIdentifier(DashboardID.gauge(gauge.kind, deviceID))
                 }
             }
+            // The rows fill the card's width whatever size the gauges are, so this never moves
+            // with what it decides.
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { rowWidth = $0 }
         } else {
             GaugeRow {
                 ForEach(gauges) { gauge in

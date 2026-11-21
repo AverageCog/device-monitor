@@ -333,6 +333,42 @@ final class DashboardUITests: XCTestCase {
         XCTAssertEqual(app.element(withIdentifier: DashboardID.summary).label, "4 of 5 devices online")
     }
 
+    /// The device is removed somewhere else (the web dashboard, another phone) while this phone
+    /// asks whether to remove it (`-dm-dashboard-removed-elsewhere`). Its card goes and the
+    /// question stays; answering Remove gets a 404 from the hub, which is what was asked for and
+    /// no failure to report.
+    @MainActor
+    func testRemovingADeviceThatIsAlreadyGoneIsNoFailure() {
+        let app = launchDemo(["-dm-dashboard-remove", "gaming", "-dm-dashboard-removed-elsewhere"], waitingForCards: false)
+
+        let alert = app.alerts["Remove from dashboard"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 30), "The question is up")
+        waitForSession(of: app, "the hub has five devices") { $0.devices == 5 }
+        XCTAssertTrue(wait(upTo: 10) { !app.deviceRow("gaming").exists }, "Its card has gone")
+        XCTAssertTrue(alert.exists, "The question is still up")
+        alert.buttons["Remove"].tap()
+
+        XCTAssertTrue(wait(upTo: 5) { !alert.exists }, "The question has gone")
+        XCTAssertFalse(app.alerts["Couldn\u{2019}t remove \u{201C}Gaming PC\u{201D}"].waitForExistence(timeout: 3), "No failure is reported")
+        XCTAssertFalse(app.alerts.firstMatch.exists, "Nothing else comes up: \(app.alerts.firstMatch.label)")
+        XCTAssertEqual(app.element(withIdentifier: DashboardID.summary).label, "4 of 5 devices online")
+    }
+
+    /// While the hub is away the tab shell's banner says "Reconnecting to hub…" on every tab. The
+    /// header keeps what it last knew rather than say the same a second time.
+    @MainActor
+    func testAnOutageIsSaidOnce() {
+        // The demo hub goes away for twenty seconds once the session has settled; the banner
+        // comes after a second, the unreachable screen after ten.
+        let app = launchDemo(["-dm-then", "outage"])
+
+        XCTAssertTrue(app.element(withIdentifier: ID.reconnectingBanner).waitForExistence(timeout: 15), "The banner says the stream is down")
+        let summary = app.element(withIdentifier: DashboardID.summary)
+        XCTAssertTrue(summary.exists)
+        XCTAssertEqual(summary.label, "5 of 6 devices online", "The header keeps the last known count")
+        attachScreenshot(of: app, named: "dashboard-outage")
+    }
+
     // MARK: Reordering
 
     /// Whether card `a` comes before card `b` in the grid: an earlier row, or earlier in the same row.
@@ -481,6 +517,25 @@ final class DashboardUITests: XCTestCase {
         XCTAssertTrue(app.deviceRow(Self.offline).waitForExistence(timeout: 5))
     }
 
+    /// At the largest text size a row of the offline list puts Wake and the menu under the name,
+    /// several times the row's usual height. They are on show without scrolling: in a sheet on a
+    /// phone, and in a popover on an iPad, which is made as tall as its rows.
+    @MainActor
+    func testTheOfflineListFitsLargeText() {
+        let app = launchDemo(["-dm-dashboard-offline", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"])
+
+        XCTAssertTrue(app.element(withIdentifier: DashboardID.offlineList).waitForExistence(timeout: 10))
+        let row = app.deviceRow(Self.offline)
+        let wake = app.element(withIdentifier: DashboardID.wake(Self.offline))
+        let menu = app.element(withIdentifier: DashboardID.menu(Self.offline))
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        XCTAssertTrue(wake.waitForExistence(timeout: 5))
+        attachScreenshot(of: app, named: "dashboard-offline-large-text")
+        XCTAssertTrue(wake.isHittable, "Wake is on show: \(wake.frame)")
+        XCTAssertTrue(menu.isHittable, "The menu is on show: \(menu.frame)")
+        XCTAssertGreaterThanOrEqual(wake.frame.minY, row.frame.maxY - 1, "Wake is under the name")
+    }
+
     // MARK: Without cards
 
     @MainActor
@@ -540,5 +595,25 @@ final class DashboardUITests: XCTestCase {
             XCTAssertGreaterThanOrEqual(value.frame.minY, label.frame.maxY - 1, "The value \(value.frame) is under its label \(label.frame)")
             XCTAssertEqual(value.frame.minX, label.frame.minX, accuracy: 2, "The value starts where its label does")
         }
+    }
+
+    /// At accessibility sizes each gauge has a row of its own, its line beside it. The gauge draws
+    /// its reading and label in proportion to its size, so it grows with the text for them to:
+    /// at the largest size it is well over the size it has at the first.
+    @MainActor
+    func testTheGaugesGrowWithTheText() {
+        func gaugeHeight(at size: String) -> CGFloat {
+            let app = launchDemo(["-UIPreferredContentSizeCategoryName", size])
+            let gauge = app.element(withIdentifier: DashboardID.gauge("cpu", "gaming"))
+            XCTAssertTrue(gauge.waitForExistence(timeout: 10))
+            attachScreenshot(of: app, named: "dashboard-gauges-\(size)")
+            let height = gauge.frame.height
+            app.terminate()
+            return height
+        }
+        let first = gaugeHeight(at: "UICTContentSizeCategoryAccessibilityM")
+        let largest = gaugeHeight(at: "UICTContentSizeCategoryAccessibilityXXXL")
+        XCTAssertGreaterThan(first, 0)
+        XCTAssertGreaterThan(largest, first * 1.3, "The gauge grew from \(first) to \(largest) points")
     }
 }
