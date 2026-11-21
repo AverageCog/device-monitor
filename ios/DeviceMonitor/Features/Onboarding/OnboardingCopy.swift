@@ -42,6 +42,8 @@ enum OnboardingCopy {
     static let demo = "Try the demo"
 
     static func invitationHub(_ origin: String) -> String { "Invitation for \(origin)" }
+    /// What VoiceOver hears when the scanner closes on an invitation: nothing has been sent yet.
+    static func scanned(_ origin: String) -> String { "Scanned the invitation for \(origin). Check the name of this device, then connect." }
 
     // MARK: Scanner
 

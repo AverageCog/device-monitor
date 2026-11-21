@@ -131,6 +131,55 @@ final class OnboardingUITests: XCTestCase {
     }
 
     @MainActor
+    func testTheKeyboardLeavesConnectInReachAtALargeTextSize() {
+        let app = launch(["-dm-phase", "onboarding", "-dm-invitation", Self.invitation, "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityL"])
+        let name = app.element(withIdentifier: ID.nameField)
+        XCTAssertTrue(name.waitForExistence(timeout: 20))
+        let scroll = app.scrollViews.firstMatch
+        XCTAssertTrue(app.scrollUp(scroll, until: name, swipes: 8), "The name field can be scrolled into view")
+        name.tap()
+
+        // From the name down to Connect fits over the keyboard at this size, so both are on show.
+        let connect = app.buttons[ID.connectButton]
+        XCTAssertTrue(wait(upTo: 8) { connect.exists && connect.isHittable && name.isHittable }, "Connect and the field being typed in are both on show")
+        let keyboard = app.keyboards.firstMatch
+        if keyboard.exists {
+            XCTAssertTrue(
+                wait(upTo: 5) { connect.frame.maxY <= keyboard.frame.minY + 1 },
+                "Connect is above the keyboard: \(connect.frame) against \(keyboard.frame)")
+        }
+        attachScreenshot(of: app, named: "onboarding-keyboard-large-text")
+    }
+
+    @MainActor
+    func testATapAnywhereInAFieldsBoxGivesItTheKeyboard() {
+        let app = launch(["-dm-phase", "onboarding"])
+        let field = app.element(withIdentifier: ID.invitationField)
+        XCTAssertTrue(field.waitForExistence(timeout: 20))
+        let connect = app.buttons[ID.connectButton]
+        XCTAssertFalse(connect.isEnabled, "The field starts empty")
+
+        // The element is the line of text; the box around it is 44 points tall and has 12
+        // points of padding at the side. A tap in that padding, level with the box's upper
+        // part, misses the text itself.
+        field.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0.5)).withOffset(CGVector(dx: -8, dy: -10)).tap()
+        // With a hardware keyboard attached to the simulator no keyboard shows; typing works either way.
+        wait(upTo: 3) { app.keyboards.firstMatch.exists }
+        app.typeText("x")
+        XCTAssertTrue(wait(upTo: 5) { connect.isEnabled }, "The invitation field took the keyboard and the text")
+        XCTAssertTrue(app.buttons[OnboardingID.clearButton].exists)
+
+        let name = app.element(withIdentifier: ID.nameField)
+        let before = name.value as? String ?? ""
+        // The name field's element is its whole box: its lower left corner is padding.
+        name.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 1)).withOffset(CGVector(dx: 4, dy: -3)).tap()
+        // The keyboard is up already; the focus moves a moment after the tap.
+        wait(upTo: 2) { false }
+        app.typeText("y")
+        XCTAssertTrue(wait(upTo: 5) { (name.value as? String ?? "") != before }, "The name field took the keyboard and the text")
+    }
+
+    @MainActor
     func testThePairingScreenScrollsAtTheLargestTextSize() {
         let app = launch(["-dm-phase", "onboarding", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"])
         XCTAssertTrue(app.element(withIdentifier: ID.onboarding).waitForExistence(timeout: 20))
@@ -185,7 +234,7 @@ final class OnboardingUITests: XCTestCase {
     }
 
     @MainActor
-    func testAScannedInvitationClosesTheScannerAndPairs() {
+    func testAScannedInvitationWaitsForConnect() {
         // The simulated scan is of an invitation for a hub that does not exist: everything up to
         // the hub's answer is real.
         let app = launch(["-dm-phase", "onboarding", "-dm-onboarding-scanner", "accept"])
@@ -195,12 +244,40 @@ final class OnboardingUITests: XCTestCase {
         let hub = app.element(withIdentifier: OnboardingID.invitationHub)
         XCTAssertTrue(hub.waitForExistence(timeout: 5), "The scanned invitation is in the field")
         XCTAssertEqual(hub.label, "Invitation for https://hub.demo.example")
+
+        // An invitation works once and the hub cannot rename a phone afterwards: nothing is
+        // sent until the hub and the name have been seen and Connect is pressed.
+        let connect = app.buttons[ID.connectButton]
         let error = app.element(withIdentifier: ID.pairError)
-        XCTAssertTrue(error.waitForExistence(timeout: 45), "Pairing started without another tap, and failed: there is no such hub")
+        XCTAssertFalse(error.waitForExistence(timeout: 6), "A scan does not pair by itself")
+        XCTAssertTrue(connect.isEnabled)
+        XCTAssertEqual(connect.label, "Connect", "Nothing is under way")
+        XCTAssertTrue(connect.isHittable, "Connect is on show once the scanner has gone")
+        XCTAssertFalse((app.element(withIdentifier: ID.nameField).value as? String ?? "").isEmpty, "The name is there to be changed first")
+        attachScreenshot(of: app, named: "scanner-accepted")
+
+        connect.tap()
+        XCTAssertTrue(error.waitForExistence(timeout: 45), "Connect pairs with the scanned invitation, and fails: there is no such hub")
         XCTAssertFalse(error.label.contains(Self.code), "No message quotes the code")
         XCTAssertEqual(app.sessionState?.phase, "onboarding")
-        XCTAssertTrue(app.buttons[ID.connectButton].isEnabled, "The invitation is kept for another try: it was not used")
-        attachScreenshot(of: app, named: "scanner-accepted")
+        XCTAssertTrue(connect.isEnabled, "The invitation is kept for another try: it was not used")
+    }
+
+    @MainActor
+    func testTheViewfinderWindowStaysClearAtTheLargestTextSize() {
+        let app = launch(["-dm-phase", "onboarding", "-dm-onboarding-scanner", "browser", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"])
+        let message = app.element(withIdentifier: OnboardingID.scannerMessage)
+        XCTAssertTrue(message.waitForExistence(timeout: 20))
+        XCTAssertTrue(message.label.contains("This link opens the dashboard in a browser."), "All of the explanation is read out, whatever part of it is on show")
+        let torch = app.element(withIdentifier: OnboardingID.scannerTorch)
+        XCTAssertTrue(torch.exists)
+        // The window is drawn, not an element: it has the room between the navigation bar (or
+        // the instruction) and the explanation, and the layout never gives it less than 160 points.
+        let top = [app.navigationBars.firstMatch, app.element(withIdentifier: OnboardingID.scannerInstruction)]
+            .filter { $0.exists }.map { $0.frame.maxY }.max() ?? 0
+        XCTAssertGreaterThanOrEqual(message.frame.minY - top, 160, "Room for the window above the explanation: \(message.frame) under \(top)")
+        XCTAssertLessThanOrEqual(message.frame.maxY, torch.frame.minY, "The explanation ends above the torch")
+        attachScreenshot(of: app, named: "scanner-browser-xxxl")
     }
 
     // MARK: - Connecting

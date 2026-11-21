@@ -12,7 +12,8 @@ import SwiftUI
 ///                                      unavailable | failed, or scanning and just shown a
 ///                                      desktop | browser | other code (the transport's message
 ///                                      for it), or `accept`: a good invitation was scanned
-///                                      (the sheet closes and pairing starts)
+///                                      (the sheet closes, and the invitation waits in its
+///                                      field for Connect)
 ///     -dm-onboarding-camera <0|1>      whether the Scan button believes the device has a camera
 ///     -dm-onboarding-focus <invitation|name>
 ///                                      put the keyboard focus in that field at launch

@@ -4,11 +4,22 @@ import SwiftUI
 /// The two ways to hand over an invitation (scan it, paste it), the name this device gets on the
 /// hub, and Connect. The session controller does the pairing and words every failure.
 ///
+/// Both ways only fill the field. Pairing waits for Connect: an invitation works once and the hub
+/// cannot rename a phone afterwards, so the hub it is for and the name this device will carry
+/// are there to be looked at first.
+///
 /// The invitation lets whoever holds it in until it is used, so it is typed and shown hidden,
 /// never logged, and dropped as soon as the hub has accepted it.
 struct OnboardingPairingForm: View {
     let viewport: OnboardingViewport
 
+    /// The padding of the card this form is the last thing in: what the card's lower edge, where
+    /// the screen scrolls to, leaves under Connect.
+    static let cardPadding = Theme.Spacing.l + 2
+
+    private static let fieldSpacing = Theme.Spacing.m + 2
+
+    /// The two inputs. Each is also the place the screen scrolls to for it.
     private enum Field: Hashable {
         case invitation, name
     }
@@ -23,13 +34,23 @@ struct OnboardingPairingForm: View {
     @State private var attempted: String?
     @State private var isScannerPresented = OnboardingPairingForm.opensScanner
     @State private var hasCamera = OnboardingPairingForm.deviceHasCamera
-    @State private var fieldsHeight: CGFloat = 0
+    /// True from a scan until its sheet has gone.
+    @State private var hasScanned = false
+    /// The invitation field with what belongs to it: the Paste button and the invited hub's line.
+    @State private var invitationHeight: CGFloat = 0
+    /// From the top of the name's label down to the bottom of Connect.
+    @State private var nameReach: CGFloat = 0
     /// `viewport.visibleHeight`, where a task that outlives this value of the view can read it.
     @State private var visibleHeight: CGFloat = 0
+    @State private var revealing: Task<Void, Never>?
     @FocusState private var focus: Field?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.l) {
+        // The gap above each part is that part's own padding, not the stack's spacing. For the
+        // two inputs it is the room kept above a field the screen has scrolled to: the top of
+        // what is on show fades into the status bar, and a place to scroll to reaches no
+        // further than the view it is.
+        VStack(alignment: .leading, spacing: 0) {
             scanner
             HStack(spacing: Theme.Spacing.m) {
                 Hairline()
@@ -39,8 +60,14 @@ struct OnboardingPairingForm: View {
                 Hairline()
             }
             .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: Theme.Spacing.m + 2) {
-                invitationField
+            .padding(.top, Theme.Spacing.l)
+            invitationField
+                .onGeometryChange(for: CGFloat.self, of: { $0.size.height }, action: { invitationHeight = $0 })
+                .padding(.top, Theme.Spacing.l)
+                .id(Field.invitation)
+            // The name and everything under it as far as Connect: what there is to see while
+            // the name is typed.
+            VStack(alignment: .leading, spacing: Self.fieldSpacing) {
                 nameField
                 if let error {
                     HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.xs + 2) {
@@ -56,21 +83,30 @@ struct OnboardingPairingForm: View {
                 }
                 connectButton
             }
-            .onGeometryChange(for: CGFloat.self, of: { $0.size.height }, action: { fieldsHeight = $0 })
+            .onGeometryChange(for: CGFloat.self, of: { $0.size.height }, action: { nameReach = $0 })
+            .padding(.top, Self.fieldSpacing)
+            .id(Field.name)
         }
         .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: error)
-        .sheet(isPresented: $isScannerPresented) {
+        .sheet(isPresented: $isScannerPresented, onDismiss: scannerClosed) {
             OnboardingScannerSheet { text in
-                isScannerPresented = false
                 invitation = text
-                connect(with: text)
+                hasScanned = true
+                isScannerPresented = false
             }
+        }
+        .onChange(of: hasScanned) { _, hasScanned in
+            // Behind the sheet as it leaves: the hub the invitation is for, the name, and
+            // Connect, which is the accent button from here on.
+            if hasScanned { viewport.scroll.scrollTo(OnboardingAnchor.fields, anchor: .bottom) }
         }
         .onChange(of: focus) { reveal() }
         .onChange(of: viewport.visibleHeight, initial: true) { _, height in
             visibleHeight = height
             reveal()
         }
+        // The error and the invited hub's line come and go under the field being typed in.
+        .onChange(of: fieldsHeight) { reveal() }
         #if DEBUG
         .task {
             let options = OnboardingDebugOptions.current
@@ -149,7 +185,7 @@ struct OnboardingPairingForm: View {
                     }
                 }
                 // Marked only when the text itself is the problem; an unreachable hub is not.
-                .onboardingField(isFocused: focus == .invitation, isInvalid: error != nil && invitedOrigin == nil)
+                .onboardingField(isFocused: focus == .invitation, isInvalid: error != nil && invitedOrigin == nil) { give(.invitation) }
                 // The system's own button: it reads the pasteboard without the "Allow Paste" question.
                 // Its handler makes no promise about the thread it is called on.
                 PasteButton(payloadType: String.self) { @Sendable strings in
@@ -198,7 +234,7 @@ struct OnboardingPairingForm: View {
                 .onSubmit {
                     if canConnect { connect(with: invitation) } else { focus = nil }
                 }
-                .onboardingField(isFocused: focus == .name)
+                .onboardingField(isFocused: focus == .name) { give(.name) }
                 .disabled(isBusy)
                 .accessibilityLabel(OnboardingCopy.nameLabel)
                 .accessibilityHint(OnboardingCopy.nameHint)
@@ -234,6 +270,11 @@ struct OnboardingPairingForm: View {
         !invitation.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    /// From the top of the invitation field down to the bottom of Connect.
+    private var fieldsHeight: CGFloat {
+        invitationHeight + Self.fieldSpacing + nameReach
+    }
+
     private var isBusy: Bool {
         #if DEBUG
         if OnboardingDebugOptions.current.showsBusy { return true }
@@ -254,9 +295,22 @@ struct OnboardingPairingForm: View {
 
     // MARK: - Actions
 
+    /// A tap in a field's box, beside its text: the keyboard goes to that field.
+    private func give(_ field: Field) {
+        // The fields are off while the hub is being asked.
+        if !isBusy { focus = field }
+    }
+
     private func pasted(_ text: String) {
         invitation = text.trimmingCharacters(in: .whitespacesAndNewlines)
         focus = nil
+    }
+
+    /// The scanner has gone. After a scan, VoiceOver says what there is to act on now.
+    private func scannerClosed() {
+        guard hasScanned else { return }
+        hasScanned = false
+        if let origin = invitedOrigin { AccessibilityNotification.Announcement(OnboardingCopy.scanned(origin)).post() }
     }
 
     private func connect(with text: String) {
@@ -280,17 +334,25 @@ struct OnboardingPairingForm: View {
         }
     }
 
-    /// With the keyboard up, brings the fields, the error and Connect into view together when
-    /// there is room for all of them. Where there is not (a phone on its side), the system's own
-    /// scrolling keeps the field being typed in on show, and the keyboard's Go key connects.
+    /// With the keyboard up, keeps Connect and the error on show together with the field being
+    /// typed in, whenever what lies from that field down to Connect fits over the keyboard. Where
+    /// it does not (a phone on its side, the largest text sizes), the field goes to the top of
+    /// what is on show, with as much of what follows it as fits, and the keyboard's Go key connects.
     private func reveal() {
+        revealing?.cancel()
         guard focus != nil else { return }
-        Task {
+        revealing = Task {
             // After the keyboard has taken its room and the system has scrolled to the caret.
             try? await Task.sleep(for: .milliseconds(350))
-            guard focus != nil, fieldsHeight > 0, fieldsHeight + 2 * Theme.Spacing.xl <= visibleHeight else { return }
+            guard !Task.isCancelled, let focus, nameReach > 0, visibleHeight > 0 else { return }
+            // From the top of the field being typed in down to the card's lower edge.
+            let reach = (focus == .name ? nameReach : fieldsHeight) + Self.cardPadding
             withAnimation(reduceMotion ? nil : .easeOut(duration: 0.25)) {
-                viewport.scroll.scrollTo(OnboardingAnchor.fields, anchor: .bottom)
+                if reach <= visibleHeight {
+                    viewport.scroll.scrollTo(OnboardingAnchor.fields, anchor: .bottom)
+                } else {
+                    viewport.scroll.scrollTo(focus, anchor: .top)
+                }
             }
         }
     }

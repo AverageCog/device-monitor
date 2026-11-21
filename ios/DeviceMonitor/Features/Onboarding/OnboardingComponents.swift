@@ -207,19 +207,30 @@ struct OnboardingOriginText: View {
 extension View {
     /// A text input of the pairing form (`input` of app/setup.html): the inset fill, a hairline
     /// border, and the accent outline while it has the keyboard.
-    func onboardingField(isFocused: Bool, isInvalid: Bool = false) -> some View {
+    /// - Parameter focus: gives the field the keyboard. A plain text field answers taps on its
+    ///   line of text only; this is what a tap anywhere else in the box does.
+    func onboardingField(isFocused: Bool, isInvalid: Bool = false, focus: @escaping () -> Void) -> some View {
         dmFont(.body)
             .foregroundStyle(Theme.textPrimary)
             .padding(.horizontal, Theme.Spacing.m)
             // 44 points at the standard text size, and taller as the text grows.
             .padding(.vertical, Theme.Spacing.s)
             .frame(minHeight: 44)
-            .background(Theme.inset, in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
+            .background {
+                // Behind the field, so a tap on the text itself still goes to the field and
+                // places the caret; only the taps that miss it land here.
+                RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous)
+                    .fill(Theme.inset)
+                    .contentShape(Rectangle())
+                    .onTapGesture(perform: focus)
+                    .accessibilityHidden(true)
+            }
             .overlay {
                 RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous)
                     .strokeBorder(
                         isFocused ? Theme.accent : isInvalid ? Theme.critical : Theme.border,
                         lineWidth: isFocused ? 2 : Theme.Layout.hairline)
+                    .allowsHitTesting(false)
             }
     }
 }

@@ -30,7 +30,7 @@ struct OnboardingScreen: View {
                     if !isWide { OnboardingInstructions() }
                     OnboardingPairingForm(viewport: viewport)
                 }
-                .padding(Theme.Spacing.l + 2)
+                .padding(OnboardingPairingForm.cardPadding)
                 .dmSurface()
                 // The form scrolls here: the card's lower edge, which leaves its padding
                 // between Connect and the keyboard.
