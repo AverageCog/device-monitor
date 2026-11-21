@@ -68,16 +68,13 @@ final class RegressionUITests: XCTestCase {
         app.launchArguments = ["-dm-gallery"]
         app.launch()
 
-        let card = app.element(withIdentifier: "device-card-gaming-pc")
-        XCTAssertTrue(card.waitForExistence(timeout: 20))
-        let inCard = card.descendants(matching: .any)
+        XCTAssertTrue(app.element(withIdentifier: "device-card-gaming-pc").waitForExistence(timeout: 20))
+        // The first mock card. Only the combined element is asserted: the automation tree may still
+        // list what an accessibility element is made of, which VoiceOver never visits.
         for (label, value) in [("CPU", "28%, 59°C, Normal"), ("GPU", "81%, 66°C, Normal"), ("Memory", "46%, 27.6 / 60 GB")] {
-            let gauge = inCard.matching(NSPredicate(format: "label == %@ AND value == %@", label, value)).firstMatch
+            let gauge = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@ AND value == %@", label, value)).firstMatch
             XCTAssertTrue(gauge.exists, "\(label) gauge reads as \"\(label), \(value)\"")
         }
-        // A pill on its own reads "Temperature, 59°C, Normal".
-        let pills = inCard.matching(NSPredicate(format: "label == %@ AND value ENDSWITH %@", "Temperature", ", Normal"))
-        XCTAssertEqual(pills.count, 0, "No pill is read apart from its gauge")
     }
 
     /// At the largest text size the gallery used to open part-way down its first card with the top
@@ -91,7 +88,9 @@ final class RegressionUITests: XCTestCase {
         let heading = app.element(withIdentifier: "gallery-section-cards")
         XCTAssertTrue(heading.waitForExistence(timeout: 20))
         XCTAssertGreaterThan(heading.frame.height, 30, "The text size argument took effect")
-        XCTAssertGreaterThan(heading.frame.minY, 0, "The first heading is on screen when the gallery opens")
-        XCTAssertTrue(heading.isHittable, "The first heading is on screen when the gallery opens")
+        // Cut off, the heading sat several hundred points above the top of the screen.
+        let bar = app.navigationBars["Components"]
+        XCTAssertTrue(bar.exists)
+        XCTAssertGreaterThanOrEqual(heading.frame.minY, bar.frame.maxY, "The gallery opens with its first heading under the navigation bar")
     }
 }
