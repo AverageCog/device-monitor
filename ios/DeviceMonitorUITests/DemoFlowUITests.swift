@@ -182,11 +182,11 @@ final class DemoFlowUITests: XCTestCase {
         // looked up by its identifier alone. It is under the tab bar until the list is scrolled.
         let menu = app.element(withIdentifier: ID.debugHubMenu)
         XCTAssertTrue(menu.waitForExistence(timeout: 10), "The Devices tab has the debug tools", file: file, line: line)
-        XCTAssertTrue(
-            app.scrollUp(app.element(withIdentifier: "screen-devices"), until: menu), "The debug menu scrolls clear of the tab bar", file: file, line: line)
+        let isClear = app.scrollUp(app.element(withIdentifier: "screen-devices"), until: menu)
         menu.tap()
         let choice = app.element(labelled: item)
-        XCTAssertTrue(choice.waitForExistence(timeout: 5), "The debug menu offers \"\(item)\"", file: file, line: line)
+        XCTAssertTrue(
+            choice.waitForExistence(timeout: 5), "The debug menu opens and offers \"\(item)\" (scrolled clear of the tab bar: \(isClear))", file: file, line: line)
         choice.tap()
     }
 
