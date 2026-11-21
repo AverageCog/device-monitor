@@ -110,9 +110,13 @@ final class HubFlowUITests: XCTestCase {
         app.tabBars.buttons["Settings"].tap()
         let disconnect = app.buttons[ID.disconnectButton]
         XCTAssertTrue(disconnect.waitForExistence(timeout: 5))
-        XCTAssertEqual(disconnect.label, "Disconnect")
+        XCTAssertEqual(disconnect.label, "Disconnect\u{2026}")
         attachScreenshot(of: app, named: "hub-6-settings")
         disconnect.tap()
+        // Settings asks first; the question's own button, without the ellipsis, does it.
+        let confirm = app.buttons["Disconnect"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5), "Disconnecting is asked about first")
+        confirm.tap()
         XCTAssertTrue(app.element(withIdentifier: ID.onboarding).waitForExistence(timeout: 15), "Disconnect returns to onboarding")
         XCTAssertEqual(try phones(control).count, 0, "The hub was told")
         app.terminate()

@@ -1,25 +1,38 @@
 import DMCore
 import SwiftUI
 
-// INTERIM STUB — replaced by the Settings feature: the electricity price editor.
-// Presented by the tab shell for `AppRouter.showElectricityPrice()`, from Settings and from
-// Advanced; the environment is the tabs'. Saving goes through `store.saveEnergySettings(_:)`.
+/// The electricity price editor on its own, for the Advanced tab's "Change…" (the dashboard opens
+/// its settings dialog at the price row for that). Presented by the tab shell for
+/// `AppRouter.showElectricityPrice()`; the environment is the tabs'.
 struct ElectricityPriceSheet: View {
-    @Environment(HubStore.self) private var store
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
         NavigationStack {
-            FeaturePlaceholder(
-                systemImage: "bolt",
-                message: "The electricity price editor goes here.\n" + (store.energySettings.map { "Saved on the hub: \($0.region)." } ?? "Nothing saved on the hub."),
-                identifier: "screen-electricity-price"
-            )
-            .navigationTitle("Electricity price")
+            ScrollView {
+                VStack(alignment: .leading, spacing: Theme.Spacing.s) {
+                    SettingsPriceEditor(placement: .sheet)
+                        .padding(Theme.Spacing.l)
+                        .dmSurface(Theme.surface1, radius: Theme.Radius.card)
+                    Text(PriceEditorNotes.shared)
+                        .dmFont(.caption)
+                        .foregroundStyle(Theme.textMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, Theme.Spacing.xs)
+                }
+                .frame(maxWidth: 560)
+                .padding(Theme.Layout.screenPadding(for: sizeClass))
+                .settingsDebugWidth()
+                .frame(maxWidth: .infinity)
+            }
+            .scrollDismissesKeyboard(.interactively)
+            .accessibilityIdentifier("screen-electricity-price")
+            .navigationTitle(PriceEditor.Labels.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
+                    Button(PriceEditorNotes.done) { dismiss() }
                         .accessibilityIdentifier("electricity-price-done-button")
                 }
             }
@@ -29,7 +42,7 @@ struct ElectricityPriceSheet: View {
     }
 }
 
-#Preview {
+#Preview("Electricity price") {
     ElectricityPriceSheet()
         .demoEnvironment()
 }
