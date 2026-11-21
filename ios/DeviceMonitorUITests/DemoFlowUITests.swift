@@ -17,19 +17,30 @@ final class DemoFlowUITests: XCTestCase {
         app.launchArguments = ["-dm-demo"]
         app.launch()
 
-        for id in Self.devices {
-            XCTAssertTrue(app.deviceRow(id).waitForExistence(timeout: 20), "The demo's \(id) is listed")
+        // A card for every device that is online.
+        let online = Self.devices.dropLast()
+        for id in online {
+            XCTAssertTrue(app.deviceRow(id).waitForExistence(timeout: 20), "The demo's \(id) has a card")
         }
         let state = try XCTUnwrap(waitForSession(of: app, "the demo is live") { $0.phase == "live" && $0.devices == 6 })
         XCTAssertTrue(state.isDemo)
         XCTAssertEqual(state.online, 5)
         XCTAssertEqual(state.hub, "https://hub.demo.example")
-        XCTAssertEqual(app.deviceRow("htpc").value as? String, "offline")
         XCTAssertTrue(app.element(withIdentifier: "demo-banner").exists, "The demo says that it is one")
         attachScreenshot(of: app, named: "demo-devices")
 
+        // The offline one has no card: it is in the list that the summary opens.
+        let offline = app.deviceRow("htpc")
+        XCTAssertFalse(offline.exists, "An offline device has no card")
+        app.element(withIdentifier: "devices-summary").tap()
+        XCTAssertTrue(offline.waitForExistence(timeout: 10), "The demo's htpc is in the offline list")
+        XCTAssertTrue((offline.value as? String ?? "").hasPrefix("offline"), "got: \(String(describing: offline.value))")
+        // The list's Done button on a phone; on an iPad it is a popover, which a tap beside it closes.
+        let done = app.element(withIdentifier: "offline-list-done-button")
+        if done.waitForExistence(timeout: 2) { done.tap() } else { app.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.9)).tap() }
+        XCTAssertTrue(wait(upTo: 10) { !offline.exists }, "The offline list closes")
+
         // Reports keep arriving: a reading on screen changes, and so does the hub's heartbeat.
-        let online = Self.devices.dropLast()
         let first = Dictionary(uniqueKeysWithValues: online.map { ($0, app.deviceRow($0).value as? String ?? "") })
         XCTAssertTrue(first.values.allSatisfy { $0.hasPrefix("online, CPU ") && $0.hasSuffix("%") }, "Rows show a CPU load: \(first)")
         let changed = wait(upTo: 30) { online.contains { app.deviceRow($0).value as? String != first[$0] } }
@@ -179,10 +190,10 @@ final class DemoFlowUITests: XCTestCase {
     private func directDemoHub(of app: XCUIApplication, _ item: String, file: StaticString = #filePath, line: UInt = #line) {
         app.tabBars.buttons["Devices"].tap()
         // A SwiftUI Menu is a pop-up button to the accessibility tree, not a button, so it is
-        // looked up by its identifier alone. It is under the tab bar until the list is scrolled.
+        // looked up by its identifier alone. It is under the cards, several screens down the page.
         let menu = app.element(withIdentifier: ID.debugHubMenu)
         XCTAssertTrue(menu.waitForExistence(timeout: 10), "The Devices tab has the debug tools", file: file, line: line)
-        let isClear = app.scrollUp(app.element(withIdentifier: "screen-devices"), until: menu)
+        let isClear = app.scrollUp(app.element(withIdentifier: "screen-devices"), until: menu, swipes: 12)
         menu.tap()
         let choice = app.element(labelled: item)
         XCTAssertTrue(
@@ -193,7 +204,9 @@ final class DemoFlowUITests: XCTestCase {
     @MainActor
     func testSharedSheetsOpenFromAnyTab() {
         let app = XCUIApplication()
-        app.launchArguments = ["-dm-demo"]
+        // The Devices tab starts with the last card, the Studio PC's, at the top of the screen
+        // (see DashboardDebugOptions): the end of this test taps that card's chart.
+        app.launchArguments = ["-dm-demo", "-dm-dashboard-scroll", "studio:top"]
         app.launch()
 
         let add = app.buttons[ID.addDeviceButton]
@@ -214,9 +227,13 @@ final class DemoFlowUITests: XCTestCase {
         XCTAssertTrue(app.element(withIdentifier: "screen-electricity-price").waitForExistence(timeout: 5), "So can Settings")
         app.buttons["electricity-price-done-button"].tap()
 
-        // A device row routes to History for that device.
+        // The chart of a device's card routes to History for that device. Not the first device's:
+        // History opened without one shows the first. Its card is where the launch left it; a
+        // swipe from the top of the page could carry a chart several screens down past the bars.
         app.tabBars.buttons["Devices"].tap()
-        app.deviceRow("studio").tap()
+        let chart = app.element(withIdentifier: "device-chart-studio")
+        XCTAssertTrue(wait(upTo: 10) { chart.exists && chart.isHittable }, "The Studio PC's chart is on screen")
+        chart.tap()
         let history = app.element(withIdentifier: "screen-history")
         XCTAssertTrue(history.waitForExistence(timeout: 5))
         XCTAssertTrue(history.label.contains("Studio PC"), "got: \(history.label)")
