@@ -96,44 +96,43 @@ enum AdvancedTextMeasure {
 
 // MARK: - Table columns
 
-/// One column of a table, by the widths it can do with.
+/// One column of a table, by the widths it can do with: each a little worse than the one before.
 nonisolated struct AdvancedTableColumn: Sendable, Equatable {
-    /// Everything on one line.
-    var natural: CGFloat
-    /// What it can come down to at no cost to its figures: a heading or a phrase on two lines.
-    var wrapped: CGFloat
-    /// The least it can do with, something being lost: a name cut short, a shorter bar.
-    var minimum: CGFloat
+    /// Widest first:
+    /// - everything on one line;
+    /// - a heading or a phrase on two lines, at no cost to the figures;
+    /// - a shorter bar;
+    /// - a device's name on two lines, or cut short.
+    let widths: [CGFloat]
 
-    init(natural: CGFloat, wrapped: CGFloat? = nil, minimum: CGFloat? = nil) {
-        self.natural = natural
-        self.wrapped = min(wrapped ?? natural, natural)
-        self.minimum = min(minimum ?? self.wrapped, self.wrapped)
+    static let levels = 4
+
+    init(natural: CGFloat, wrapped: CGFloat? = nil, trimmed: CGFloat? = nil, minimum: CGFloat? = nil) {
+        let wrapped = min(wrapped ?? natural, natural)
+        let trimmed = min(trimmed ?? wrapped, wrapped)
+        widths = [natural, wrapped, trimmed, min(minimum ?? trimmed, trimmed)]
     }
 }
 
 nonisolated enum AdvancedTableFit {
     /// Column widths that fill `available` exactly, or nil when the table does not fit even with
-    /// every column at its minimum (the caller then shows cards instead).
+    /// every column at its least (the caller then shows cards instead).
     ///
     /// Spare room is shared in proportion, as a `width: 100%` table does in a browser. A shortage
-    /// is first taken from the columns that can wrap, and only then from those that lose something.
+    /// is taken level by level: every column gives up what costs least before any gives up more.
     static func widths(of columns: [AdvancedTableColumn], in available: CGFloat, spacing: CGFloat) -> [CGFloat]? {
         let room = available - spacing * CGFloat(max(0, columns.count - 1))
-        let natural = columns.reduce(0) { $0 + $1.natural }
-        let wrapped = columns.reduce(0) { $0 + $1.wrapped }
-        let minimum = columns.reduce(0) { $0 + $1.minimum }
-        guard natural > 0, room >= minimum else { return nil }
-        if room >= natural {
-            let growth = room / natural
-            return columns.map { $0.natural * growth }
+        let totals = (0..<AdvancedTableColumn.levels).map { level in columns.reduce(0) { $0 + $1.widths[level] } }
+        guard totals[0] > 0 else { return nil }
+        if room >= totals[0] {
+            let growth = room / totals[0]
+            return columns.map { $0.widths[0] * growth }
         }
-        if room >= wrapped {
-            let share = natural > wrapped ? (natural - room) / (natural - wrapped) : 0
-            return columns.map { $0.natural - ($0.natural - $0.wrapped) * share }
-        }
-        let share = wrapped > minimum ? (wrapped - room) / (wrapped - minimum) : 0
-        return columns.map { $0.wrapped - ($0.wrapped - $0.minimum) * share }
+        // The table fits somewhere between the first level it has room for and the one before.
+        guard let level = totals.firstIndex(where: { room >= $0 }) else { return nil }
+        let span = totals[level - 1] - totals[level]
+        let share = span > 0 ? (totals[level - 1] - room) / span : 0
+        return columns.map { $0.widths[level - 1] - ($0.widths[level - 1] - $0.widths[level]) * share }
     }
 }
 
@@ -152,7 +151,8 @@ nonisolated enum AdvancedTableMetrics {
     /// Width of the share bar (`.share`), and the least it may shrink to in a tight table.
     static let shareBar: CGFloat = 60
     static let shareBarMinimum: CGFloat = 36
-    /// A device name is cut short beyond this (at the default text size) before a table gives up.
+    /// The least room a table leaves for a device's name (at the default text size); a name
+    /// longer than that takes a second line there.
     static let nameMinimum: CGFloat = 84
     /// Gap between cards, and between the cells inside one.
     static let cardSpacing: CGFloat = 10
@@ -237,16 +237,20 @@ struct AdvancedDeviceName: View {
     let name: String
     let color: AdvancedSeriesColor
     var style: DMTextStyle = .callout
+    /// Two in a table, where a long name takes a second line before it is cut short.
+    var lineLimit = 1
 
     var body: some View {
-        HStack(spacing: AdvancedTableMetrics.swatchSpacing) {
+        // The square stands on the baseline of the name's first line, level with its capitals.
+        HStack(alignment: .firstTextBaseline, spacing: AdvancedTableMetrics.swatchSpacing) {
             AdvancedSwatch(color: color)
             Text(name)
                 .dmFont(style)
                 .fontWeight(.semibold)
                 .foregroundStyle(Theme.textPrimary)
-                .lineLimit(1)
+                .lineLimit(lineLimit)
                 .truncationMode(.tail)
+                .multilineTextAlignment(.leading)
         }
     }
 }

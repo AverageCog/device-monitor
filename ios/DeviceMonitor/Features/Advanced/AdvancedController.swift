@@ -156,13 +156,9 @@ final class AdvancedController {
         startLoading()
     }
 
-    /// Pull to refresh: returns when the hub has answered.
+    /// Pull to refresh: asks now, and returns when the hub has answered.
     func refresh() async {
-        guard isActive else { return }
-        reloadTask?.cancel()
-        // A task of its own: the gesture's task ends when the list is let go, the question should not.
-        await Task { await self.load() }.value
-        startLoading(askingNow: false)
+        await startLoading()?.value
     }
 
     // MARK: What changes around it
@@ -189,19 +185,31 @@ final class AdvancedController {
 
     // MARK: Loading
 
-    /// `loadAdv(); adv.timer = setInterval(loadAdv, 60e3)`.
-    private func startLoading(askingNow: Bool = true) {
+    /// `loadAdv(); adv.timer = setInterval(loadAdv, 60e3)`: asks now and every minute from now,
+    /// in place of whatever was being asked. Returns the request it makes now.
+    @discardableResult
+    private func startLoading() -> Task<Void, Never>? {
         reloadTask?.cancel()
         reloadTask = nil
-        guard isActive, let clock = store?.clock else { return }
+        guard isActive, let clock = store?.clock else { return nil }
+        // A task of its own, so that whoever waits for the answer (pull to refresh) is not
+        // waiting for the minutes after it.
+        let first = Task { [weak self] in
+            _ = await self?.load()
+        }
         reloadTask = Task { [weak self] in
-            if askingNow { await self?.load() }
+            await withTaskCancellationHandler {
+                await first.value
+            } onCancel: {
+                first.cancel()
+            }
             while !Task.isCancelled {
                 do { try await clock.sleep(milliseconds: AdvancedRefresh.reloadInterval * 1000) } catch { return }
                 guard let controller = self else { return }
                 await controller.load()
             }
         }
+        return first
     }
 
     // function loadAdv

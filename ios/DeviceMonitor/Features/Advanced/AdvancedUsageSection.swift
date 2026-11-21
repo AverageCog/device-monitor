@@ -84,8 +84,9 @@ struct AdvancedUsageSection: View {
         let bytes = max(
             widest(rows.map(\.downloaded)), widest(rows.map(\.uploaded)), widest(rows.map(\.diskRead)), widest(rows.map(\.diskWritten)))
         let columns = [
-            // A long name is cut short before the table gives up, and only then.
-            AdvancedTableColumn(natural: max(names, head(0)), minimum: max(head(0), min(names, mark + Metrics.nameMinimum * scale))),
+            // Last of all the names give way: a long one takes a second line.
+            AdvancedTableColumn(
+                natural: max(names, head(0)), minimum: max(head(0), min(names, mark + Metrics.nameMinimum * scale))),
             column(1, figures: widest(rows.map { Self.online($0) })),
             column(2, figures: load),
             column(3, figures: load),
@@ -137,7 +138,7 @@ struct AdvancedUsageSection: View {
     @ViewBuilder
     private func cell(_ row: AdvancedModel.UsageRow, _ index: Int) -> some View {
         switch index {
-        case 0: AdvancedDeviceName(name: row.name, color: row.color)
+        case 0: AdvancedDeviceName(name: row.name, color: row.color, lineLimit: 2)
         default: figure(row, index).dmFont(.callout).foregroundStyle(Theme.textPrimary).lineLimit(1)
         }
     }

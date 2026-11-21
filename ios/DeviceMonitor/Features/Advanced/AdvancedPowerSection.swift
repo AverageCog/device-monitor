@@ -116,7 +116,7 @@ struct AdvancedPowerSection: View {
         let reading = readings.map { AdvancedTextMeasure.width(of: $0, style: .statValue, size: readingSize) }.max() ?? 0
         let readingOnTwoLines = readings.map { AdvancedTextMeasure.twoLineWidth(of: $0, style: .statValue, size: readingSize) }.max() ?? 0
         let columns = [
-            // A long name is cut short before the table gives up, and only then.
+            // Last of all the names give way: a long one takes a second line.
             AdvancedTableColumn(
                 natural: max(names, total, head(0)), minimum: max(total, head(0), min(names, mark + Metrics.nameMinimum * scale))),
             AdvancedTableColumn(natural: max(watts, head(1))),
@@ -124,9 +124,9 @@ struct AdvancedPowerSection: View {
             AdvancedTableColumn(natural: max(watts, head(3))),
             AdvancedTableColumn(natural: energy),
             AdvancedTableColumn(natural: cost),
-            // The bar gives way first.
+            // The bar gives way before any name does.
             AdvancedTableColumn(
-                natural: max(head(6), percent + Metrics.shareBar), minimum: max(head(6), percent + Metrics.shareBarMinimum)),
+                natural: max(head(6), percent + Metrics.shareBar), trimmed: max(head(6), percent + Metrics.shareBarMinimum)),
             // "GPU measured, CPU estimated" may take two lines.
             AdvancedTableColumn(natural: max(head(7), reading), wrapped: max(head(7), readingOnTwoLines)),
         ]
@@ -220,7 +220,7 @@ struct AdvancedPowerSection: View {
     @ViewBuilder
     private func cell(_ row: AdvancedModel.PowerRow, _ index: Int) -> some View {
         switch index {
-        case 0: AdvancedDeviceName(name: row.name, color: row.color)
+        case 0: AdvancedDeviceName(name: row.name, color: row.color, lineLimit: 2)
         case 1: figure(row.now, isMuted: row.isOffline)
         case 2: figure(row.average)
         case 3: figure(row.peak)
