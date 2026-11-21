@@ -145,9 +145,9 @@ test('redeeming yields two independent secrets, stores only their digests and wo
     const again=await pair(code,extra);assert.equal(again.status,403);assert.deepEqual(await again.json(),REFUSED);
   }
   const text=fs.readFileSync(path.join(dataDir,'access-v2.json'),'utf8'), row=JSON.parse(text).identities[paired.id];
-  assert.deepEqual(Object.keys(row).sort(),['client','mobile','proof']);
-  assert.equal(row.client,sha(paired.client));assert.equal(row.proof,sha(paired.proof));
-  assert.deepEqual(Object.keys(row.mobile).sort(),['created','name']);assert.equal(row.mobile.name,'Kitchen iPad');
+  // Nothing outside `mobile`, where hubs from before phones would take a client digest for a desktop's.
+  assert.deepEqual(Object.keys(row),['mobile']);assert.deepEqual(Object.keys(row.mobile).sort(),['client','created','name','proof']);
+  assert.equal(row.mobile.client,sha(paired.client));assert.equal(row.mobile.proof,sha(paired.proof));assert.equal(row.mobile.name,'Kitchen iPad');
   assert.ok(Math.abs(Date.now()-row.mobile.created)<5000);
   for(const raw of [paired.client,paired.proof,code]) assert.ok(!text.includes(raw));
   if(process.platform!=='win32') assert.equal(fs.statSync(path.join(dataDir,'access-v2.json')).mode & 0o777,0o600);
@@ -211,34 +211,72 @@ test('the access store keeps phones apart from reporting identities and rolls ba
 });
 
 test('records written by any version load without trusting their contents',t=>{
-  const dir=temp(t).dir, s=Array.from({length:10},secret);
+  const dir=temp(t).dir, s=Array.from({length:15},secret);
   const identities={
     'old-desktop':{agent:sha(s[0]),client:sha(s[1])}, 'old-agent':{agent:sha(s[2])},
-    'phone':{client:sha(s[3]),proof:sha(s[4]),mobile:{name:' Hall\u0000 iPad ',created:5}},
-    'phone-without-proof':{client:sha(s[5]),mobile:{}},
-    // Hand-edited or damaged: a phone row can still never yield a reporting credential.
-    'phone-with-agent':{agent:sha(s[6]),client:sha(s[7]),proof:sha(s[8]),mobile:{name:7,created:'yesterday'}},
+    'phone':{mobile:{client:sha(s[3]),proof:sha(s[4]),name:' Hall\u0000 iPad ',created:5}},
+    'phone-without-proof':{mobile:{client:sha(s[5])}},
+    // Hand-edited or damaged: a phone row can still never yield a reporting credential, and only the
+    // digests inside `mobile` count. Without one there, a phone row opens nothing at all.
+    'phone-with-agent':{agent:sha(s[6]),client:sha(s[10]),proof:sha(s[11]),mobile:{client:sha(s[7]),proof:sha(s[8]),name:7,created:'yesterday'}},
+    'phone-without-client':{client:sha(s[12]),proof:sha(s[13]),mobile:{name:'Old layout',created:4}},
   };
-  fs.writeFileSync(path.join(dir,'access-v2.json'),JSON.stringify({localKey:s[9],identities}));
+  fs.writeFileSync(path.join(dir,'access-v2.json'),JSON.stringify({localKey:s[14],identities}));
   const access=new Access({},path.join(dir,'config.json'));
   assert.deepEqual(access.principal(s[0]),{role:'agent',id:'old-desktop'});assert.deepEqual(access.principal(s[1]),{role:'client',id:'old-desktop'});
   assert.deepEqual(access.principal(s[2]),{role:'agent',id:'old-agent'});
   assert.deepEqual(access.principal(s[3]),{role:'client',id:'phone',mobile:true});
   assert.deepEqual(access.principal(s[5]),{role:'client',id:'phone-without-proof',mobile:true});
   assert.deepEqual(access.principal(s[7]),{role:'client',id:'phone-with-agent',mobile:true});
-  for(const proofOrAgent of [s[4],s[6],s[8]]) assert.equal(access.principal(proofOrAgent),null);
-  assert.deepEqual(access.mobiles(),[{id:'phone-without-proof',name:'iPhone',created:null},{id:'phone-with-agent',name:'iPhone',created:null},{id:'phone',name:'Hall iPad',created:5}]);
+  for(const ignored of [s[4],s[6],s[8],s[10],s[11],s[12],s[13]]) assert.equal(access.principal(ignored),null);
+  assert.equal(access.index.size,6);assert.ok(![...access.index.values()].some(v=>v.id==='phone-without-client'));
+  assert.deepEqual(access.mobiles(),[{id:'phone-without-proof',name:'iPhone',created:null},{id:'phone-with-agent',name:'iPhone',created:null},
+    {id:'phone-without-client',name:'Old layout',created:4},{id:'phone',name:'Hall iPad',created:5}]);
   assert.deepEqual([...access.desktopKeys.values()].map(k=>k.toString('hex')).sort(),
     [desktopKey(sha(s[0]),sha(s[1])),desktopKey(sha(s[4]),sha(s[3])),desktopKey(sha(s[8]),sha(s[7]))].map(k=>k.toString('hex')).sort());
-  for(const id of ['phone','phone-without-proof','phone-with-agent']) access.revoke(id);
+  for(const id of ['phone','phone-without-proof','phone-with-agent','phone-without-client']) access.revoke(id);
   assert.equal(access.desktopKeys.size,1);assert.equal(access.index.size,3);assert.deepEqual(access.mobiles(),[]);
-  // What an earlier hub release does with the same file: a row is { agent?, client? } to it. A phone
-  // row has no agent, so that reader sees a dashboard credential and nothing that can report.
   const stored=JSON.parse(fs.readFileSync(path.join(dir,'access-v2.json'),'utf8')).identities;
   assert.deepEqual(stored,{'old-desktop':identities['old-desktop'],'old-agent':identities['old-agent']});
+  // An earlier hub release reads a row as { agent?, client? } and finds neither in a phone's (the next test loads that release).
   const fresh=new Access({},path.join(dir,'config.json')), paired=fresh.redeem(fresh.issue('mobile',ORIGIN),'mobile',ORIGIN);
-  const row=fresh.config.identities[paired.id];
-  assert.equal(row.agent,undefined);assert.match(row.client,/^[0-9a-f]{64}$/);assert.equal(desktopKey(row.agent,row.client),null);
+  assert.deepEqual(Object.keys(fresh.config.identities[paired.id]),['mobile']);
+});
+
+// The access store of the last hub released before phones (main at 9e42fd6), with the modules it loads, from git history.
+async function releasedAccess(dir) {
+  for(const file of ['access.js','security.js','desktop-identity.js','safe-json.js']){
+    const {stdout}=await execFile('git',['show','9e42fd6:'+file],{cwd:root,windowsHide:true,maxBuffer:1<<24});
+    fs.writeFileSync(path.join(dir,file),stdout);
+  }
+  return require(path.join(dir,'access.js')).Access;
+}
+test('a hub downgraded to the release before phones accepts nothing of a paired phone and keeps its record for the upgrade',async t=>{
+  let Released;
+  // A shallow clone (as CI checks out) has no history to load that release from.
+  try{Released=await releasedAccess(temp(t).dir);}catch(e){return t.skip('needs commit 9e42fd6 in this checkout: '+e.message);}
+  const dir=temp(t).dir, file=path.join(dir,'config.json'), stored=()=>JSON.parse(fs.readFileSync(path.join(dir,'access-v2.json'),'utf8')).identities;
+  const current=new Access({},file), desk=current.redeem(current.issue('desktop',ORIGIN,'desk-1'),'desktop',ORIGIN);
+  const phone=current.redeem(current.issue('mobile',ORIGIN),'mobile',ORIGIN,{name:'Lost iPhone'}), row=stored()[phone.id];
+  const key=desktopKey(sha(phone.proof),sha(phone.client));
+  // That hub has no way to list or remove a phone, so it must not let one in: neither secret is a principal there.
+  const old=new Released({},file);
+  for(const secretKey of [phone.client,phone.proof]) for(const local of [false,true]) assert.equal(old.principal(secretKey,local),null);
+  assert.ok(![...old.index.values()].some(v=>v.id===phone.id));assert.ok(!old.desktopKeys.has(mac(key,'lookup')));
+  assert.deepEqual(old.principal(desk.client),{role:'client',id:'desk-1'});assert.equal(old.desktopKeys.size,1);
+  // Every save there writes the phone's record back exactly as it found it.
+  const box=old.redeem(old.issue('agent',ORIGIN,'box-1'),'agent',ORIGIN);
+  assert.deepEqual(stored()[phone.id],row);
+  old.revoke('desk-1');
+  assert.deepEqual(stored(),{'box-1':{agent:sha(box.agent)},[phone.id]:row});assert.equal(old.principal(phone.client),null);
+  // Upgraded again, the phone works as before, including its TLS-rotation proof, and can be removed.
+  const again=new Access({},file);
+  assert.deepEqual(again.principal(phone.client),{role:'client',id:phone.id,mobile:true});assert.equal(again.principal(phone.proof),null);
+  assert.deepEqual(again.desktopKeys.get(mac(key,'lookup')),key);assert.equal(again.desktopKeys.size,1);
+  assert.deepEqual(again.mobiles(),[{id:phone.id,name:'Lost iPhone',created:row.mobile.created}]);
+  assert.deepEqual(again.principal(box.agent),{role:'agent',id:'box-1'});assert.equal(again.principal(desk.client),null);
+  again.revoke(phone.id);
+  assert.equal(again.principal(phone.client),null);assert.equal(again.desktopKeys.size,0);assert.deepEqual(Object.keys(stored()),['box-1']);
 });
 
 test('invitation kinds cannot be confused in either direction',async t=>{
@@ -682,6 +720,40 @@ test('an answer that arrives after the phone tab was left changes nothing on scr
   ui.choose('mobile');
   assert.match(await until(()=>element('mobileCode').textContent),/^https:\/\/hub\.test\/mobile#join=[A-Za-z0-9_-]{43}$/);
   assert.equal(element('mobileRow').hidden,false);assert.ok(ui.drawn.length>1);assert.equal(ui.timers.size,1);
+});
+test('a dialog closed while it still waits for the hub neither refreshes the phone list nor issues invitations',async t=>{
+  const {h,call}=await fixture(t);
+  // The hub has no HTTPS address until "Enable Tailscale HTTPS" succeeds (a fixture hub refuses that, so it is answered here).
+  let https=false;const requests=[];
+  const gate=held(async(resource,options={})=>{
+    const request=(options.method||'GET')+' '+resource;requests.push(request+(options.body?' '+options.body:''));
+    if(request==='POST /api/remote/https'){https=true;return Response.json({ok:true});}
+    const res=await call(resource,{key:h.localKey,method:options.method,raw:options.body});
+    return request==='GET /api/info' && !https ? Response.json({...await res.json(),origin:null}) : res;
+  });
+  const ui=dialog(t,gate.fetch), {element}=ui, dlg=element('addDlg');
+  const after=async(from,ms=50)=>{await gate.settled();await new Promise(ok=>setTimeout(ok,ms));await gate.settled();return requests.slice(from);};
+  await ui.open();ui.choose('mobile');
+  await until(()=>element('cmdHint').textContent.startsWith('The iPhone and iPad app pairs through the hub’s HTTPS address.'));
+  await gate.settled();assert.equal(element('enableHttps').hidden,false);assert.equal(ui.timers.size,1);
+  // Enable HTTPS can take up to 20 seconds on a real hub (`tailscale serve --bg`): the dialog is closed meanwhile.
+  const enabling=gate.hold(/^POST \/api\/remote\/https /), clicked=element('enableHttps').listeners.click();
+  await gate.parked(enabling);dlg.close();assert.equal(ui.timers.size,0);
+  let from=requests.length;enabling.release();await clicked;
+  assert.deepEqual(await after(from),['GET /api/info']);
+  assert.equal(dlg.open,false);assert.equal(ui.timers.size,0);assert.equal(element('enableHttps').disabled,false);
+  assert.equal(element('mobileCode').textContent,'');assert.equal(element('mobileRow').hidden,true);
+  // The same for + when the dialog is closed before the hub's /api/info answer is in. The iPhone / iPad tab is still the one chosen.
+  const info=gate.hold(/^GET \/api\/info /), opened=ui.open();
+  await gate.parked(info);dlg.close();
+  from=requests.length;info.release();await opened;
+  assert.deepEqual(await after(from),[]);
+  assert.equal(ui.timers.size,0);assert.equal(element('mobileCode').textContent,'');assert.equal(element('mobileRow').hidden,true);
+  // Left open, the same click does show a phone invitation and keep the list fresh, so the checks above were not passing on a dead page.
+  from=requests.length;await ui.open();
+  assert.match(await until(()=>element('mobileCode').textContent),/^https:\/\/hub\.test\/mobile#join=[A-Za-z0-9_-]{43}$/);
+  assert.equal(ui.timers.size,1);assert.ok(requests.slice(from).some(r=>r.startsWith('POST /api/invites {"kind":"mobile"')));
+  dlg.close();assert.equal(ui.timers.size,0);
 });
 test('without an HTTPS address the phone tab explains what to enable first',async t=>{
   const {h,call}=await fixture(t,{publicUrl:null});
