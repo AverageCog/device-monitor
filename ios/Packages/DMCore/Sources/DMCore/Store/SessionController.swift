@@ -206,6 +206,18 @@ public final class SessionController {
     /// The origin of the hub in use, the demo's included: "https://hub.example:8443".
     public var hubOriginText: String? { hub?.origin.string ?? demoHub?.configuration.origin }
 
+    /// The SPKI pin of the hub's TLS key this device trusts: the one verified at pairing, or the
+    /// one the hub last proved after changing its key. A hash of a public key, so not a secret;
+    /// Settings shows it for comparing with the hub's certificate. Nil while onboarding, in demo
+    /// mode and when the credential store cannot be read.
+    ///
+    /// Read from the credential store each time, where a rotation proof writes the new pin, so
+    /// it is not observable: ask again when the screen appears.
+    public var hubPin: String? {
+        guard hub != nil else { return nil }
+        return (try? credentials.load())?.pin
+    }
+
     /// Why the hub could not be reached last time, in the transport's words ("The hub did not
     /// answer in time."), to go under the `.unreachable` message. Nil when nothing has failed.
     public var unreachableReason: String? { store?.lastErrorText }
