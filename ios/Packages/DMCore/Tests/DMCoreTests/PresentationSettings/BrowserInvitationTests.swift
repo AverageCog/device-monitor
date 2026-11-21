@@ -136,7 +136,7 @@ import Testing
         #expect(AddDeviceGuide.viewTitle == "View from another device")
         #expect(AddDeviceGuide.viewText == "Open this link on any phone, tablet or computer on your network. It is a single-use, ten-minute invitation for one browser tab.")
         #expect(AddDeviceGuide.computerOptions == ["Windows command", "Desktop app (Windows / Mac)", "Mac / Linux command"])
-        #expect(AddDeviceGuide.mobileLead == "On the hub, choose + \u{2192} iPhone / iPad app.")
+        #expect(AddDeviceGuide.mobileLead == "On the hub, choose + and then:" && AddDeviceGuide.mobileOption == "iPhone / iPad app")
     }
 
     /// The tab names and sentences quoted from the dashboard are still in the dashboard.

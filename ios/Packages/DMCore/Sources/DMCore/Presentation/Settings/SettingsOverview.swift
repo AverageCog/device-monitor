@@ -206,6 +206,37 @@ public enum PriceEditorNotes {
         sentence("Could not save the electricity price.", error)
     }
 
+    /// What the region picker shows as its choice: the place's name, "Somewhere else" for a rate
+    /// of the user's own, and the code itself for one another client saved that the table does
+    /// not list (a browser's picker would be blank).
+    public static func regionLabel(for code: String) -> String {
+        code == PriceRegions.customCode ? PriceRegions.customName : PriceRegions.region(code)?.name ?? code
+    }
+
+    /// A place's typical rate, next to its name in the list: "$0.316/kWh".
+    public static func typicalRate(of region: PriceRegion, locale: Locale = .current) -> String {
+        EnergyPrice(region: region.code, currency: region.currency, rate: region.rate).priceText(locale: locale)
+    }
+
+    /// The region picker's sections narrowed to the places whose name contains `query`, ignoring
+    /// case and accents; sections left without a place are dropped. An empty query keeps all.
+    public static func regionGroups(matching query: String, locale: Locale = .current) -> [PriceRegions.Group] {
+        let wanted = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !wanted.isEmpty else { return PriceRegions.groups }
+        return PriceRegions.groups.compactMap { group in
+            let regions = group.regions.filter {
+                $0.name.range(of: wanted, options: [.caseInsensitive, .diacriticInsensitive], locale: locale) != nil
+            }
+            return regions.isEmpty ? nil : PriceRegions.Group(title: group.title, regions: regions)
+        }
+    }
+
+    /// The price in one line, for a row that only reports it: "$0.316/kWh · Typical home rate
+    /// for California." (the Advanced page's price line without its label).
+    public static func summary(of price: EnergyPrice, locale: Locale = .current) -> String {
+        "\(price.priceText(locale: locale)) \u{B7} \(price.source)"
+    }
+
     /// "4 pm to 9 pm": a period, for the accessibility labels of its controls.
     public static func span(of period: PriceEditor.Period) -> String {
         "\(PriceEditor.hourLabel(period.from)) \(PriceEditor.Labels.to) \(PriceEditor.hourLabel(period.to))"

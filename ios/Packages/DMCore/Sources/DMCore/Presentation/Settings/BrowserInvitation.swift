@@ -186,7 +186,8 @@ public enum AddDeviceGuide {
     public static let mobileTitle = "iPhone or iPad"
     /// The dashboard's tab for this app.
     public static let mobileOption = "iPhone / iPad app"
-    public static let mobileLead = "On the hub, choose + \u{2192} \(mobileOption)."
+    /// Before `mobileOption`.
+    public static let mobileLead = "On the hub, choose + and then:"
     // 'In Device Monitor on your iPhone or iPad, choose Scan invitation and point the camera at this code. Single use, valid ten minutes.'
     public static let mobileSteps = "In Device Monitor on the other iPhone or iPad, choose Scan invitation and point the camera at the code the hub shows. Single use, valid ten minutes."
 

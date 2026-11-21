@@ -107,6 +107,37 @@ import Testing
         #expect(PriceEditorNotes.loadFailed(.http(status: 500, message: "")) == "Could not load the electricity price.")
     }
 
+    @Test func theRegionPickerNamesItsChoice() {
+        #expect(PriceEditorNotes.regionLabel(for: "US-CA") == "California")
+        #expect(PriceEditorNotes.regionLabel(for: "custom") == "Somewhere else")
+        // A browser's picker would be blank for a code the table does not have.
+        #expect(PriceEditorNotes.regionLabel(for: "ZZ") == "ZZ")
+    }
+
+    @Test func aPlaceIsListedWithItsTypicalRate() throws {
+        let enUS = Locale(identifier: "en_US")
+        #expect(PriceEditorNotes.typicalRate(of: try #require(PriceRegions.region("US-CA")), locale: enUS) == "$0.316/kWh")
+        #expect(PriceEditorNotes.typicalRate(of: try #require(PriceRegions.region("JP")), locale: enUS) == "¥31.00/kWh")
+    }
+
+    @Test func searchingNarrowsTheSectionsByName() {
+        #expect(PriceEditorNotes.regionGroups(matching: "") == PriceRegions.groups)
+        #expect(PriceEditorNotes.regionGroups(matching: "  \n") == PriceRegions.groups)
+        let new = PriceEditorNotes.regionGroups(matching: "new ")
+        #expect(new.map(\.title) == ["United States", "Canada", "Other countries"])
+        #expect(new.map { $0.regions.map(\.code) } == [["US-NH", "US-NJ", "US-NM", "US-NY"], ["CA-NB", "CA-NL"], ["NZ"]])
+        #expect(PriceEditorNotes.regionGroups(matching: "QUÉBEC").map { $0.regions.map(\.code) } == [["CA-QC"]])
+        #expect(PriceEditorNotes.regionGroups(matching: "atlantis").isEmpty)
+    }
+
+    @Test func thePriceInOneLine() {
+        let enUS = Locale(identifier: "en_US")
+        let flat = EnergyPrice(saved: EnergySettings(region: "US-CA", rate: 0.316, currency: "USD"), guessedRegion: "US")
+        #expect(PriceEditorNotes.summary(of: flat, locale: enUS) == "$0.316/kWh \u{B7} Typical home rate for California.")
+        let guessed = EnergyPrice(saved: nil, guessedRegion: "DE")
+        #expect(PriceEditorNotes.summary(of: guessed, locale: enUS) == "€0.390/kWh \u{B7} Typical home rate for Germany, guessed from this device's time zone.")
+    }
+
     @Test func periodsAreNamedByTheirHours() throws {
         var editor = PriceEditor(saved: EnergySettings(region: "US-CA", rate: 0.3, currency: "USD", tou: [TouPeriod(from: 16, to: 21, rate: 0.5), TouPeriod(from: 0, to: 12, rate: 0.2)]), guessedRegion: "US")
         #expect(editor.periods.map(PriceEditorNotes.span(of:)) == ["4 pm to 9 pm", "12 am to noon"])
