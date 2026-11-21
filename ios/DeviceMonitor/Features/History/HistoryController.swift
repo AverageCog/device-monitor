@@ -93,7 +93,8 @@ final class HistoryController {
     @ObservationIgnored private var requestedPoints: Int?
     @ObservationIgnored private var pointerTime: Double?
     @ObservationIgnored private var pinch: Pinch?
-    @ObservationIgnored private var spokenIndex: Int?
+    /// A finger is resting on a chart; a pointer hovering over one does not count.
+    @ObservationIgnored private var isHolding = false
     /// A refresh came due while a finger was on a chart; it runs when the finger lifts.
     @ObservationIgnored private var missedTick = false
     #if DEBUG
@@ -135,7 +136,8 @@ final class HistoryController {
     /// Whether a touch on the charts means anything: they show the selected device.
     private var acceptsGestures: Bool { model != nil && shownDeviceID == deviceID }
 
-    private var isInteracting: Bool { pointerTime != nil || selection != nil || pinch != nil }
+    /// A touch is in progress. The page is not refreshed under a finger.
+    private var isInteracting: Bool { isHolding || selection != nil || pinch != nil }
 
     // MARK: - Choosing what to show
 
@@ -231,12 +233,28 @@ final class HistoryController {
         reload()
     }
 
+    /// Pull to refresh: the window ends now again (a zoom stays where it is), and this returns
+    /// when the hub has answered.
+    func refresh() async {
+        guard deviceID != nil else { return }
+        cancelInteraction()
+        window.refresh(now: store.clock.now)
+        reload()
+        await loadTask?.value
+    }
+
     // MARK: - Keeping it current
 
     /// For as long as the page is on screen: loads, then moves the window to now every thirty
     /// seconds (`hv.timer`).
     func run() async {
         missedTick = false
+        // The unit may have been changed in Settings while this tab was not on screen.
+        #if DEBUG
+        if debug.unit == nil { setUnit(preferences.temperatureUnit) }
+        #else
+        setUnit(preferences.temperatureUnit)
+        #endif
         tick()
         while !Task.isCancelled {
             do {
@@ -257,7 +275,8 @@ final class HistoryController {
         }
         if failure != nil || (model == nil && !isLoading) {
             reload()
-        } else if window.refresh(now: store.clock.now) {
+        } else if !isLoading, window.refresh(now: store.clock.now) {
+            // A request that is still out is not asked again; it fails or answers by itself.
             reload(isRefresh: true)
         }
     }
@@ -326,24 +345,25 @@ final class HistoryController {
             model = nil
             failure = error.errorDescription ?? Self.failureFallback
         }
-        spokenIndex = nil
         updateTooltip()
     }
 
     // MARK: - Pointing at a moment
 
-    /// The finger rests at `x` on a chart `chartWidth` wide: every chart marks that moment.
-    func point(at x: Double, chartWidth: Double) {
+    /// A finger rests at `x` on a chart `chartWidth` wide, or a pointer hovers there (`holding`
+    /// false): every chart marks that moment.
+    func point(at x: Double, chartWidth: Double, holding: Bool = true) {
         guard acceptsGestures, let layout = layout(chartWidth) else { return }
         // hv.hoverT = hvT(x, c.clientWidth);
         pointerTime = layout.time(atX: x)
+        if holding { isHolding = true }
         updateTooltip()
     }
 
     func endPointing() {
-        guard pointerTime != nil else { return }
+        guard pointerTime != nil || isHolding else { return }
         pointerTime = nil
-        spokenIndex = nil
+        isHolding = false
         updateTooltip()
         interactionEnded()
     }
@@ -380,6 +400,7 @@ final class HistoryController {
         let ended = selection
         selection = nil
         pointerTime = nil
+        isHolding = false
         updateTooltip()
         defer { interactionEnded() }
         // A range chosen meanwhile wins over a drag across the charts it is about to replace.
@@ -403,7 +424,7 @@ final class HistoryController {
 
     func movePinch(scale: Double) {
         guard let pinch, let layout = layout(pinch.chartWidth), let stretch = Self.stretch(of: pinch, scale: scale) else {
-            selection = nil
+            if selection != nil { selection = nil }
             return
         }
         selection = HistoryChartSelection(x1: layout.x(stretch.from), x2: layout.x(stretch.to), chartWidth: pinch.chartWidth)
@@ -440,7 +461,7 @@ final class HistoryController {
 
     private func cancelInteraction() {
         pinch = nil
-        spokenIndex = nil
+        isHolding = false
         if selection != nil { selection = nil }
         if pointerTime != nil {
             pointerTime = nil
@@ -457,19 +478,20 @@ final class HistoryController {
     // MARK: - VoiceOver
 
     /// Moves the marked moment a step later or earlier, for a chart that is adjusted rather than
-    /// touched. It starts at the newest reading.
+    /// touched. It starts at the newest reading, and stays at its moment through a refresh.
     func step(_ direction: AccessibilityAdjustmentDirection) {
         guard acceptsGestures, let points = model?.points, !points.isEmpty else { return }
         let stride = max(1, points.count / 60)
         let last = points.count - 1
-        let current = min(last, spokenIndex ?? last)
+        let current = pointerTime.flatMap { time in
+            points.indices.min { abs(points[$0].t - time) < abs(points[$1].t - time) }
+        } ?? last
         let next: Int
         switch direction {
         case .increment: next = min(last, current + stride)
         case .decrement: next = max(0, current - stride)
         @unknown default: next = current
         }
-        spokenIndex = next
         pointerTime = points[next].t
         updateTooltip()
     }

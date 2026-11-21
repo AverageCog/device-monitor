@@ -6,6 +6,9 @@ import UIKit.UIGestureRecognizerSubclass
 nonisolated enum HistoryChartTouch: Equatable, Sendable {
     /// Resting on the chart, then moving: the crosshair follows.
     case point(x: CGFloat)
+    /// A pointer over the chart, no button pressed.
+    case hover(x: CGFloat)
+    /// The finger lifted, or the pointer left.
     case pointEnded
     /// A sideways drag that began at `start` and has reached `x`.
     case selectionBegan(start: CGFloat, x: CGFloat)

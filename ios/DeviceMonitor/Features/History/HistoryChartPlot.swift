@@ -204,10 +204,13 @@ struct HistoryTooltipPlacement: Layout {
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
         guard let tooltip = subviews.first else { return }
         let size = tooltip.sizeThatFits(ProposedViewSize(width: bounds.width, height: nil))
-        let crosshair = HistoryChartGeometry(size: bounds.size, scale: scale, from: from, to: to).x(time)
+        let geometry = HistoryChartGeometry(size: bounds.size, scale: scale, from: from, to: to)
+        let crosshair = geometry.x(time)
         // tip.style.left = (px + 12 + tw > W ? px - tw - 12 : px + 12) + 'px';
         let beside = crosshair + 12 + size.width > bounds.width ? crosshair - size.width - 12 : crosshair + 12
-        let x = min(bounds.width - size.width, max(0, beside))
+        // Kept inside the chart, and off the value labels for as long as it is narrower than the plot.
+        let trailing = max(0, bounds.width - size.width)
+        let x = min(trailing, max(min(geometry.plot.minX, trailing), beside))
         tooltip.place(at: CGPoint(x: bounds.minX + x, y: bounds.minY - Self.lift), anchor: .topLeading, proposal: ProposedViewSize(size))
     }
 }

@@ -62,6 +62,7 @@ struct HistoryPage: View {
                     .frame(maxWidth: .infinity)
                 }
             }
+            .refreshable { await controller.refresh() }
             // window.scrollTo(0, 0) in openHistory
             .onChange(of: controller.deviceID) {
                 proxy.scrollTo(HistoryAnchor.top, anchor: .top)
@@ -86,8 +87,8 @@ private struct HistoryControls: View {
             // One row while every chip and the range buttons fit in it, as on the dashboard.
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: Theme.Spacing.m) {
+                    // The chips take what the range buttons leave, which puts those at the far end.
                     HistoryDeviceBar(controller: controller, bleedsToEdges: false)
-                    Spacer(minLength: 0)
                     HistoryRangeControl(controller: controller)
                         .fixedSize()
                 }

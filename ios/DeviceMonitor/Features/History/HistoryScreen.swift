@@ -32,12 +32,11 @@ struct HistoryScreen: View {
 }
 
 /// Owns the page's state and ties it to what happens around it: the device the router names, the
-/// unit, the connection coming back, the app returning to the foreground, and the page being on screen.
+/// unit, the connection coming back, and the page being on screen.
 private struct HistoryRoot: View {
     private let store: HubStore
     private let preferences: Preferences
     @State private var controller: HistoryController
-    @Environment(\.scenePhase) private var scenePhase
 
     #if DEBUG
     init(store: HubStore, preferences: Preferences, debug: HistoryDebugOptions) {
@@ -61,11 +60,10 @@ private struct HistoryRoot: View {
             .onChange(of: preferences.temperatureUnit) { _, unit in
                 controller.setUnit(unit)
             }
+            // Back from an outage or from the background: what failed is asked again, and the
+            // window moves up to now without waiting for the next half minute.
             .onChange(of: store.isLive) { _, isLive in
                 if isLive { controller.tick() }
-            }
-            .onChange(of: scenePhase) { _, phase in
-                if phase == .active { controller.tick() }
             }
             // From appearing to disappearing: a tab that is not showing asks the hub for nothing.
             .task { await controller.run() }

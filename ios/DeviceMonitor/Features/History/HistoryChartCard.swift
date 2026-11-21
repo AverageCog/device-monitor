@@ -37,6 +37,13 @@ struct HistoryChartCard: View {
                     }
                     .accessibilityHidden(true)
                 }
+                // With a pointer (an iPad's trackpad) the crosshair follows it, as on the dashboard.
+                .onContinuousHover { phase in
+                    switch phase {
+                    case .active(let location): _ = handle(.hover(x: location.x), in: geometry)
+                    case .ended: _ = handle(.pointEnded, in: geometry)
+                    }
+                }
             }
             .frame(height: HistoryChartGeometry.height(scale: scale))
         }
@@ -55,6 +62,8 @@ struct HistoryChartCard: View {
         switch touch {
         case .point(let x):
             controller.point(at: geometry.layoutX(x), chartWidth: chartWidth)
+        case .hover(let x):
+            controller.point(at: geometry.layoutX(x), chartWidth: chartWidth, holding: false)
         case .pointEnded:
             controller.endPointing()
         case .selectionBegan(let start, let x):
