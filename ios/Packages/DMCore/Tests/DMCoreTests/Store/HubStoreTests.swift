@@ -350,6 +350,21 @@ import Testing
         h.store.stop()
     }
 
+    @Test func anAnswerIsCheckedAgainstTheRangeTheCardIsOnNow() async throws {
+        let h = StoreHarness()
+        try await h.goLive()
+        let answer = Gate<HistoryResponse>()
+        h.hub.on { $0.history = { _, _ in try await answer.wait() } }
+        h.store.setRange(.hour, for: "a")
+        try await eventually("the hour was asked for") { answer.arrivals == 1 }
+        // The range changes where the store is not asked to fetch anything: the preferences are shared.
+        h.preferences.setCardRange(.tenMinutes, for: "a")
+        answer.open(Self.history([F.point(1)], resolution: 10_000))
+        try await h.idle()
+        #expect(h.store.series(for: "a") == .empty && h.store.range(for: "a") == .tenMinutes)
+        h.store.stop()
+    }
+
     @Test func anAnswerOvertakenByANewerRequestIsDropped() async throws {
         let h = StoreHarness()
         try await h.goLive()
