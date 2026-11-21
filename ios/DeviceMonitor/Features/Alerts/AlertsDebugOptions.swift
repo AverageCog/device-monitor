@@ -34,6 +34,8 @@ import UIKit
 //                                     save            Save
 //                                     test            Send test alert
 //                                     test-failed     a test result with a delivery that failed
+//                                     back            leave the rule's screen for the editor
+//                                     disk-alert      a demo hub raises a disk alert (see -dm-alerts-probe)
 //                                 e.g. webhook=on,url=https://chat.example/hook,save,replace=on
 //     -dm-alerts-fail <save|test> the hub cannot be reached for that request (a stand-in: the
 //                                 demo hub itself is left alone)
@@ -41,6 +43,11 @@ import UIKit
 //     -dm-alerts-unit <C|F>       limits shown in that unit; the stored preference is not touched
 //     -dm-alerts-width <points>   lay these screens out at that width and shrink the picture to
 //                                 fit, to look at an iPad's or a sideways phone's arrangement
+//     -dm-alerts-probe            an invisible accessibility element on the Alerts tab,
+//                                 `debug-alerts-notifier`, whose label lists what the notifier
+//                                 did, e.g. "stream: up; log: 6 entries; notify: [] …; live:
+//                                 <title>; notify: [<title>] posted". The script step `disk-alert`
+//                                 has a demo hub raise an alert and clear it eight seconds later.
 //
 // `save` and `test` in a script go through the store like the buttons do, so on a demo hub they
 // change that hub (which lives in memory, for this launch only).
@@ -63,6 +70,7 @@ nonisolated struct AlertsDebugOptions: Sendable {
     var hasNoPrice = false
     var unit: TemperatureUnit?
     var width: CGFloat?
+    var showsProbe = false
 
     static let current = AlertsDebugOptions(arguments: ProcessInfo.processInfo.arguments)
 
@@ -83,6 +91,22 @@ nonisolated struct AlertsDebugOptions: Sendable {
         hasNoPrice = value(after: "-dm-alerts-price") == "none"
         unit = value(after: "-dm-alerts-unit").flatMap(TemperatureUnit.init(rawValue:))
         width = value(after: "-dm-alerts-width").flatMap(Double.init).flatMap { $0 >= 200 && $0 <= 2000 ? CGFloat($0) : nil }
+        showsProbe = arguments.contains("-dm-alerts-probe")
+    }
+}
+
+/// `-dm-alerts-probe`: what `AlertsNotifier` did, as one invisible accessibility element.
+private struct AlertsNotifierProbe: View {
+    var body: some View {
+        // The notifier is not observable; once a second is often enough for a test to follow it.
+        TimelineView(.periodic(from: .now, by: 1)) { _ in
+            Color.clear
+                .frame(width: 1, height: 1)
+                .allowsHitTesting(false)
+                .accessibilityElement()
+                .accessibilityLabel(AlertsNotifier.shared.trace.joined(separator: "; "))
+                .accessibilityIdentifier("debug-alerts-notifier")
+        }
     }
 }
 
@@ -107,6 +131,22 @@ extension View {
         #if DEBUG
         if let width = AlertsDebugOptions.current.width {
             modifier(AlertsDebugWidth(width: width))
+        } else {
+            self
+        }
+        #else
+        self
+        #endif
+    }
+}
+
+extension View {
+    /// Adds the `-dm-alerts-probe` element in a DEBUG build that was asked for it.
+    @ViewBuilder
+    func alertsDebugProbe() -> some View {
+        #if DEBUG
+        if AlertsDebugOptions.current.showsProbe {
+            overlay(alignment: .topLeading) { AlertsNotifierProbe() }
         } else {
             self
         }
@@ -182,9 +222,16 @@ nonisolated enum AlertsLaunch {
 
     /// `-dm-alerts-rule` and `-dm-alerts-script`, once, when the editor has the hub's settings.
     @MainActor
-    static func prepare(_ model: AlertsEditorModel, store: HubStore) async {
+    static func prepare(_ model: AlertsEditorModel, store: HubStore) {
         guard !isPrepared, options.rule != nil || !options.script.isEmpty else { return }
         isPrepared = true
+        // A task of its own: the screen that asks is covered by the editor a moment later, and
+        // a task tied to it would be cancelled half-way through the script.
+        Task { await run(model, store: store) }
+    }
+
+    @MainActor
+    private static func run(_ model: AlertsEditorModel, store: HubStore) async {
         for _ in 0..<80 where model.editor == nil {
             try? await Task.sleep(for: .milliseconds(100))
         }
@@ -208,6 +255,10 @@ nonisolated enum AlertsLaunch {
             case "test-failed":
                 let result = AlertTestResult(ntfy: .init(ok: false, error: "HTTP 404"), webhook: .init(ok: true))
                 model.debugShow(AlertsTestReport(result: result, sendsToApps: true))
+            case "back":
+                model.editedRuleID = nil
+            case "disk-alert":
+                AppModel.shared.session.demoHub?.simulateDiskAlert()
             default:
                 let parts = step.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
                 if parts.count == 2 { edit(model, parts[0], parts[1], unit: unit) }
@@ -254,6 +305,6 @@ nonisolated enum AlertsLaunch {
     static func unit(_ unit: TemperatureUnit) -> TemperatureUnit { unit }
     static func priceSet(_ isSet: Bool) -> Bool { isSet }
     static func shown(_ alerts: AlertsState) -> AlertsState { alerts }
-    @MainActor static func prepare(_ model: AlertsEditorModel, store: HubStore) async {}
+    @MainActor static func prepare(_ model: AlertsEditorModel, store: HubStore) {}
     #endif
 }

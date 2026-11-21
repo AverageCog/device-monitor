@@ -187,6 +187,8 @@ struct AlertsFieldRow<Accessory: View>: View {
                 .submitLabel(.done)
                 .onSubmit { focus.wrappedValue = nil }
                 .focused(focus, equals: field)
+                // The field look asks for 40 points; a touch target wants 44.
+                .frame(minHeight: 44)
                 .dmField(isInvalid: issue?.severity == .error)
                 .accessibilityIdentifier(identifier)
             if let issue {

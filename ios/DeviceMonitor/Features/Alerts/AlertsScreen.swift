@@ -7,7 +7,10 @@ import SwiftUI
 /// Its toolbar leads to the rules and channels (`AlertsSettingsScreen`).
 struct AlertsScreen: View {
     @Environment(HubStore.self) private var store
+    @Environment(AppRouter.self) private var router
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The draft of the alert settings. Here, not in the editor, so it outlives a visit there.
     @State private var model = AlertsEditorModel()
     @State private var directory = AlertsDirectory()
@@ -45,6 +48,8 @@ struct AlertsScreen: View {
                 .padding(Theme.Layout.screenPadding(for: sizeClass))
                 .alertsDebugWidth()
                 .frame(maxWidth: .infinity)
+                // An alert that fires or clears moves the list; it does not jump.
+                .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: alerts.active.map(\.id) + [alerts.events.first?.id ?? ""])
             }
             .refreshable { _ = try? await store.refreshAlerts() }
             .accessibilityIdentifier("screen-alerts")
@@ -63,6 +68,8 @@ struct AlertsScreen: View {
                 } label: {
                     Label("Alert settings", systemImage: "slider.horizontal.3")
                 }
+                // Nothing to edit before the hub has said what its rules are.
+                .disabled(model.editor == nil)
                 .accessibilityIdentifier("alerts-settings-button")
             }
         }
@@ -72,13 +79,18 @@ struct AlertsScreen: View {
         .background { AlertsStoreWatcher(directory: $directory, dayStart: $dayStart) }
         .modifier(AlertsPermissionRefresh())
         .onChange(of: store.alerts.settings, initial: true) { _, settings in model.follow(settings) }
+        // Whoever is looking at the alerts no longer needs them in Notification Centre.
         .onAppear { AlertsNotificationCenter.shared.clearDelivered() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active, router.selectedTab == .alerts { AlertsNotificationCenter.shared.clearDelivered() }
+        }
         .task {
             // The store asks with every connection. This is for when that answer never came.
             try? await Task.sleep(for: .seconds(1))
-            if !store.alerts.isLoaded, loadFailure == nil { await load() }
+            if !Task.isCancelled, !store.alerts.isLoaded, loadFailure == nil { await load() }
         }
-        .task { await AlertsLaunch.prepare(model, store: store) }
+        .onAppear { AlertsLaunch.prepare(model, store: store) }
+        .alertsDebugProbe()
     }
 
     private func load() async {
@@ -400,19 +412,15 @@ private struct AlertsEventRow: View {
                 VStack(alignment: .leading, spacing: 2) {
                     if typeSize.isAccessibilitySize {
                         title
-                        meta
+                        time
                     } else {
                         HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.s) {
                             title
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                            meta
+                            time
                         }
                     }
-                    if !row.message.isEmpty {
-                        Text(row.message)
-                            .dmFont(.callout)
-                            .foregroundStyle(Theme.textSecondary)
-                    }
+                    message
                 }
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
@@ -430,22 +438,33 @@ private struct AlertsEventRow: View {
             .foregroundStyle(Theme.textPrimary)
     }
 
-    /// "Resolved · 2:36 PM": the state in its colour, then the time.
-    private var meta: some View {
-        HStack(spacing: 5) {
-            if row.state != .firing {
-                Text(row.state.label)
-                    .foregroundStyle(tint)
-                Text("\u{B7}")
-                    .foregroundStyle(Theme.textMuted)
+    private var time: some View {
+        Text(row.time)
+            .dmFont(.caption)
+            .monospacedDigit()
+            .foregroundStyle(Theme.textMuted)
+            .lineLimit(1)
+            .fixedSize()
+    }
+
+    /// The hub's message. What is not an alert starts with the word for it, in its colour:
+    /// "Resolved · Now 79°C (limit 85°C)."
+    @ViewBuilder
+    private var message: some View {
+        if row.state == .firing {
+            if !row.message.isEmpty {
+                Text(row.message)
+                    .dmFont(.callout)
+                    .foregroundStyle(Theme.textSecondary)
             }
-            Text(row.time)
-                .monospacedDigit()
-                .foregroundStyle(Theme.textMuted)
+        } else {
+            let state = Text(row.state.label).foregroundStyle(tint)
+            // A key, so that the coloured word can be part of the one text that wraps.
+            let line: LocalizedStringKey = row.message.isEmpty ? "\(state)" : "\(state) \u{B7} \(row.message)"
+            Text(line)
+                .dmFont(.callout)
+                .foregroundStyle(Theme.textSecondary)
         }
-        .dmFont(.caption)
-        .lineLimit(1)
-        .fixedSize()
     }
 
     private var symbol: String {

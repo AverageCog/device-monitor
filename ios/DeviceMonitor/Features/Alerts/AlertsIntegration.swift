@@ -77,6 +77,13 @@ final class AlertsNotifier {
     /// The batch being handed to the system. The next one waits for it, so the order holds.
     private var posting: Task<Void, Never>?
 
+    #if DEBUG
+    /// What the notifier did, oldest first, for the DEBUG probe on the Alerts tab
+    /// (`-dm-alerts-probe`): the only way to watch it decide where nothing can answer the
+    /// system's permission question.
+    private(set) var trace: [String] = []
+    #endif
+
     private init() {}
 
     func use(_ preferences: Preferences) {
@@ -105,6 +112,7 @@ final class AlertsNotifier {
 
     /// An alert arrived on the stream, and the hub wants apps to announce it.
     func received(_ event: AlertEvent) {
+        note("live: \(event.title)")
         guard let store = session?.store, caughtUp != ObjectIdentifier(store) else {
             announce(AlertNotifications.plan(live: event, notify: true, seen: marker))
             return
@@ -130,7 +138,9 @@ final class AlertsNotifier {
     private func connectionChanged() {
         changes += 1
         caughtUp = nil
-        if session?.store?.connection == .live { catchUp() }
+        let isLive = session?.store?.connection == .live
+        note(isLive ? "stream: up" : "stream: down")
+        if isLive { catchUp() }
     }
 
     private func catchUp() {
@@ -159,6 +169,7 @@ final class AlertsNotifier {
             }
             // The stream went away and came back meanwhile: this answer may predate the gap.
             guard change == changes else { continue }
+            note("log: \(store.alerts.events.count) entries")
             announce(fetched: store.alerts, now: store.clock.now)
             caughtUp = ObjectIdentifier(store)
             return
@@ -201,6 +212,7 @@ final class AlertsNotifier {
         // Remembered whether or not this device shows anything, so that switching notifications
         // on later does not bring up alerts from before.
         if let marker = plan.marker { preferences.markAlertSeen(id: marker.id, time: marker.t) }
+        note("notify: [\(plan.notifications.map(\.title).joined(separator: " + "))] \(preferences.notificationsEnabled ? "posted" : "kept back, off on this device")")
         guard preferences.notificationsEnabled, !plan.notifications.isEmpty else { return }
         let notifications = plan.notifications
         let previous = posting
@@ -210,5 +222,13 @@ final class AlertsNotifier {
                 await AlertsNotificationCenter.post(notification)
             }
         }
+    }
+
+    /// One line for the DEBUG probe; nothing at all in a release build.
+    private func note(_ text: @autoclosure () -> String) {
+        #if DEBUG
+        trace.append(text())
+        if trace.count > 24 { trace.removeFirst(trace.count - 24) }
+        #endif
     }
 }

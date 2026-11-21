@@ -55,6 +55,8 @@ struct AlertsSettingsScreen: View {
                 proxy.scrollTo(anchor, anchor: .top)
             }
         }
+        // A pushed screen draws its own page background; the tab shell only dresses the first one.
+        .dmScreen()
         .navigationTitle("Alert settings")
         .navigationBarTitleDisplayMode(.inline)
         // With edits, the way out is Save or Cancel: a swipe back must not lose them silently.

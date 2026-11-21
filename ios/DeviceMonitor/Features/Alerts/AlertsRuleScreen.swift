@@ -39,6 +39,7 @@ struct AlertsRuleScreen: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .accessibilityIdentifier("screen-alert-rule")
+        .dmScreen()
         .navigationTitle(rule?.type.label ?? "Rule")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -141,42 +142,35 @@ struct AlertsRuleScreen: View {
     private func limitRow(_ rule: AlertRule, issue: AlertIssue?, unit: TemperatureUnit, currency: String?) -> some View {
         let unitLabel = AlertThresholds.unitLabel(kind: rule.type, unit: unit, currency: currency)
         return AlertsRow {
-            AlertsSplitRow("Limit", description: "Alerts when the reading goes above it.") {
+            AlertsSplitRow("Limit") {
                 HStack(spacing: Theme.Spacing.s) {
                     AlertsNumberField(title: "Limit", text: $limitText, isInvalid: issue != nil, width: 76, field: .limit, focus: $focus)
                         .keyboardType(.decimalPad)
                         .accessibilityValue(limitText.isEmpty ? "Empty" : "\(limitText) \(unitLabel)")
                         .accessibilityIdentifier("alert-rule-limit-field")
                     if !unitLabel.isEmpty {
-                        Text(unitLabel)
-                            .dmFont(.body)
-                            .foregroundStyle(Theme.textSecondary)
-                            .accessibilityHidden(true)
+                        AlertsUnitLabel(unitLabel)
                     }
                 }
             }
             if let issue {
                 AlertsIssueLabel(issue)
                     .accessibilityIdentifier("alert-rule-limit-issue")
+            } else {
+                AlertsRowNote(rule.type == .dailyCost ? "Alerts once today's electricity has cost more than this." : "Alerts when the reading goes above it.")
             }
         }
     }
 
     private func durationRow(_ rule: AlertRule, spec: AlertRuleSpec, issue: AlertIssue?) -> some View {
         let range = spec.minutesRange
-        let hint = rule.type == .offline
-            ? "How long a device must be silent."
-            : "How long the reading must stay above the limit. 0 alerts at once."
         return AlertsRow {
-            AlertsSplitRow("Duration", description: hint) {
+            AlertsSplitRow("Duration") {
                 HStack(spacing: Theme.Spacing.s) {
                     AlertsNumberField(title: "Duration in minutes", text: $minutesText, isInvalid: issue != nil, width: 52, field: .minutes, focus: $focus)
                         .keyboardType(.numberPad)
                         .accessibilityIdentifier("alert-rule-minutes-field")
-                    Text("min")
-                        .dmFont(.body)
-                        .foregroundStyle(Theme.textSecondary)
-                        .accessibilityHidden(true)
+                    AlertsUnitLabel("min")
                     Stepper(
                         "Duration in minutes",
                         value: Binding(
@@ -192,6 +186,12 @@ struct AlertsRuleScreen: View {
             if let issue {
                 AlertsIssueLabel(issue)
                     .accessibilityIdentifier("alert-rule-minutes-issue")
+            } else {
+                AlertsRowNote(
+                    rule.type == .offline
+                        ? "How long a device must be silent before the alert."
+                        : "How long the reading must stay above the limit. 0 means at once."
+                )
             }
         }
     }
@@ -234,6 +234,40 @@ nonisolated enum AlertsRuleField: Hashable, Sendable {
     case limit, minutes
 }
 
+/// The unit after a number field. It keeps its width: the text beside it wraps instead.
+private struct AlertsUnitLabel: View {
+    private let text: String
+
+    init(_ text: String) {
+        self.text = text
+    }
+
+    var body: some View {
+        Text(text)
+            .dmFont(.body)
+            .foregroundStyle(Theme.textSecondary)
+            .fixedSize()
+            .accessibilityHidden(true)
+    }
+}
+
+/// A line of explanation under a row's control.
+private struct AlertsRowNote: View {
+    private let text: String
+
+    init(_ text: String) {
+        self.text = text
+    }
+
+    var body: some View {
+        Text(text)
+            .dmFont(.callout)
+            .foregroundStyle(Theme.textSecondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
 /// A short right-aligned number field in the dashboard's field look.
 private struct AlertsNumberField: View {
     let title: String
@@ -252,6 +286,7 @@ private struct AlertsNumberField: View {
             .monospacedDigit()
             .focused(focus, equals: field)
             .frame(width: width * min(scale, 1.8))
+            .frame(minHeight: 44)
             .dmField(isInvalid: isInvalid)
     }
 }

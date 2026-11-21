@@ -185,10 +185,23 @@ struct AlertsSplitRow<Control: View>: View {
                 AlertsRowText(title: title, description: description)
                 control
             }
+        } else if description == nil {
+            // A short title keeps its width; the control gets the rest, and shortens what it shows
+            // (a long device name) rather than the title.
+            HStack(alignment: .center, spacing: Theme.Spacing.l) {
+                Text(title)
+                    .dmFont(.rowTitle)
+                    .foregroundStyle(Theme.textPrimary)
+                    .fixedSize()
+                control
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            }
         } else {
+            // A description wraps; the control keeps the width it needs.
             HStack(alignment: .center, spacing: Theme.Spacing.l) {
                 AlertsRowText(title: title, description: description)
                 control
+                    .layoutPriority(1)
             }
         }
     }
