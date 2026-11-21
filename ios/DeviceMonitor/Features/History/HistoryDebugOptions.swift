@@ -1,6 +1,7 @@
 #if DEBUG
 import DMCore
 import SwiftUI
+import UIKit
 
 /// Launch arguments of the History tab, for looking at states that need a finger or a failing hub
 /// where nothing can tap, drag or scroll. DEBUG builds only; a release build has none of this.
@@ -31,6 +32,13 @@ import SwiftUI
 ///                                            whether the stream was lost and found again, how many
 ///                                            answers History took from the hub while it was not
 ///                                            showing, and how many since. Needs `-dm-demo`.
+///     -dm-history-background                 refreshes every two seconds instead of thirty, and goes
+///                                            on running for a while when the app is sent to the
+///                                            background, as when iOS wakes it there for the alerts
+///                                            check. Back in front, `history-debug` says e.g.
+///                                            "background=done;requests=0;since=1": how many times
+///                                            History asked the hub for charts behind the other
+///                                            apps, and how many answers it has shown since.
 ///
 /// Nothing here is stored: the range and the unit apply to this launch only, and the hub is not
 /// told anything. `-dm-history-zoom` goes through the same code as a real drag.
@@ -53,6 +61,12 @@ nonisolated struct HistoryDebugOptions: Sendable, Equatable {
     var zoom: Fractions?
     var scenario: Scenario?
     var leaves = false
+    var watchesBackground = false
+
+    /// `-dm-history-background`'s refresh period, so that a few come due in a short stay in the background.
+    static let backgroundRefreshInterval: Double = 2_000
+    /// How long `-dm-history-background` keeps the app running in the background at most.
+    static let backgroundTime: Duration = .seconds(20)
 
     static let current = HistoryDebugOptions(arguments: ProcessInfo.processInfo.arguments)
 
@@ -80,6 +94,7 @@ nonisolated struct HistoryDebugOptions: Sendable, Equatable {
         zoom = fractions(after: "-dm-history-zoom")
         scenario = value(after: "-dm-history-state").flatMap(Scenario.init(rawValue:))
         leaves = arguments.contains("-dm-history-away")
+        watchesBackground = arguments.contains("-dm-history-background")
     }
 
     /// A chart this wide stands in for the real ones: what is marked on it is turned into times
@@ -95,6 +110,13 @@ nonisolated struct HistoryDebugOptions: Sendable, Equatable {
     func prepare(_ controller: HistoryController) {
         controller.debug = self
         controller.debugOverride(range: range, unit: unit)
+        if watchesBackground {
+            let hub = controller.loader
+            controller.loader = { [weak controller] (id: String, request: HistoryRequest) async throws(HubError) -> HistoryResponse in
+                controller?.debugRequests += 1
+                return try await hub(id, request)
+            }
+        }
         guard let scenario, scenario != .noDevices else { return }
         let hub = controller.loader
         let requests = HistoryDebugCounter()
@@ -130,13 +152,22 @@ struct HistoryDebugDriver: View {
     @Environment(HubStore.self) private var store
     @Environment(AppRouter.self) private var router
     @Environment(SessionController.self) private var session
-    /// What `-dm-history-away` found, and the answers shown by the time it came back.
+    @Environment(\.scenePhase) private var scenePhase
+    /// What `-dm-history-away` or `-dm-history-background` found, and the answers shown by the
+    /// time it came back.
     @State private var away: (report: String, loads: Int)?
+    /// `-dm-history-background`: the requests sent by the time the app went to the background.
+    @State private var requestsWhenLeft: Int?
+    /// The time iOS was asked for to go on running there.
+    @State private var backgroundTime = UIBackgroundTaskIdentifier.invalid
 
     var body: some View {
         Color.clear
             .onChange(of: controller.loadCount, initial: true) { _, count in
                 apply(after: count)
+            }
+            .onChange(of: scenePhase) { _, phase in
+                if controller.debug.watchesBackground { follow(phase) }
             }
             .accessibilityHidden(true)
             .overlay(alignment: .topLeading) {
@@ -215,6 +246,36 @@ struct HistoryDebugDriver: View {
         let loads = controller.loadCount
         away = ("away=done;reconnected=\(lost && found ? 1 : 0);loads=\(loads - before)", loads)
         router.selectedTab = .history
+    }
+
+    /// `-dm-history-background`: the app goes on running behind the other apps, as it does for a
+    /// moment after it leaves and whenever iOS wakes it for the alerts check, and says when it is
+    /// back what History did meanwhile.
+    private func follow(_ phase: ScenePhase) {
+        switch phase {
+        case .background where requestsWhenLeft == nil && controller.loadCount > 0:
+            requestsWhenLeft = controller.debugRequests
+            // Without it iOS suspends the app at once, and nothing could come due back there.
+            let time = UIApplication.shared.beginBackgroundTask(withName: "history-debug", expirationHandler: nil)
+            backgroundTime = time
+            Task {
+                try? await Task.sleep(for: HistoryDebugOptions.backgroundTime)
+                if backgroundTime == time { endBackgroundTime() }
+            }
+        case .active:
+            endBackgroundTime()
+            guard let requestsWhenLeft else { return }
+            self.requestsWhenLeft = nil
+            away = ("background=done;requests=\(controller.debugRequests - requestsWhenLeft)", controller.loadCount)
+        default:
+            break
+        }
+    }
+
+    private func endBackgroundTime() {
+        guard backgroundTime != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(backgroundTime)
+        backgroundTime = .invalid
     }
 }
 
