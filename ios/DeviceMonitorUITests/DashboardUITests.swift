@@ -31,12 +31,17 @@ final class DashboardUITests: XCTestCase {
         continueAfterFailure = false
     }
 
+    /// What an earlier run may have left in the app's defaults, set aside for this launch: a range
+    /// chosen on a card is remembered (`dm.cardRanges`), and the demo keeps it like any other hub's.
+    /// Arguments in this form take the place of the stored values without touching them.
+    private static let untouchedRanges = ["-dm.cardRanges", "{}", "-dm.range", "10m"]
+
     /// Starts the demo, with more launch arguments if a test wants a particular state, and waits
     /// for the first card.
     @MainActor
     private func launchDemo(_ arguments: [String] = [], waitingForCards: Bool = true) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-dm-demo"] + arguments
+        app.launchArguments = ["-dm-demo"] + Self.untouchedRanges + arguments
         app.launch()
         if waitingForCards {
             XCTAssertTrue(app.deviceRow("gaming").waitForExistence(timeout: 30), "The demo's first card is on screen")
@@ -45,10 +50,55 @@ final class DashboardUITests: XCTestCase {
     }
 
     /// Scrolls the page until `element` can be tapped clear of the tab bar.
+    ///
+    /// A third of a screen at a time and without a fling: a swipe travels as far as it likes, and
+    /// what is in the middle of a page several screens long can be carried past the top between
+    /// two looks. The finger is in the page's margin, where no card is to take the touch.
     @MainActor
     private func reveal(_ element: XCUIElement, in app: XCUIApplication, file: StaticString = #filePath, line: UInt = #line) {
         XCTAssertTrue(element.waitForExistence(timeout: 10), "Missing \(element)", file: file, line: line)
-        XCTAssertTrue(app.scrollUp(app.element(withIdentifier: DashboardID.screen), until: element, swipes: 12), "Could not reach \(element)", file: file, line: line)
+        let page = app.element(withIdentifier: DashboardID.screen)
+        func isClear() -> Bool {
+            guard element.exists, element.isHittable else { return false }
+            let bar = app.tabBars.firstMatch
+            // An iPad's tab bar is at the top, out of the way.
+            return !bar.exists || bar.frame.minY < page.frame.midY || element.frame.maxY <= bar.frame.minY
+        }
+        for _ in 0..<40 {
+            if isClear() { return }
+            let from = page.coordinate(withNormalizedOffset: CGVector(dx: 1, dy: 0.7)).withOffset(CGVector(dx: -6, dy: 0))
+            let to = page.coordinate(withNormalizedOffset: CGVector(dx: 1, dy: 0.35)).withOffset(CGVector(dx: -6, dy: 0))
+            from.press(forDuration: 0.05, thenDragTo: to, withVelocity: .slow, thenHoldForDuration: 0.2)
+        }
+        XCTAssertTrue(isClear(), "Could not reach \(element)", file: file, line: line)
+    }
+
+    /// Opens a menu and returns its item titled `title`.
+    ///
+    /// The title alone does not find it: "History" is also a tab, and the tab's button comes
+    /// first in the tree, menu or no menu. The item is what carries the title once the menu is
+    /// open and was not there before. No assumption about what kind of element the system makes it.
+    @MainActor
+    private func item(
+        _ title: String, ofMenuOpenedBy opener: XCUIElement, in app: XCUIApplication, file: StaticString = #filePath, line: UInt = #line
+    ) -> XCUIElement {
+        func isSame(_ a: CGRect, _ b: CGRect) -> Bool {
+            abs(a.minX - b.minX) < 1 && abs(a.minY - b.minY) < 1 && abs(a.width - b.width) < 1 && abs(a.height - b.height) < 1
+        }
+        let titled = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", title))
+        let before = titled.allElementsBoundByIndex.map(\.frame)
+        opener.tap()
+        var found: XCUIElement?
+        let appeared = wait(upTo: 5) {
+            found = titled.allElementsBoundByIndex.first { candidate in
+                guard candidate.exists else { return false }
+                let frame = candidate.frame
+                return !frame.isEmpty && !before.contains { isSame($0, frame) }
+            }
+            return found != nil
+        }
+        XCTAssertTrue(appeared, "The menu offers \"\(title)\"", file: file, line: line)
+        return found ?? titled.firstMatch
     }
 
     /// Opens a device's "…" menu and picks an item by its title.
@@ -56,10 +106,7 @@ final class DashboardUITests: XCTestCase {
     private func choose(_ item: String, fromMenuOf id: String, in app: XCUIApplication, file: StaticString = #filePath, line: UInt = #line) {
         let menu = app.element(withIdentifier: DashboardID.menu(id))
         XCTAssertTrue(menu.waitForExistence(timeout: 10), "The device has a menu", file: file, line: line)
-        menu.tap()
-        let choice = app.element(labelled: item)
-        XCTAssertTrue(choice.waitForExistence(timeout: 5), "The menu offers \"\(item)\"", file: file, line: line)
-        choice.tap()
+        self.item(item, ofMenuOpenedBy: menu, in: app, file: file, line: line).tap()
     }
 
     // MARK: Cards
@@ -140,22 +187,81 @@ final class DashboardUITests: XCTestCase {
         XCTAssertTrue(wait(upTo: 5) { !details.exists }, "Details closes")
     }
 
+    /// A device that went offline gets a fresh card when it is back, the last one to go as well:
+    /// with it the whole grid went, and its open Details used to be remembered through that.
+    @MainActor
+    func testCardsThatComeBackStartWithDetailsClosed() {
+        // Every device stops reporting, and reports again eight seconds after the hub has called
+        // the last of them offline (`-dm-dashboard-state offline-and-back`).
+        let app = launchDemo(["-dm-dashboard-details", "all", "-dm-dashboard-state", "offline-and-back"])
+        for id in Self.online {
+            let toggle = app.element(withIdentifier: DashboardID.detailsToggle(id))
+            XCTAssertTrue(wait(upTo: 10) { toggle.value as? String == "Expanded" }, "\(id) starts with Details open")
+        }
+
+        // The hub calls a device offline thirty seconds after its last report.
+        waitForSession(of: app, "no device is online", timeout: 90) { $0.devices == 6 && $0.online == 0 }
+        waitForSession(of: app, "the devices report again", timeout: 60) { $0.online == Self.online.count }
+        for id in Self.online {
+            XCTAssertTrue(app.deviceRow(id).waitForExistence(timeout: 10), "\(id) has a card again")
+            let toggle = app.element(withIdentifier: DashboardID.detailsToggle(id))
+            XCTAssertEqual(toggle.value as? String, "Collapsed", "\(id) came back as a fresh card")
+            XCTAssertFalse(app.element(withIdentifier: DashboardID.details(id)).exists, "\(id) shows no details")
+        }
+        attachScreenshot(of: app, named: "dashboard-cards-back")
+    }
+
     @MainActor
     func testACardsRangeIsChosenFromItsMenu() {
         let app = launchDemo()
 
+        // Ten minutes unless a range was chosen, and this launch starts without a choice
+        // (`untouchedRanges`): the one this test makes is remembered by the app.
         let range = app.element(withIdentifier: DashboardID.range("gaming"))
         XCTAssertTrue(range.waitForExistence(timeout: 10))
         XCTAssertEqual(range.value as? String, "last 10 min")
-        range.tap()
-        for label in ["last 10 min", "last 60 min", "last 6 hours"] {
+        // Every card shows "last 10 min" already; the hour is only in the menu.
+        let hour = item("last 60 min", ofMenuOpenedBy: range, in: app)
+        for label in ["last 10 min", "last 6 hours"] {
             XCTAssertTrue(app.element(labelled: label).waitForExistence(timeout: 5), "The range menu offers \(label)")
         }
-        app.element(labelled: "last 60 min").tap()
+        hour.tap()
         XCTAssertTrue(wait(upTo: 5) { range.value as? String == "last 60 min" }, "The card shows its new range: \(String(describing: range.value))")
         // The other cards keep theirs.
         XCTAssertEqual(app.element(withIdentifier: DashboardID.range("spark")).value as? String, "last 10 min")
         attachScreenshot(of: app, named: "dashboard-range")
+
+        // The choice is the store's to keep: it is still there after the tab was left.
+        app.tabBars.buttons["Settings"].tap()
+        app.tabBars.buttons["Devices"].tap()
+        XCTAssertTrue(range.waitForExistence(timeout: 10))
+        XCTAssertEqual(range.value as? String, "last 60 min")
+
+        // Back to ten minutes, which is then also what the app's defaults are left with.
+        item("last 10 min", ofMenuOpenedBy: range, in: app).tap()
+        XCTAssertTrue(wait(upTo: 5) { range.value as? String == "last 10 min" }, "The card is back on ten minutes: \(String(describing: range.value))")
+    }
+
+    /// A range chosen in an earlier run is in the app's defaults, the demo's included. A launch
+    /// that sets the stored ranges aside starts every card on ten minutes all the same, which is
+    /// what lets the tests here run a second time on the same simulator.
+    @MainActor
+    func testAStoredRangeIsSetAsideForALaunch() {
+        // An earlier run: six hours for the Gaming PC, chosen as its menu would (`-dm-dashboard-range`).
+        var app = XCUIApplication()
+        app.launchArguments = ["-dm-demo", "-dm-dashboard-range", "gaming:6h"]
+        app.launch()
+        var range = app.element(withIdentifier: DashboardID.range("gaming"))
+        XCTAssertTrue(range.waitForExistence(timeout: 30))
+        XCTAssertTrue(wait(upTo: 10) { range.value as? String == "last 6 hours" }, "The choice is made: \(String(describing: range.value))")
+        app.terminate()
+
+        // The next launch, as every test here starts. A range chosen for another card in it
+        // replaces what the first launch stored: a ten-minute choice is all this test leaves.
+        app = launchDemo(["-dm-dashboard-range", "spark:10m"])
+        range = app.element(withIdentifier: DashboardID.range("gaming"))
+        XCTAssertTrue(range.waitForExistence(timeout: 10))
+        XCTAssertEqual(range.value as? String, "last 10 min", "The stored choice is set aside for this launch")
     }
 
     // MARK: The menu
@@ -164,18 +270,21 @@ final class DashboardUITests: XCTestCase {
     func testTheMenuOpensHistory() {
         let app = launchDemo()
 
-        let menu = app.element(withIdentifier: DashboardID.menu("gaming"))
-        XCTAssertTrue(menu.waitForExistence(timeout: 10))
-        menu.tap()
-        for item in ["History", "Rename", "Remove from dashboard"] {
-            XCTAssertTrue(app.element(labelled: item).waitForExistence(timeout: 5), "The menu offers \(item)")
+        // Not the first device: History opened without one falls back on the first, and would
+        // look right for the Gaming PC whatever was tapped.
+        let menu = app.element(withIdentifier: DashboardID.menu("spark"))
+        reveal(menu, in: app)
+        // "History" is also the name of a tab, so the item is looked for as part of the menu.
+        let history = item("History", ofMenuOpenedBy: menu, in: app)
+        for other in ["Rename", "Remove from dashboard"] {
+            XCTAssertTrue(app.element(labelled: other).waitForExistence(timeout: 5), "The menu offers \(other)")
         }
         attachScreenshot(of: app, named: "dashboard-menu")
-        app.element(labelled: "History").tap()
+        history.tap()
 
-        let history = app.element(withIdentifier: "screen-history")
-        XCTAssertTrue(history.waitForExistence(timeout: 10))
-        XCTAssertTrue(history.label.contains("Gaming PC"), "History is on the device whose menu it was: \(history.label)")
+        let screen = app.element(withIdentifier: "screen-history")
+        XCTAssertTrue(screen.waitForExistence(timeout: 10), "The menu's History opens the History tab")
+        XCTAssertTrue(screen.label.contains("DGX Spark"), "History is on the device whose menu it was: \(screen.label)")
     }
 
     @MainActor
@@ -349,6 +458,29 @@ final class DashboardUITests: XCTestCase {
         XCTAssertTrue(wait(upTo: 10) { app.deviceRow(Self.offline).label == "Den PC" }, "The row shows the new name: \(app.deviceRow(Self.offline).label)")
     }
 
+    /// In a window the size of an iPad's the logo, name and summary are a row of their own above
+    /// the cards (`-dm-dashboard-header page` gives a phone that row). It stays where it is while
+    /// the cards scroll: the summary is the only way to the offline list.
+    @MainActor
+    func testThePinnedHeaderStaysWhileTheCardsScroll() {
+        let app = launchDemo(["-dm-dashboard-header", "page"])
+
+        let summary = app.element(withIdentifier: DashboardID.summary)
+        XCTAssertTrue(summary.waitForExistence(timeout: 10))
+        XCTAssertEqual(summary.label, "5 of 6 devices online")
+        let top = summary.frame.minY
+
+        // To the end of the last card, several screens down.
+        reveal(app.element(withIdentifier: DashboardID.detailsToggle("studio")), in: app)
+        XCTAssertTrue(summary.exists && summary.isHittable, "The summary is still on screen")
+        XCTAssertEqual(summary.frame.minY, top, accuracy: 1, "The header has not moved with the page")
+        attachScreenshot(of: app, named: "dashboard-pinned-header")
+
+        summary.tap()
+        XCTAssertTrue(app.element(withIdentifier: DashboardID.offlineList).waitForExistence(timeout: 5), "From there it still opens the offline list")
+        XCTAssertTrue(app.deviceRow(Self.offline).waitForExistence(timeout: 5))
+    }
+
     // MARK: Without cards
 
     @MainActor
@@ -396,5 +528,17 @@ final class DashboardUITests: XCTestCase {
         toggle.tap()
         XCTAssertTrue(app.element(withIdentifier: DashboardID.details("gaming")).waitForExistence(timeout: 5))
         attachScreenshot(of: app, named: "dashboard-large-text-details")
+
+        // At this size a line of the card does not hold a label and its value side by side (the
+        // label used to be cut short), so a row of Details is its label over its value. Read as
+        // one element, "Model, NVIDIA GeForce RTX 5090"; where the tree also lists the two texts
+        // it is made of, the value is under the label.
+        let row = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@ AND value == %@", "Model", "NVIDIA GeForce RTX 5090")).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5), "Details names the GPU")
+        let label = app.staticTexts["Model"], value = app.staticTexts["NVIDIA GeForce RTX 5090"]
+        if label.exists, value.exists {
+            XCTAssertGreaterThanOrEqual(value.frame.minY, label.frame.maxY - 1, "The value \(value.frame) is under its label \(label.frame)")
+            XCTAssertEqual(value.frame.minX, label.frame.minX, accuracy: 2, "The value starts where its label does")
+        }
     }
 }

@@ -16,6 +16,7 @@ struct DashboardGrid: View {
     @Environment(AppRouter.self) private var router
     @Environment(DashboardDeviceActionModel.self) private var actions
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// A column is never narrower than this (`minmax(290px, 1fr)`); it grows with the text.
     @ScaledMetric(relativeTo: .body) private var minimumCardWidth = Theme.Layout.cardMinWidth
@@ -30,12 +31,10 @@ struct DashboardGrid: View {
 
     var body: some View {
         let padding = Theme.Layout.screenPadding(for: horizontalSizeClass)
+        let pinsHeader = DashboardScreen.headerPlacement(horizontal: horizontalSizeClass, vertical: verticalSizeClass) == .page
         ScrollViewReader { scroll in
             ScrollView {
                 VStack(alignment: .leading, spacing: Theme.Layout.gridSpacing) {
-                    if DashboardScreen.headerPlacement(for: horizontalSizeClass) == .page {
-                        DashboardTitleBar(showsOfflineList: $showsOfflineList, placement: .page)
-                    }
                     if session.isDemo {
                         BannerView(DashboardStrings.demoBanner, kind: .info)
                             .accessibilityIdentifier(DashboardID.demoBanner)
@@ -56,10 +55,26 @@ struct DashboardGrid: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .accessibilityIdentifier(DashboardID.screen)
+            // header { position: sticky; top: 0 }: the cards scroll away under it.
+            .safeAreaInset(edge: .top, spacing: 0) {
+                if pinsHeader {
+                    DashboardPinnedHeader(showsOfflineList: $showsOfflineList, padding: padding)
+                }
+            }
+            // A device that leaves the grid comes back as a fresh card. Asked here and not where
+            // the cards are: when the last of them goes, that view goes with it.
+            .onChange(of: cardIDs, initial: true) { _, ids in
+                if let ids { DashboardMemory.shared.keep(only: ids) }
+            }
             #if DEBUG
             .task { await applyDebugOptions(scroll) }
             #endif
         }
+    }
+
+    /// The devices that have a card; nil until the hub has said which devices there are.
+    private var cardIDs: Set<String>? {
+        store.hasSnapshot ? Set(store.onlineDevices.map(\.id)) : nil
     }
 
     private var content: Content {
@@ -110,7 +125,6 @@ struct DashboardGrid: View {
         // Above the rest of the page, for the card in the air.
         .zIndex(1)
         .onChange(of: ids, initial: true) { _, ids in
-            DashboardMemory.shared.keep(only: Set(ids))
             reorder.cardsChanged(ids, store: store, failures: actions)
         }
         .onDisappear { reorder.abandon() }
@@ -164,11 +178,13 @@ struct DashboardGrid: View {
     private func applyDebugOptions(_ scroll: ScrollViewProxy) async {
         let options = DashboardDebugOptions.current
         // Only a demo hub is ever emptied or silenced.
+        var silenced: [String] = []
         if let hub = session.demoHub {
             switch options.state {
             case .empty:
                 for device in store.devices { try? await store.remove(device: device.id) }
-            case .allOffline:
+            case .allOffline, .offlineAndBack:
+                silenced = store.onlineDevices.map(\.id)
                 for device in store.devices { hub.setReporting(false, device: device.id) }
             case .loading, nil:
                 break
@@ -220,6 +236,15 @@ struct DashboardGrid: View {
         if let drag = options.drag {
             try? await Task.sleep(for: .milliseconds(300))
             await reorder.debugDrag(id: drag.id, over: drag.over, holds: drag.holds, online: online, store: store, failures: actions)
+        }
+        if options.state == .offlineAndBack, let hub = session.demoHub {
+            // The hub calls a device offline thirty seconds after its last report.
+            while !Task.isCancelled, store.counts.online > 0 { try? await Task.sleep(for: .milliseconds(500)) }
+            // Long enough for the page without cards to be seen.
+            try? await Task.sleep(for: .seconds(8))
+            if !Task.isCancelled {
+                for id in silenced { hub.setReporting(true, device: id) }
+            }
         }
     }
     #endif

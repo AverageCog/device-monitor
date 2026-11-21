@@ -24,13 +24,15 @@ import Foundation
 ///     -dm-dashboard-card-width <points>        the narrowest a column of the grid may be (290),
 ///                                              to see several columns on a phone
 ///     -dm-dashboard-header <page|bar>          where the logo, name and summary go, whatever the
-///                                              window's width: at the head of the page (as in a
-///                                              regular-width window) or in the navigation bar
-///     -dm-dashboard-state <loading|empty|all-offline>
+///                                              window's size: in a row pinned above the page (as
+///                                              on an iPad) or in the navigation bar
+///     -dm-dashboard-state <loading|empty|all-offline|offline-and-back>
 ///                                              loading: draw the state before the first snapshot;
 ///                                              empty: remove every device (demo hub only);
 ///                                              all-offline: stop every device reporting (demo hub
-///                                              only; the hub calls them offline 30 s later)
+///                                              only; the hub calls them offline 30 s later);
+///                                              offline-and-back: the same, and eight seconds after
+///                                              the last of them has gone they all report again
 ///
 /// Actions, done as the control would do them:
 ///
@@ -53,6 +55,7 @@ nonisolated struct DashboardDebugOptions: Sendable {
     enum ForcedState: String, Sendable {
         case loading, empty
         case allOffline = "all-offline"
+        case offlineAndBack = "offline-and-back"
     }
 
     struct Drag: Sendable {

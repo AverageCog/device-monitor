@@ -5,28 +5,31 @@ import SwiftUI
 /// "3 of 4 devices online", "+") is the navigation bar; below it the grid of cards for the devices
 /// that are online. The offline ones are a list behind the summary.
 ///
-/// In a regular-width window the logo, name and summary head the page instead of the bar: on an
-/// iPad the tab bar floats where a bar's title would go, and the summary is the only way to the
-/// offline list.
+/// In a window the size of an iPad's the logo, name and summary are a row of their own, pinned
+/// above the cards like the dashboard's sticky header: there the tab bar floats where a bar's
+/// title would go, and the summary is the only way to the offline list.
 struct DashboardScreen: View {
     @Environment(HubStore.self) private var store
     @Environment(AppRouter.self) private var router
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     @State private var showsOfflineList = false
     /// The rename and remove questions of the cards' menus. The offline list has its own.
     @State private var actions = DashboardDeviceActionModel()
 
-    /// Where the logo, name and summary go.
-    static func headerPlacement(for sizeClass: UserInterfaceSizeClass?) -> DashboardTitleBar.Placement {
+    /// Where the logo, name and summary go. A row of their own takes height from the cards for
+    /// good, so a phone on its side keeps them in the bar: its width may be regular too, but its
+    /// tab bar is at the bottom and the bar is free.
+    static func headerPlacement(horizontal: UserInterfaceSizeClass?, vertical: UserInterfaceSizeClass?) -> DashboardTitleBar.Placement {
         #if DEBUG
         if let forced = DashboardDebugOptions.current.header { return forced == "page" ? .page : .navigationBar }
         #endif
-        return sizeClass == .regular ? .page : .navigationBar
+        return horizontal == .regular && vertical == .regular ? .page : .navigationBar
     }
 
     var body: some View {
-        let placement = Self.headerPlacement(for: horizontalSizeClass)
+        let placement = Self.headerPlacement(horizontal: horizontalSizeClass, vertical: verticalSizeClass)
         DashboardGrid(showsOfflineList: $showsOfflineList)
             .environment(actions)
             // The bar shows the product instead; the tab keeps its name for the system and for tests.
@@ -66,9 +69,10 @@ struct DashboardScreen: View {
 /// name goes, as in a narrow browser window.
 struct DashboardTitleBar: View {
     nonisolated enum Placement: Sendable {
-        /// In the navigation bar of a compact-width window; the offline list is a sheet.
+        /// In the navigation bar; the offline list is a sheet.
         case navigationBar
-        /// At the head of the page in a regular-width window; the offline list is a popover.
+        /// In a row pinned above the page (`DashboardPinnedHeader`), in a window that is regular
+        /// both ways; the offline list is a popover.
         case page
     }
 
@@ -82,6 +86,8 @@ struct DashboardTitleBar: View {
     /// As long as the tab shell waits before its banner: coming back to the app reconnects in a
     /// moment, and saying so each time would only flicker.
     private static let reconnectingDelay: Duration = .milliseconds(1200)
+    /// The height of the summary's plate, which is the tallest thing in the row.
+    static let summaryHeight: CGFloat = 28
 
     var body: some View {
         let outage = lostSince
@@ -97,8 +103,9 @@ struct DashboardTitleBar: View {
             DashboardOfflineList(showsDone: placement == .navigationBar)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        // A bar does not grow with the text; past this size the system's large-content viewer takes over.
-        .dynamicTypeSize(...(placement == .navigationBar ? DynamicTypeSize.xLarge : .accessibility5))
+        // A bar does not grow with the text, and the pinned row only so far: what it takes, the
+        // cards lose. Past this size the system's large-content viewer takes over.
+        .dynamicTypeSize(...(placement == .navigationBar ? DynamicTypeSize.xLarge : .accessibility1))
         .task(id: outage) {
             guard let outage else {
                 shownOutage = nil
@@ -137,6 +144,32 @@ struct DashboardTitleBar: View {
                 showsOfflineList = true
             }
         }
+    }
+}
+
+/// The header as a row of its own that stays put while the cards scroll away under it
+/// (`header { position: sticky; top: 0 }` in public/index.html).
+struct DashboardPinnedHeader: View {
+    @Binding var showsOfflineList: Bool
+    /// The page's side padding: the row lines up with the cards.
+    let padding: CGFloat
+
+    var body: some View {
+        DashboardTitleBar(showsOfflineList: $showsOfflineList, placement: .page)
+            // As tall before the first device as with a summary, so the cards never shift for it.
+            .frame(minHeight: DashboardTitleBar.summaryHeight)
+            .padding(.horizontal, padding)
+            .padding(.vertical, Theme.Spacing.s)
+            // background: rgba(13,13,13,0.9); backdrop-filter: blur(8px). Up to the top of the
+            // screen, so that no card shows again above the row, behind the tab bar.
+            .background {
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .overlay(Theme.page.opacity(0.9))
+                    .ignoresSafeArea(edges: [.top, .horizontal])
+            }
+            // border-bottom: 1px solid var(--border)
+            .overlay(alignment: .bottom) { Hairline() }
     }
 }
 
@@ -196,7 +229,7 @@ private struct DashboardSummaryButtonStyle: ButtonStyle {
         configuration.label
             .foregroundStyle(isLit ? Theme.textPrimary : Theme.textSecondary)
             .padding(.horizontal, Theme.Spacing.s)
-            .frame(minHeight: 28)
+            .frame(minHeight: DashboardTitleBar.summaryHeight)
             .background(isLit ? Theme.surface2 : .clear, in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
             .padding(.vertical, 8)
             .contentShape(Rectangle())
