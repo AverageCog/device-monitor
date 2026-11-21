@@ -41,7 +41,7 @@ struct HistoryChartCard: View {
                 .onContinuousHover { phase in
                     switch phase {
                     case .active(let location): _ = handle(.hover(x: location.x), in: geometry)
-                    case .ended: _ = handle(.pointEnded, in: geometry)
+                    case .ended: _ = handle(.hoverEnded, in: geometry)
                     }
                 }
             }
@@ -66,6 +66,8 @@ struct HistoryChartCard: View {
             controller.point(at: geometry.layoutX(x), chartWidth: chartWidth, holding: false)
         case .pointEnded:
             controller.endPointing()
+        case .hoverEnded:
+            controller.endHovering()
         case .selectionBegan(let start, let x):
             controller.beginSelection(from: geometry.layoutX(start), to: geometry.layoutX(x), chartWidth: chartWidth)
         case .selectionMoved(let x):

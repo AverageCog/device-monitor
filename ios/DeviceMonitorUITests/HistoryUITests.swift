@@ -84,11 +84,13 @@ final class HistoryUITests: XCTestCase {
         let cpu = app.element(withIdentifier: HistoryID.tile("cpu"))
         XCTAssertEqual(cpu.label, "CPU")
         XCTAssertTrue((cpu.value as? String ?? "").contains("peak"), "The tile's value carries the peak and the average, got: \(String(describing: cpu.value))")
-        for kind in ["utilization", "temperature", "gpuPower", "network", "diskIO"] {
-            XCTAssertTrue(app.element(withIdentifier: HistoryID.chart(kind)).exists, "Missing chart \(kind)")
-        }
         XCTAssertFalse(app.element(withIdentifier: HistoryID.resetZoom).exists, "Nothing is zoomed at first")
         attachScreenshot(of: app, named: "history-default")
+        // The Gaming PC has a reading for every chart; each is reached by scrolling down the page.
+        for kind in ["utilization", "temperature", "gpuPower", "network", "diskIO"] {
+            _ = chart(kind, in: app)
+        }
+        attachScreenshot(of: app, named: "history-last-charts")
     }
 
     @MainActor

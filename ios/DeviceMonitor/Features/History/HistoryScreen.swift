@@ -104,6 +104,18 @@ private struct HistoryDeviceTracker: View {
         .demoEnvironment(tab: .history)
 }
 
+// The other states are set up with the History tab's DEBUG launch arguments.
+#if DEBUG
+/// Opens a preview on a given device, as `AppRouter.openHistory(deviceID:)` would.
+private struct HistoryPreviewDevice: ViewModifier {
+    let id: String
+    @Environment(AppRouter.self) private var router
+
+    func body(content: Content) -> some View {
+        content.onAppear { router.historyDeviceID = id }
+    }
+}
+
 #Preview("Zoomed, inspecting") {
     NavigationStack { HistoryScreen(debug: HistoryDebugOptions(arguments: ["-dm-history-zoom", "0.3,0.7", "-dm-history-inspect", "0.6"])).dmScreen() }
         .demoEnvironment(tab: .history)
@@ -111,6 +123,12 @@ private struct HistoryDeviceTracker: View {
 
 #Preview("Thirty days, Fahrenheit") {
     NavigationStack { HistoryScreen(debug: HistoryDebugOptions(arguments: ["-dm-history-range", "30d", "-dm-history-unit", "F"])).dmScreen() }
+        .demoEnvironment(tab: .history)
+}
+
+#Preview("Offline device") {
+    NavigationStack { HistoryScreen().dmScreen() }
+        .modifier(HistoryPreviewDevice(id: "htpc"))
         .demoEnvironment(tab: .history)
 }
 
@@ -128,3 +146,9 @@ private struct HistoryDeviceTracker: View {
     NavigationStack { HistoryScreen(debug: HistoryDebugOptions(arguments: ["-dm-history-state", "error"])).dmScreen() }
         .demoEnvironment(tab: .history)
 }
+
+#Preview("No devices") {
+    NavigationStack { HistoryScreen(debug: HistoryDebugOptions(arguments: ["-dm-history-state", "no-devices"])).dmScreen() }
+        .demoEnvironment(tab: .history)
+}
+#endif

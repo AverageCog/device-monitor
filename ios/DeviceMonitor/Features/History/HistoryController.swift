@@ -368,6 +368,12 @@ final class HistoryController {
         interactionEnded()
     }
 
+    /// The pointer left the chart. A finger that is down meanwhile keeps its crosshair.
+    func endHovering() {
+        guard !isInteracting else { return }
+        endPointing()
+    }
+
     private func layout(_ chartWidth: Double) -> HistoryChartLayout? {
         guard let model, chartWidth > HistoryChartLayout.padding.left + HistoryChartLayout.padding.right else { return nil }
         return HistoryChartLayout(width: chartWidth, from: model.from, to: model.to)

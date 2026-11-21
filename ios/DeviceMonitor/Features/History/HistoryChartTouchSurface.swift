@@ -2,14 +2,16 @@ import SwiftUI
 import UIKit
 import UIKit.UIGestureRecognizerSubclass
 
-/// What a finger does on a history chart. Positions are horizontal, from the chart's leading edge.
+/// What a finger or a pointer does on a history chart. Positions are horizontal, from the chart's
+/// leading edge.
 nonisolated enum HistoryChartTouch: Equatable, Sendable {
     /// Resting on the chart, then moving: the crosshair follows.
     case point(x: CGFloat)
+    /// The finger lifted.
+    case pointEnded
     /// A pointer over the chart, no button pressed.
     case hover(x: CGFloat)
-    /// The finger lifted, or the pointer left.
-    case pointEnded
+    case hoverEnded
     /// A sideways drag that began at `start` and has reached `x`.
     case selectionBegan(start: CGFloat, x: CGFloat)
     case selectionMoved(x: CGFloat)
@@ -50,6 +52,8 @@ struct HistoryChartTouchSurface: UIViewRepresentable {
 
         let hold = UILongPressGestureRecognizer(target: coordinator, action: #selector(Coordinator.handleHold(_:)))
         hold.minimumPressDuration = Coordinator.holdDuration
+        // A finger that has travelled far enough for the drag to read its direction is not resting.
+        hold.allowableMovement = HistoryHorizontalDragRecognizer.slop
         view.addGestureRecognizer(hold)
 
         let drag = HistoryHorizontalDragRecognizer(target: coordinator, action: #selector(Coordinator.handleDrag(_:)))
