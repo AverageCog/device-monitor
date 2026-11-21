@@ -70,6 +70,7 @@ ios/
   DeviceMonitorUITests/        XCUITest bundle
   Packages/DMCore/             Swift package: everything that is not a SwiftUI view
   Tools/e2e.sh                 end-to-end test against a real hub on a simulator
+  Tools/e2e-selftest.sh        checks e2e.sh itself, without Xcode or a simulator
 ```
 
 `DeviceMonitor/` and `DeviceMonitorUITests/` are synchronized folders: a file added anywhere inside
@@ -120,7 +121,10 @@ Everything that is not a view is in DMCore. Three objects carry the app:
   (`disconnect()`, `pairAgain()`). `retryNow()` is the "Try again" of the failure screens.
 - **`HubStore`** (DMCore) is the hub's state, kept current by the live stream: devices, chart series,
   alerts, the saved electricity price, and every action on the hub. The session creates one per
-  pairing (`session.store`), and one for the demo.
+  pairing (`session.store`), and one for the demo. "Try again" after a revocation starts over with a
+  new, empty one, so nothing from before the hub refused the phone can come back on screen.
+  Disconnecting is not an action of the store: `session.disconnect()` tells the hub and removes the
+  enrollment from the Keychain.
 - **`AppRouter`** (App/) is navigation that crosses features: the selected tab,
   `openHistory(deviceID:)`, `showAlerts()`, and the two shared sheets, `showAddDevice()` and
   `showElectricityPrice()`. The tab shell presents those sheets, so any screen can ask for one.
@@ -301,9 +305,11 @@ ios/Tools/e2e.sh --sim <udid> --port 8571 --control 8572 --result /tmp/e2e.xcres
 The script starts the fixture hub, trusts its CA in the simulator
 (`xcrun simctl keychain <udid> add-root-cert`), builds the app and the tests, asks the hub's control
 port for a fresh invitation and runs `HubFlowUITests`, handing it the invitation and the control
-port's address (`TEST_RUNNER_DM_E2E_INVITATION`, `TEST_RUNNER_DM_E2E_CONTROL`). The hub, and an
-`xcodebuild` that is still running, are stopped when the script ends, also when it is interrupted or
-terminated. The test:
+port's address (`TEST_RUNNER_DM_E2E_INVITATION`, `TEST_RUNNER_DM_E2E_CONTROL`). The hub, and
+whatever command is still running (`xcodebuild`, or `simctl` waiting for a simulator), are stopped
+when the script ends, also when it is interrupted or terminated. The result bundle an earlier run
+left at `--result` is replaced; a `--result` that exists and is not an `.xcresult` bundle is refused
+before anything is started. The test:
 
 1. starts from a reset app, types the invitation and connects;
 2. sees the fixture's seven devices, with readings that keep changing, and the phone in the hub's list;
@@ -316,6 +322,12 @@ terminated. The test:
 kept in `ios/.build/e2e-hub` so one CA stays trusted across runs; the hub's data is new every run.
 Do not pass `CODE_SIGNING_ALLOWED=NO` here: the test relaunches the app and expects the enrollment
 to still be in the Keychain (see [Signing](#signing)).
+
+`ios/Tools/e2e-selftest.sh [--port 8581]` checks the script itself, in a few seconds and without
+Xcode or a simulator (macOS or Linux): it runs `e2e.sh` against the real fixture hub with stand-ins
+for `xcrun` and `xcodebuild`, and checks what the test runner is handed, that a result bundle is
+replaced, and that TERM ends the script and its hub at once, also while a simulator command hangs.
+Run it after changing `e2e.sh`.
 
 To look at the app against the fixture hub by hand, start the hub
 (`node build/test/mobile-hub.js --port 8571 --control 8572 --dir <dir>`), trust `<dir>/ca.pem` in the
