@@ -1,0 +1,2089 @@
+[
+  {
+    "id": "a3f1c9d2-7b64-4e0a-9c1d-2f5e8b7a6c40",
+    "name": "DESKTOP-7QK2M1P",
+    "firstSeen": 1795213867000,
+    "order": 1,
+    "hostname": "DESKTOP-7QK2M1P",
+    "platform": "windows",
+    "os": "Windows 11 Pro 24H2",
+    "lastSeen": 1795213953000,
+    "hw": {
+      "formFactor": "desktop",
+      "threads": 32
+    },
+    "macs": [
+      "a4:bb:6d:12:9f:0e",
+      "a4:bb:6d:12:9f:0f"
+    ],
+    "online": true,
+    "latest": {
+      "id": "a3f1c9d2-7b64-4e0a-9c1d-2f5e8b7a6c40",
+      "hostname": "DESKTOP-7QK2M1P",
+      "platform": "windows",
+      "os": "Windows 11 Pro 24H2",
+      "uptime": 266440,
+      "formFactor": "desktop",
+      "power": {
+        "cpu": 40.1
+      },
+      "features": [
+        "procs",
+        "actions"
+      ],
+      "actions": [
+        "sleep",
+        "restart",
+        "shutdown"
+      ],
+      "macs": [
+        "a4:bb:6d:12:9f:0e",
+        "a4:bb:6d:12:9f:0f"
+      ],
+      "actionResult": null,
+      "appVersion": "1.2.32",
+      "cpu": {
+        "name": "AMD Ryzen 9 7950X 16-Core Processor",
+        "usage": 24.3,
+        "cores": [
+          10.7,
+          14.7,
+          18.7,
+          22.7,
+          26.7,
+          30.7,
+          34.7,
+          38.7
+        ],
+        "threads": 32,
+        "clockMHz": 4491.7,
+        "temp": 52.9,
+        "tempSource": null
+      },
+      "memory": {
+        "total": 68631805952,
+        "used": 29107868375
+      },
+      "gpus": [
+        {
+          "name": "NVIDIA GeForce RTX 4090",
+          "vendor": "NVIDIA",
+          "usage": 38.7,
+          "temp": 58.7,
+          "memUsed": 9787133205,
+          "memTotal": 25757220864,
+          "power": 191.3,
+          "powerLimit": 450,
+          "fan": 41,
+          "clockMHz": 2520
+        }
+      ],
+      "disks": [
+        {
+          "name": "C:",
+          "label": "Windows",
+          "total": 999650168832,
+          "used": 612345678848
+        },
+        {
+          "name": "D:",
+          "label": "Games",
+          "total": 2000381014016,
+          "used": 1234567890123
+        }
+      ],
+      "net": {
+        "rx": 205351,
+        "tx": 25889
+      },
+      "diskIO": {
+        "read": 245029,
+        "write": 857603
+      },
+      "temps": [
+        {
+          "name": "CPU Package",
+          "parent": "AMD Ryzen 9 7950X",
+          "value": 52.9
+        },
+        {
+          "name": "GPU Hot Spot",
+          "parent": "NVIDIA GeForce RTX 4090",
+          "value": 66.7
+        },
+        {
+          "name": "Temperature #1",
+          "parent": "Samsung SSD 990 PRO 2TB",
+          "value": 39
+        },
+        {
+          "name": "System",
+          "parent": "ASUS ROG STRIX X670E-E",
+          "value": -2.5
+        }
+      ],
+      "fans": [
+        {
+          "name": "CPU Fan",
+          "rpm": 912
+        },
+        {
+          "name": "Chassis Fan #1",
+          "rpm": 0
+        },
+        {
+          "name": "Pump",
+          "rpm": null
+        }
+      ],
+      "ai": [],
+      "receivedAt": 1795213953000,
+      "powerEst": {
+        "watts": 284.9,
+        "cpu": 40.1,
+        "gpu": 191.3,
+        "rest": 25,
+        "losses": 28.5,
+        "cpuMeasured": true,
+        "gpuMeasured": true,
+        "gpuEstimated": false
+      }
+    },
+    "history": [
+      {
+        "t": 1795213867000,
+        "cpu": 28,
+        "gpu": 44,
+        "mem": 42.606775028550544,
+        "cpuTemp": 54,
+        "gpuTemp": 59.5,
+        "gpuPower": 202.1,
+        "power": 299.6,
+        "rx": 229459,
+        "tx": 28567,
+        "dr": 525903,
+        "dw": 1840659
+      },
+      {
+        "t": 1795213869000,
+        "cpu": 25.4,
+        "gpu": 40.3,
+        "mem": 42.47065880852081,
+        "cpuTemp": 53.3,
+        "gpuTemp": 58.9,
+        "gpuPower": 194.6,
+        "power": 289.3,
+        "rx": 212643,
+        "tx": 26699,
+        "dr": 329989,
+        "dw": 1154961
+      },
+      {
+        "t": 1795213871000,
+        "cpu": 29.7,
+        "gpu": 46.4,
+        "mem": 42.69330318146194,
+        "cpuTemp": 54.5,
+        "gpuTemp": 59.9,
+        "gpuPower": 206.8,
+        "power": 306,
+        "rx": 240148,
+        "tx": 29755,
+        "dr": 650444,
+        "dw": 2276553
+      },
+      {
+        "t": 1795213873000,
+        "cpu": 27.9,
+        "gpu": 43.9,
+        "mem": 42.602170720160046,
+        "cpuTemp": 54,
+        "gpuTemp": 59.5,
+        "gpuPower": 201.8,
+        "power": 299.2,
+        "rx": 228890,
+        "tx": 28504,
+        "dr": 519276,
+        "dw": 1817465
+      },
+      {
+        "t": 1795213875000,
+        "cpu": 28,
+        "gpu": 44,
+        "mem": 42.60645997491469,
+        "cpuTemp": 54,
+        "gpuTemp": 59.5,
+        "gpuPower": 202,
+        "power": 299.4,
+        "rx": 229420,
+        "tx": 28563,
+        "dr": 525449,
+        "dw": 1839072
+      },
+      {
+        "t": 1795213877000,
+        "cpu": 21.7,
+        "gpu": 35.1,
+        "mem": 42.279738398978274,
+        "cpuTemp": 52.2,
+        "gpuTemp": 58.2,
+        "gpuPower": 184.1,
+        "power": 275.1,
+        "rx": 189057,
+        "tx": 24078,
+        "dr": 55194,
+        "dw": 193181
+      },
+      {
+        "t": 1795213879000,
+        "cpu": 25.7,
+        "gpu": 40.7,
+        "mem": 42.487058834491094,
+        "cpuTemp": 53.3,
+        "gpuTemp": 59,
+        "gpuPower": 195.5,
+        "power": 290.6,
+        "rx": 214669,
+        "tx": 26924,
+        "dr": 353594,
+        "dw": 1237577
+      },
+      {
+        "t": 1795213881000,
+        "cpu": 33.1,
+        "gpu": 51.3,
+        "mem": 42.87214112007868,
+        "cpuTemp": 55.5,
+        "gpuTemp": 60.6,
+        "gpuPower": 216.6,
+        "power": 319.3,
+        "rx": 262241,
+        "tx": 32210,
+        "dr": 907848,
+        "dw": 3177466
+      },
+      {
+        "t": 1795213883000,
+        "cpu": 33.1,
+        "gpu": 51.3,
+        "mem": 42.8721091174238,
+        "cpuTemp": 55.5,
+        "gpuTemp": 60.6,
+        "gpuPower": 216.6,
+        "power": 319.3,
+        "rx": 262237,
+        "tx": 32209,
+        "dr": 907802,
+        "dw": 3177305
+      },
+      {
+        "t": 1795213885000,
+        "cpu": 30.5,
+        "gpu": 47.6,
+        "mem": 42.73697382597472,
+        "cpuTemp": 54.7,
+        "gpuTemp": 60,
+        "gpuPower": 209.2,
+        "power": 309.2,
+        "rx": 245543,
+        "tx": 30355,
+        "dr": 713299,
+        "dw": 2496548
+      },
+      {
+        "t": 1795213887000,
+        "cpu": 28.5,
+        "gpu": 44.7,
+        "mem": 42.629636399867174,
+        "cpuTemp": 54.1,
+        "gpuTemp": 59.6,
+        "gpuPower": 203.3,
+        "power": 301.2,
+        "rx": 232283,
+        "tx": 28881,
+        "dr": 558807,
+        "dw": 1955826
+      },
+      {
+        "t": 1795213889000,
+        "cpu": 97.4,
+        "gpu": 46.5,
+        "mem": 42.69688524806487,
+        "cpuTemp": 54.5,
+        "gpuTemp": 59.9,
+        "gpuPower": 207,
+        "power": 306.2,
+        "rx": 240591,
+        "tx": 29804,
+        "dr": 655599,
+        "dw": 2294598
+      },
+      {
+        "t": 1795213897000,
+        "cpu": 33.4,
+        "gpu": 51.7,
+        "mem": 42.88648626641927,
+        "cpuTemp": 55.5,
+        "gpuTemp": 60.7,
+        "gpuPower": 217.4,
+        "power": 320.4,
+        "rx": 264013,
+        "tx": 32407,
+        "dr": 928495,
+        "dw": 3249732
+      },
+      {
+        "t": 1795213907000,
+        "cpu": 22.6,
+        "gpu": 36.3,
+        "mem": 42.323438097075936,
+        "cpuTemp": 52.5,
+        "gpuTemp": 58.3,
+        "gpuPower": 186.5,
+        "power": 278.3,
+        "rx": 194456,
+        "tx": 24678,
+        "dr": 118092,
+        "dw": 413322
+      },
+      {
+        "t": 1795213917000,
+        "cpu": 24.9,
+        "gpu": 39.5,
+        "mem": 42.44221240130598,
+        "cpuTemp": 53.1,
+        "gpuTemp": 58.8,
+        "gpuPower": 193,
+        "power": 287.2,
+        "rx": 209129,
+        "tx": 26309,
+        "dr": 289045,
+        "dw": 1011659
+      },
+      {
+        "t": 1795213927000,
+        "cpu": 27.9,
+        "gpu": 43.9,
+        "mem": 42.60160312326441,
+        "cpuTemp": 54,
+        "gpuTemp": 59.5,
+        "gpuPower": 201.8,
+        "power": 299.1,
+        "rx": 228820,
+        "tx": 28496,
+        "dr": 518459,
+        "dw": 1814605
+      },
+      {
+        "t": 1795213937000,
+        "cpu": 25.5,
+        "gpu": 40.5,
+        "mem": 42.47714630937882,
+        "cpuTemp": 53.3,
+        "gpuTemp": 59,
+        "gpuPower": 194.9,
+        "power": 289.8,
+        "rx": 213445,
+        "tx": 26788,
+        "dr": 339326,
+        "dw": 1187642
+      },
+      {
+        "t": 1795213947000,
+        "cpu": 34.1,
+        "gpu": 52.6,
+        "mem": 42.920596262033214,
+        "cpuTemp": 55.7,
+        "gpuTemp": 60.8,
+        "gpuPower": 219.3,
+        "power": 323,
+        "rx": 268227,
+        "tx": 32875,
+        "dr": 977590,
+        "dw": 3421564
+      },
+      {
+        "t": 1795213949000,
+        "cpu": 28.2,
+        "gpu": 44.2,
+        "mem": 42.61383072515189,
+        "cpuTemp": 54,
+        "gpuTemp": 59.5,
+        "gpuPower": 202.4,
+        "power": 300,
+        "rx": 230330,
+        "tx": 28664,
+        "dr": 536058,
+        "dw": 1876203
+      },
+      {
+        "t": 1795213951000,
+        "cpu": 23.1,
+        "gpu": 37,
+        "mem": 42.348976016058074,
+        "cpuTemp": 52.6,
+        "gpuTemp": 58.4,
+        "gpuPower": 187.9,
+        "power": 280.2,
+        "rx": 197611,
+        "tx": 25029,
+        "dr": 154849,
+        "dw": 541972
+      },
+      {
+        "t": 1795213953000,
+        "cpu": 24.3,
+        "gpu": 38.7,
+        "mem": 42.411631125308844,
+        "cpuTemp": 52.9,
+        "gpuTemp": 58.7,
+        "gpuPower": 191.3,
+        "power": 284.9,
+        "rx": 205351,
+        "tx": 25889,
+        "dr": 245029,
+        "dw": 857603
+      }
+    ]
+  },
+  {
+    "id": "4c2f9a7e1b3d4f6a8c0e2d4b6f8a1c3e",
+    "name": "dgx-station",
+    "firstSeen": 1795213867000,
+    "order": 0,
+    "hostname": "dgx-station",
+    "platform": "linux",
+    "os": "Ubuntu 24.04.2 LTS",
+    "lastSeen": 1795213953000,
+    "hw": {
+      "formFactor": "desktop",
+      "threads": 112
+    },
+    "macs": [
+      "3c:ec:ef:90:12:ab"
+    ],
+    "online": true,
+    "latest": {
+      "id": "4c2f9a7e1b3d4f6a8c0e2d4b6f8a1c3e",
+      "hostname": "dgx-station",
+      "platform": "linux",
+      "os": "Ubuntu 24.04.2 LTS",
+      "uptime": 5184040,
+      "formFactor": "desktop",
+      "power": {
+        "cpu": 231.4
+      },
+      "features": [
+        "procs"
+      ],
+      "actions": [],
+      "macs": [
+        "3c:ec:ef:90:12:ab"
+      ],
+      "actionResult": null,
+      "appVersion": null,
+      "cpu": {
+        "name": "Intel(R) Xeon(R) W9-3495X CPU @ 1.90GHz",
+        "usage": 23.1,
+        "cores": [
+          12.5,
+          99.9,
+          0,
+          null,
+          41
+        ],
+        "threads": 112,
+        "clockMHz": 1900,
+        "temp": 58.4,
+        "tempSource": null
+      },
+      "memory": {
+        "total": 540431955968,
+        "used": 388024139776
+      },
+      "gpus": [
+        {
+          "name": "NVIDIA RTX 6000 Ada Generation",
+          "vendor": "NVIDIA",
+          "usage": 97.1,
+          "temp": 71,
+          "memUsed": 44560285696,
+          "memTotal": 51527024640,
+          "power": 281.6,
+          "powerLimit": 300,
+          "fan": 84,
+          "clockMHz": null
+        },
+        {
+          "name": "NVIDIA RTX 6000 Ada Generation",
+          "vendor": "NVIDIA",
+          "usage": 97.1,
+          "temp": 72,
+          "memUsed": 44560285696,
+          "memTotal": 51527024640,
+          "power": 281.6,
+          "powerLimit": 300,
+          "fan": 84,
+          "clockMHz": null
+        },
+        {
+          "name": "NVIDIA RTX 6000 Ada Generation",
+          "vendor": "NVIDIA",
+          "usage": 97.1,
+          "temp": 73,
+          "memUsed": 44560285696,
+          "memTotal": 51527024640,
+          "power": 281.6,
+          "powerLimit": 300,
+          "fan": 84,
+          "clockMHz": null
+        },
+        {
+          "name": "NVIDIA RTX 6000 Ada Generation",
+          "vendor": "NVIDIA",
+          "usage": 0,
+          "temp": 74,
+          "memUsed": 429496729.6,
+          "memTotal": 51527024640,
+          "power": 21.4,
+          "powerLimit": 300,
+          "fan": 30,
+          "clockMHz": null
+        },
+        {
+          "name": "ASPEED Graphics Family",
+          "vendor": "ASPEED",
+          "usage": null,
+          "temp": null,
+          "memUsed": null,
+          "memTotal": null,
+          "power": null,
+          "powerLimit": null,
+          "fan": null,
+          "clockMHz": null
+        }
+      ],
+      "disks": [
+        {
+          "name": "/",
+          "label": null,
+          "total": 1888000000000,
+          "used": 1203000000000
+        },
+        {
+          "name": "/raid",
+          "label": "md0",
+          "total": 30000000000000,
+          "used": 21450000000000
+        }
+      ],
+      "net": {
+        "rx": 4812345,
+        "tx": 733210
+      },
+      "diskIO": {
+        "read": 88123456,
+        "write": 12345678
+      },
+      "temps": [
+        {
+          "name": "Package id 0",
+          "parent": "coretemp",
+          "value": 58.4
+        },
+        {
+          "name": "Composite",
+          "parent": "nvme",
+          "value": 44.9
+        }
+      ],
+      "fans": [
+        {
+          "name": "fan1",
+          "rpm": 2310
+        },
+        {
+          "name": "fan2",
+          "rpm": 2295
+        }
+      ],
+      "ai": [
+        {
+          "app": "ComfyUI",
+          "mem": 110255669248,
+          "models": [
+            {
+              "name": "flux1-dev-fp8.safetensors",
+              "size": 17246524772,
+              "kind": "unet"
+            },
+            {
+              "name": "t5xxl_fp16.safetensors",
+              "size": 9787841024,
+              "kind": "clip"
+            },
+            {
+              "name": "ae.safetensors",
+              "size": 335304388,
+              "kind": "vae"
+            }
+          ]
+        },
+        {
+          "app": "Ollama",
+          "mem": 5200000000,
+          "models": [
+            {
+              "name": "qwen3:8b",
+              "size": 6100000000,
+              "kind": null
+            }
+          ]
+        },
+        {
+          "app": "vLLM",
+          "mem": null,
+          "models": []
+        }
+      ],
+      "receivedAt": 1795213953000,
+      "powerEst": {
+        "watts": 1247.3,
+        "cpu": 231.4,
+        "gpu": 866.2,
+        "rest": 25,
+        "losses": 124.7,
+        "cpuMeasured": true,
+        "gpuMeasured": true,
+        "gpuEstimated": false
+      }
+    },
+    "history": [
+      {
+        "t": 1795213867000,
+        "cpu": 23,
+        "gpu": 97,
+        "mem": 71.79888892413602,
+        "cpuTemp": 58.3,
+        "gpuTemp": 71,
+        "gpuPower": 281.3,
+        "power": 1245.8,
+        "rx": 4812345,
+        "tx": 733210,
+        "dr": 88123456,
+        "dw": 12345678
+      },
+      {
+        "t": 1795213869000,
+        "cpu": 20.1,
+        "gpu": 95.1,
+        "mem": 71.79888892413602,
+        "cpuTemp": 57.7,
+        "gpuTemp": 71,
+        "gpuPower": 274.9,
+        "power": 1213.9,
+        "rx": 4812345,
+        "tx": 733210,
+        "dr": 88123456,
+        "dw": 12345678
+      },
+      {
+        "t": 1795213871000,
+        "cpu": 20.4,
+        "gpu": 95.3,
+        "mem": 71.79888892413602,
+        "cpuTemp": 57.8,
+        "gpuTemp": 71,
+        "gpuPower": 275.6,
+        "power": 1217.3,
+        "rx": 4812345,
+        "tx": 733210,
+        "dr": 88123456,
+        "dw": 12345678
+      },
+      {
+        "t": 1795213873000,
+        "cpu": 21.1,
+        "gpu": 95.8,
+        "mem": 71.79888892413602,
+        "cpuTemp": 57.9,
+        "gpuTemp": 71,
+        "gpuPower": 277.2,
+        "power": 1225.3,
+        "rx": 4812345,
+        "tx": 733210,
+        "dr": 88123456,
+        "dw": 12345678
+      },
+      {
+        "t": 1795213875000,
+        "cpu": 22.6,
+        "gpu": 96.8,
+        "mem": 71.79888892413602,
+        "cpuTemp": 58.3,
+        "gpuTemp": 71,
+        "gpuPower": 280.5,
+        "power": 1241.9,
+        "rx": 4812345,
+        "tx": 733210,
+        "dr": 88123456,
+        "dw": 12345678
+      },
+      {
+        "t": 1795213877000,
+        "cpu": 19.7,
+        "gpu": 94.8,
+        "mem": 71.79888892413602,
+        "cpuTemp": 57.6,
+        "gpuTemp": 71,
+        "gpuPower": 273.9,
+        "power": 1208.9,
+        "rx": 4812345,
+        "tx": 733210,
+        "dr": 88123456,
+        "dw": 12345678
+      },
+      {
+        "t": 1795213879000,
+        "cpu": 22,
+        "gpu": 96.3,
+        "mem": 71.79888892413602,
+        "cpuTemp": 58.1,
+        "gpuTemp": 71,
+        "gpuPower": 279.1,
+        "power": 1234.9,
+        "rx": 4812345,
+        "tx": 733210,
+        "dr": 88123456,
+        "dw": 12345678
+      },
+      {
+        "t": 1795213881000,
+        "cpu": 25.5,
+        "gpu": 98.6,
+        "mem": 71.79888892413602,
+        "cpuTemp": 58.9,
+        "gpuTemp": 71,
+        "gpuPower": 286.8,
+        "power": 1273.3,
+        "rx": 4812345,
+        "tx": 733210,
+        "dr": 88123456,
+        "dw": 12345678
+      },
+      {
+        "t": 1795213883000,
+        "cpu": 25,
+        "gpu": 98.3,
+        "mem": 71.79888892413602,
+        "cpuTemp": 58.8,
+        "gpuTemp": 71,
+        "gpuPower": 285.8,
+        "power": 1268.3,
+        "rx": 4812345,
+        "tx": 733210,
+        "dr": 88123456,
+        "dw": 12345678
+      },
+      {
+        "t": 1795213885000,
+        "cpu": 21.3,
+        "gpu": 95.9,
+        "mem": 71.79888892413602,
+        "cpuTemp": 58,
+        "gpuTemp": 71,
+        "gpuPower": 277.7,
+        "power": 1227.8,
+        "rx": 4812345,
+        "tx": 733210,
+        "dr": 88123456,
+        "dw": 12345678
+      },
+      {
+        "t": 1795213887000,
+        "cpu": 24.1,
+        "gpu": 97.7,
+        "mem": 71.79888892413602,
+        "cpuTemp": 58.6,
+        "gpuTemp": 71,
+        "gpuPower": 283.8,
+        "power": 1258.3,
+        "rx": 4812345,
+        "tx": 733210,
+        "dr": 88123456,
+        "dw": 12345678
+      },
+      {
+        "t": 1795213889000,
+        "cpu": 25.3,
+        "gpu": 98.5,
+        "mem": 71.79888892413602,
+        "cpuTemp": 58.8,
+        "gpuTemp": 71,
+        "gpuPower": 286.5,
+        "power": 1271.8,
+        "rx": 4812345,
+        "tx": 733210,
+        "dr": 88123456,
+        "dw": 12345678
+      },
+      {
+        "t": 1795213897000,
+        "cpu": 24.8,
+        "gpu": 98.2,
+        "mem": 71.79888892413602,
+        "cpuTemp": 58.7,
+        "gpuTemp": 71,
+        "gpuPower": 285.3,
+        "power": 1265.8,
+        "rx": 4812345,
+        "tx": 733210,
+        "dr": 88123456,
+        "dw": 12345678
+      },
+      {
+        "t": 1795213907000,
+        "cpu": 24,
+        "gpu": 97.6,
+        "mem": 71.79888892413602,
+        "cpuTemp": 58.5,
+        "gpuTemp": 71,
+        "gpuPower": 283.5,
+        "power": 1256.8,
+        "rx": 4812345,
+        "tx": 733210,
+        "dr": 88123456,
+        "dw": 12345678
+      },
+      {
+        "t": 1795213917000,
+        "cpu": 17.3,
+        "gpu": 93.2,
+        "mem": 71.79888892413602,
+        "cpuTemp": 57.1,
+        "gpuTemp": 71,
+        "gpuPower": 268.6,
+        "power": 1182.3,
+        "rx": 4812345,
+        "tx": 733210,
+        "dr": 88123456,
+        "dw": 12345678
+      },
+      {
+        "t": 1795213927000,
+        "cpu": 23.9,
+        "gpu": 97.6,
+        "mem": 71.79888892413602,
+        "cpuTemp": 58.5,
+        "gpuTemp": 71,
+        "gpuPower": 283.3,
+        "power": 1255.9,
+        "rx": 4812345,
+        "tx": 733210,
+        "dr": 88123456,
+        "dw": 12345678
+      },
+      {
+        "t": 1795213937000,
+        "cpu": 24.1,
+        "gpu": 97.7,
+        "mem": 71.79888892413602,
+        "cpuTemp": 58.6,
+        "gpuTemp": 71,
+        "gpuPower": 283.8,
+        "power": 1258.2,
+        "rx": 4812345,
+        "tx": 733210,
+        "dr": 88123456,
+        "dw": 12345678
+      },
+      {
+        "t": 1795213947000,
+        "cpu": 18.5,
+        "gpu": 94,
+        "mem": 71.79888892413602,
+        "cpuTemp": 57.3,
+        "gpuTemp": 71,
+        "gpuPower": 271.4,
+        "power": 1196.4,
+        "rx": 4812345,
+        "tx": 733210,
+        "dr": 88123456,
+        "dw": 12345678
+      },
+      {
+        "t": 1795213949000,
+        "cpu": 24.4,
+        "gpu": 97.9,
+        "mem": 71.79888892413602,
+        "cpuTemp": 58.6,
+        "gpuTemp": 71,
+        "gpuPower": 284.5,
+        "power": 1261.8,
+        "rx": 4812345,
+        "tx": 733210,
+        "dr": 88123456,
+        "dw": 12345678
+      },
+      {
+        "t": 1795213951000,
+        "cpu": 25.1,
+        "gpu": 98.4,
+        "mem": 71.79888892413602,
+        "cpuTemp": 58.8,
+        "gpuTemp": 71,
+        "gpuPower": 286,
+        "power": 1269.3,
+        "rx": 4812345,
+        "tx": 733210,
+        "dr": 88123456,
+        "dw": 12345678
+      },
+      {
+        "t": 1795213953000,
+        "cpu": 23.1,
+        "gpu": 97.1,
+        "mem": 71.79888892413602,
+        "cpuTemp": 58.4,
+        "gpuTemp": 71,
+        "gpuPower": 281.6,
+        "power": 1247.3,
+        "rx": 4812345,
+        "tx": 733210,
+        "dr": 88123456,
+        "dw": 12345678
+      }
+    ]
+  },
+  {
+    "id": "5B8E2A11-93C4-5D7F-A012-6E4C9D3B7F21",
+    "name": "Sams-MacBook-Pro",
+    "firstSeen": 1795213867000,
+    "order": 2,
+    "hostname": "Sams-MacBook-Pro",
+    "platform": "macos",
+    "os": "macOS 15.5",
+    "lastSeen": 1795213953000,
+    "hw": {
+      "formFactor": "laptop",
+      "threads": 12
+    },
+    "macs": [
+      "f0:18:98:5a:6b:7c"
+    ],
+    "online": true,
+    "latest": {
+      "id": "5B8E2A11-93C4-5D7F-A012-6E4C9D3B7F21",
+      "hostname": "Sams-MacBook-Pro",
+      "platform": "macos",
+      "os": "macOS 15.5",
+      "uptime": 93784,
+      "formFactor": "laptop",
+      "power": null,
+      "features": [
+        "procs",
+        "actions"
+      ],
+      "actions": [
+        "sleep"
+      ],
+      "macs": [
+        "f0:18:98:5a:6b:7c"
+      ],
+      "actionResult": null,
+      "appVersion": "1.2.30",
+      "cpu": {
+        "name": "Apple M3 Pro",
+        "usage": 12.3,
+        "cores": [
+          22,
+          18.5,
+          3,
+          1,
+          0.5,
+          0
+        ],
+        "threads": 12,
+        "clockMHz": null,
+        "temp": 46.9,
+        "tempSource": null
+      },
+      "memory": {
+        "total": 38654705664,
+        "used": 24403509248
+      },
+      "gpus": [
+        {
+          "name": "Apple M3 Pro",
+          "vendor": "Apple",
+          "usage": 8.4,
+          "temp": null,
+          "memUsed": null,
+          "memTotal": null,
+          "power": null,
+          "powerLimit": null,
+          "fan": null,
+          "clockMHz": null
+        }
+      ],
+      "disks": [
+        {
+          "name": "/",
+          "label": "Macintosh HD",
+          "total": 994662584320,
+          "used": 521998368768
+        }
+      ],
+      "net": {
+        "rx": 15360,
+        "tx": 2048
+      },
+      "diskIO": {
+        "read": 0,
+        "write": 409600
+      },
+      "temps": [],
+      "fans": [],
+      "ai": null,
+      "receivedAt": 1795213953000,
+      "powerEst": {
+        "watts": 14.3,
+        "cpu": 6.6,
+        "gpu": 0,
+        "rest": 6,
+        "losses": 1.7,
+        "cpuMeasured": false,
+        "gpuMeasured": false,
+        "gpuEstimated": false
+      }
+    },
+    "history": [
+      {
+        "t": 1795213867000,
+        "cpu": 14.2,
+        "gpu": 9.7,
+        "mem": 63.132052951388886,
+        "cpuTemp": 47.5,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 14.9,
+        "rx": 15360,
+        "tx": 2048,
+        "dr": 0,
+        "dw": 409600
+      },
+      {
+        "t": 1795213869000,
+        "cpu": 15.6,
+        "gpu": 10.7,
+        "mem": 63.132052951388886,
+        "cpuTemp": 47.9,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 15.4,
+        "rx": 15360,
+        "tx": 2048,
+        "dr": 0,
+        "dw": 409600
+      },
+      {
+        "t": 1795213871000,
+        "cpu": 13.5,
+        "gpu": 9.2,
+        "mem": 63.132052951388886,
+        "cpuTemp": 47.3,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 14.7,
+        "rx": 15360,
+        "tx": 2048,
+        "dr": 0,
+        "dw": 409600
+      },
+      {
+        "t": 1795213873000,
+        "cpu": 15.6,
+        "gpu": 10.7,
+        "mem": 63.132052951388886,
+        "cpuTemp": 47.9,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 15.4,
+        "rx": 15360,
+        "tx": 2048,
+        "dr": 0,
+        "dw": 409600
+      },
+      {
+        "t": 1795213875000,
+        "cpu": 13.9,
+        "gpu": 9.5,
+        "mem": 63.132052951388886,
+        "cpuTemp": 47.4,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 14.8,
+        "rx": 15360,
+        "tx": 2048,
+        "dr": 0,
+        "dw": 409600
+      },
+      {
+        "t": 1795213877000,
+        "cpu": 9.8,
+        "gpu": 6.6,
+        "mem": 63.132052951388886,
+        "cpuTemp": 46.2,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 13.5,
+        "rx": 15360,
+        "tx": 2048,
+        "dr": 0,
+        "dw": 409600
+      },
+      {
+        "t": 1795213879000,
+        "cpu": 14,
+        "gpu": 9.5,
+        "mem": 63.132052951388886,
+        "cpuTemp": 47.4,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 14.8,
+        "rx": 15360,
+        "tx": 2048,
+        "dr": 0,
+        "dw": 409600
+      },
+      {
+        "t": 1795213881000,
+        "cpu": 14.3,
+        "gpu": 9.8,
+        "mem": 63.132052951388886,
+        "cpuTemp": 47.5,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 14.9,
+        "rx": 15360,
+        "tx": 2048,
+        "dr": 0,
+        "dw": 409600
+      },
+      {
+        "t": 1795213883000,
+        "cpu": 9.5,
+        "gpu": 6.3,
+        "mem": 63.132052951388886,
+        "cpuTemp": 46.1,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 13.4,
+        "rx": 15360,
+        "tx": 2048,
+        "dr": 0,
+        "dw": 409600
+      },
+      {
+        "t": 1795213885000,
+        "cpu": 14.2,
+        "gpu": 9.7,
+        "mem": 63.132052951388886,
+        "cpuTemp": 47.5,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 14.9,
+        "rx": 15360,
+        "tx": 2048,
+        "dr": 0,
+        "dw": 409600
+      },
+      {
+        "t": 1795213887000,
+        "cpu": 13.9,
+        "gpu": 9.5,
+        "mem": 63.132052951388886,
+        "cpuTemp": 47.4,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 14.8,
+        "rx": 15360,
+        "tx": 2048,
+        "dr": 0,
+        "dw": 409600
+      },
+      {
+        "t": 1795213889000,
+        "cpu": 9.3,
+        "gpu": 6.2,
+        "mem": 63.132052951388886,
+        "cpuTemp": 46.1,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 13.3,
+        "rx": 15360,
+        "tx": 2048,
+        "dr": 0,
+        "dw": 409600
+      },
+      {
+        "t": 1795213897000,
+        "cpu": 13.4,
+        "gpu": 9.2,
+        "mem": 63.132052951388886,
+        "cpuTemp": 47.3,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 14.6,
+        "rx": 15360,
+        "tx": 2048,
+        "dr": 0,
+        "dw": 409600
+      },
+      {
+        "t": 1795213907000,
+        "cpu": 9.4,
+        "gpu": 6.3,
+        "mem": 63.132052951388886,
+        "cpuTemp": 46.1,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 13.3,
+        "rx": 15360,
+        "tx": 2048,
+        "dr": 0,
+        "dw": 409600
+      },
+      {
+        "t": 1795213917000,
+        "cpu": 11.8,
+        "gpu": 8,
+        "mem": 63.132052951388886,
+        "cpuTemp": 46.8,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 14.1,
+        "rx": 15360,
+        "tx": 2048,
+        "dr": 0,
+        "dw": 409600
+      },
+      {
+        "t": 1795213927000,
+        "cpu": 13.7,
+        "gpu": 9.3,
+        "mem": 63.132052951388886,
+        "cpuTemp": 47.3,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 14.7,
+        "rx": 15360,
+        "tx": 2048,
+        "dr": 0,
+        "dw": 409600
+      },
+      {
+        "t": 1795213937000,
+        "cpu": 10.5,
+        "gpu": 7.1,
+        "mem": 63.132052951388886,
+        "cpuTemp": 46.4,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 13.7,
+        "rx": 15360,
+        "tx": 2048,
+        "dr": 0,
+        "dw": 409600
+      },
+      {
+        "t": 1795213947000,
+        "cpu": 16,
+        "gpu": 11,
+        "mem": 63.132052951388886,
+        "cpuTemp": 48,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 15.5,
+        "rx": 15360,
+        "tx": 2048,
+        "dr": 0,
+        "dw": 409600
+      },
+      {
+        "t": 1795213949000,
+        "cpu": 10.8,
+        "gpu": 7.3,
+        "mem": 63.132052951388886,
+        "cpuTemp": 46.5,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 13.8,
+        "rx": 15360,
+        "tx": 2048,
+        "dr": 0,
+        "dw": 409600
+      },
+      {
+        "t": 1795213951000,
+        "cpu": 11.7,
+        "gpu": 7.9,
+        "mem": 63.132052951388886,
+        "cpuTemp": 46.8,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 14.1,
+        "rx": 15360,
+        "tx": 2048,
+        "dr": 0,
+        "dw": 409600
+      },
+      {
+        "t": 1795213953000,
+        "cpu": 12.3,
+        "gpu": 8.4,
+        "mem": 63.132052951388886,
+        "cpuTemp": 46.9,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 14.3,
+        "rx": 15360,
+        "tx": 2048,
+        "dr": 0,
+        "dw": 409600
+      }
+    ]
+  },
+  {
+    "id": "nas-01",
+    "name": "nas",
+    "firstSeen": 1795213867000,
+    "order": 4,
+    "hostname": "nas",
+    "platform": "linux",
+    "os": null,
+    "lastSeen": 1795213953000,
+    "hw": {
+      "formFactor": null,
+      "threads": null
+    },
+    "online": true,
+    "latest": {
+      "id": "nas-01",
+      "hostname": "nas",
+      "platform": "linux",
+      "os": null,
+      "uptime": null,
+      "formFactor": null,
+      "power": null,
+      "features": [],
+      "actions": [],
+      "macs": [],
+      "actionResult": null,
+      "appVersion": null,
+      "cpu": {
+        "name": null,
+        "usage": 3.9,
+        "cores": [],
+        "threads": null,
+        "clockMHz": null,
+        "temp": null,
+        "tempSource": null
+      },
+      "memory": {
+        "total": 8233517056,
+        "used": 1811939328
+      },
+      "gpus": [],
+      "disks": [
+        {
+          "name": "/volume1",
+          "label": null,
+          "total": 15989000000000,
+          "used": 9113730000000
+        }
+      ],
+      "net": null,
+      "diskIO": null,
+      "temps": [],
+      "fans": [],
+      "ai": null,
+      "receivedAt": 1795213953000,
+      "powerEst": {
+        "watts": 43.6,
+        "cpu": 14.3,
+        "gpu": 0,
+        "rest": 25,
+        "losses": 4.4,
+        "cpuMeasured": false,
+        "gpuMeasured": false,
+        "gpuEstimated": false
+      }
+    },
+    "history": [
+      {
+        "t": 1795213867000,
+        "cpu": 4.1,
+        "gpu": null,
+        "mem": 22.006869186960483,
+        "cpuTemp": null,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 43.8,
+        "rx": null,
+        "tx": null,
+        "dr": null,
+        "dw": null
+      },
+      {
+        "t": 1795213869000,
+        "cpu": 4.1,
+        "gpu": null,
+        "mem": 22.006869186960483,
+        "cpuTemp": null,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 43.8,
+        "rx": null,
+        "tx": null,
+        "dr": null,
+        "dw": null
+      },
+      {
+        "t": 1795213871000,
+        "cpu": 3.7,
+        "gpu": null,
+        "mem": 22.006869186960483,
+        "cpuTemp": null,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 43.5,
+        "rx": null,
+        "tx": null,
+        "dr": null,
+        "dw": null
+      },
+      {
+        "t": 1795213873000,
+        "cpu": 4.6,
+        "gpu": null,
+        "mem": 22.006869186960483,
+        "cpuTemp": null,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 44.1,
+        "rx": null,
+        "tx": null,
+        "dr": null,
+        "dw": null
+      },
+      {
+        "t": 1795213875000,
+        "cpu": 4.1,
+        "gpu": null,
+        "mem": 22.006869186960483,
+        "cpuTemp": null,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 43.8,
+        "rx": null,
+        "tx": null,
+        "dr": null,
+        "dw": null
+      },
+      {
+        "t": 1795213877000,
+        "cpu": 4.3,
+        "gpu": null,
+        "mem": 22.006869186960483,
+        "cpuTemp": null,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 43.9,
+        "rx": null,
+        "tx": null,
+        "dr": null,
+        "dw": null
+      },
+      {
+        "t": 1795213879000,
+        "cpu": 4.4,
+        "gpu": null,
+        "mem": 22.006869186960483,
+        "cpuTemp": null,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 43.9,
+        "rx": null,
+        "tx": null,
+        "dr": null,
+        "dw": null
+      },
+      {
+        "t": 1795213881000,
+        "cpu": 3.1,
+        "gpu": null,
+        "mem": 22.006869186960483,
+        "cpuTemp": null,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 43.1,
+        "rx": null,
+        "tx": null,
+        "dr": null,
+        "dw": null
+      },
+      {
+        "t": 1795213949000,
+        "cpu": 3.3,
+        "gpu": null,
+        "mem": 22.006869186960483,
+        "cpuTemp": null,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 43.2,
+        "rx": null,
+        "tx": null,
+        "dr": null,
+        "dw": null
+      },
+      {
+        "t": 1795213951000,
+        "cpu": 4.2,
+        "gpu": null,
+        "mem": 22.006869186960483,
+        "cpuTemp": null,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 43.8,
+        "rx": null,
+        "tx": null,
+        "dr": null,
+        "dw": null
+      },
+      {
+        "t": 1795213953000,
+        "cpu": 3.9,
+        "gpu": null,
+        "mem": 22.006869186960483,
+        "cpuTemp": null,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 43.6,
+        "rx": null,
+        "tx": null,
+        "dr": null,
+        "dw": null
+      }
+    ]
+  },
+  {
+    "id": "f0e1d2c3-b4a5-4697-8879-6a5b4c3d2e1f",
+    "name": "Lab PC",
+    "firstSeen": 1795213867000,
+    "order": 3,
+    "hostname": "LAB-PC-03",
+    "platform": "windows",
+    "os": "Windows 10 Enterprise",
+    "lastSeen": 1795213953000,
+    "hw": {
+      "formFactor": "desktop",
+      "threads": 6
+    },
+    "macs": [
+      "00:1b:21:3c:4d:5e"
+    ],
+    "renamed": true,
+    "online": true,
+    "latest": {
+      "id": "f0e1d2c3-b4a5-4697-8879-6a5b4c3d2e1f",
+      "hostname": "LAB-PC-03",
+      "platform": "windows",
+      "os": "Windows 10 Enterprise",
+      "uptime": 45,
+      "formFactor": "desktop",
+      "power": null,
+      "features": [
+        "actions"
+      ],
+      "actions": [
+        "restart",
+        "shutdown"
+      ],
+      "macs": [
+        "00:1b:21:3c:4d:5e"
+      ],
+      "actionResult": null,
+      "appVersion": "1.2.32",
+      "cpu": {
+        "name": "Intel(R) Core(TM) i5-9500 CPU @ 3.00GHz",
+        "usage": 63,
+        "cores": [
+          50,
+          61,
+          39,
+          48,
+          55,
+          42
+        ],
+        "threads": 6,
+        "clockMHz": 3000,
+        "temp": 61,
+        "tempSource": "acpi"
+      },
+      "memory": {
+        "total": 16978788352,
+        "used": 12884901888
+      },
+      "gpus": [
+        {
+          "name": "AMD Radeon RX 6600",
+          "vendor": "AMD",
+          "usage": 82.7,
+          "temp": 77,
+          "memUsed": 3435973836.8,
+          "memTotal": 8589934592,
+          "power": null,
+          "powerLimit": null,
+          "fan": null,
+          "clockMHz": null
+        }
+      ],
+      "disks": [
+        {
+          "name": "C:",
+          "label": null,
+          "total": 255433101312,
+          "used": 243122896896
+        }
+      ],
+      "net": {
+        "rx": 0,
+        "tx": 0
+      },
+      "diskIO": {
+        "read": 0,
+        "write": 0
+      },
+      "temps": [],
+      "fans": [],
+      "ai": null,
+      "receivedAt": 1795213953000,
+      "powerEst": {
+        "watts": 223.7,
+        "cpu": 42.2,
+        "gpu": 134.1,
+        "rest": 25,
+        "losses": 22.4,
+        "cpuMeasured": false,
+        "gpuMeasured": false,
+        "gpuEstimated": true
+      }
+    },
+    "history": [
+      {
+        "t": 1795213867000,
+        "cpu": 45.1,
+        "gpu": 70.7,
+        "mem": 75.88822960080208,
+        "cpuTemp": 61,
+        "gpuTemp": 77,
+        "gpuPower": null,
+        "power": 194.1,
+        "rx": 0,
+        "tx": 0,
+        "dr": 0,
+        "dw": 0
+      },
+      {
+        "t": 1795213869000,
+        "cpu": 62,
+        "gpu": 82,
+        "mem": 75.88822960080208,
+        "cpuTemp": 61,
+        "gpuTemp": 77,
+        "gpuPower": null,
+        "power": 222,
+        "rx": 0,
+        "tx": 0,
+        "dr": 0,
+        "dw": 0
+      },
+      {
+        "t": 1795213871000,
+        "cpu": 66.4,
+        "gpu": 84.9,
+        "mem": 75.88822960080208,
+        "cpuTemp": 61,
+        "gpuTemp": 77,
+        "gpuPower": null,
+        "power": 229.1,
+        "rx": 0,
+        "tx": 0,
+        "dr": 0,
+        "dw": 0
+      },
+      {
+        "t": 1795213873000,
+        "cpu": 51.9,
+        "gpu": 75.3,
+        "mem": 75.88822960080208,
+        "cpuTemp": 61,
+        "gpuTemp": 77,
+        "gpuPower": null,
+        "power": 205.4,
+        "rx": 0,
+        "tx": 0,
+        "dr": 0,
+        "dw": 0
+      },
+      {
+        "t": 1795213875000,
+        "cpu": 50.6,
+        "gpu": 74.4,
+        "mem": 75.88822960080208,
+        "cpuTemp": 61,
+        "gpuTemp": 77,
+        "gpuPower": null,
+        "power": 203.2,
+        "rx": 0,
+        "tx": 0,
+        "dr": 0,
+        "dw": 0
+      },
+      {
+        "t": 1795213877000,
+        "cpu": 65.1,
+        "gpu": 84.1,
+        "mem": 75.88822960080208,
+        "cpuTemp": 61,
+        "gpuTemp": 77,
+        "gpuPower": null,
+        "power": 227.1,
+        "rx": 0,
+        "tx": 0,
+        "dr": 0,
+        "dw": 0
+      },
+      {
+        "t": 1795213879000,
+        "cpu": 70.3,
+        "gpu": 87.6,
+        "mem": 75.88822960080208,
+        "cpuTemp": 61,
+        "gpuTemp": 77,
+        "gpuPower": null,
+        "power": 235.7,
+        "rx": 0,
+        "tx": 0,
+        "dr": 0,
+        "dw": 0
+      },
+      {
+        "t": 1795213881000,
+        "cpu": 67,
+        "gpu": 85.3,
+        "mem": 75.88822960080208,
+        "cpuTemp": 61,
+        "gpuTemp": 77,
+        "gpuPower": null,
+        "power": 230.1,
+        "rx": 0,
+        "tx": 0,
+        "dr": 0,
+        "dw": 0
+      },
+      {
+        "t": 1795213883000,
+        "cpu": 62.5,
+        "gpu": 82.3,
+        "mem": 75.88822960080208,
+        "cpuTemp": 61,
+        "gpuTemp": 77,
+        "gpuPower": null,
+        "power": 222.7,
+        "rx": 0,
+        "tx": 0,
+        "dr": 0,
+        "dw": 0
+      },
+      {
+        "t": 1795213885000,
+        "cpu": 72.9,
+        "gpu": 89.2,
+        "mem": 75.88822960080208,
+        "cpuTemp": 61,
+        "gpuTemp": 77,
+        "gpuPower": null,
+        "power": 239.8,
+        "rx": 0,
+        "tx": 0,
+        "dr": 0,
+        "dw": 0
+      },
+      {
+        "t": 1795213887000,
+        "cpu": 61.9,
+        "gpu": 82,
+        "mem": 75.88822960080208,
+        "cpuTemp": 61,
+        "gpuTemp": 77,
+        "gpuPower": null,
+        "power": 221.9,
+        "rx": 0,
+        "tx": 0,
+        "dr": 0,
+        "dw": 0
+      },
+      {
+        "t": 1795213889000,
+        "cpu": 50,
+        "gpu": 74,
+        "mem": 75.88822960080208,
+        "cpuTemp": 61,
+        "gpuTemp": 77,
+        "gpuPower": null,
+        "power": 202.2,
+        "rx": 0,
+        "tx": 0,
+        "dr": 0,
+        "dw": 0
+      },
+      {
+        "t": 1795213897000,
+        "cpu": 54.6,
+        "gpu": 77.1,
+        "mem": 75.88822960080208,
+        "cpuTemp": 61,
+        "gpuTemp": 77,
+        "gpuPower": null,
+        "power": 209.8,
+        "rx": 0,
+        "tx": 0,
+        "dr": 0,
+        "dw": 0
+      },
+      {
+        "t": 1795213907000,
+        "cpu": 66.2,
+        "gpu": 84.8,
+        "mem": 75.88822960080208,
+        "cpuTemp": 61,
+        "gpuTemp": 77,
+        "gpuPower": null,
+        "power": 228.9,
+        "rx": 0,
+        "tx": 0,
+        "dr": 0,
+        "dw": 0
+      },
+      {
+        "t": 1795213917000,
+        "cpu": 66.8,
+        "gpu": 85.2,
+        "mem": 75.88822960080208,
+        "cpuTemp": 61,
+        "gpuTemp": 77,
+        "gpuPower": null,
+        "power": 229.8,
+        "rx": 0,
+        "tx": 0,
+        "dr": 0,
+        "dw": 0
+      },
+      {
+        "t": 1795213927000,
+        "cpu": 50.8,
+        "gpu": 74.6,
+        "mem": 75.88822960080208,
+        "cpuTemp": 61,
+        "gpuTemp": 77,
+        "gpuPower": null,
+        "power": 203.6,
+        "rx": 0,
+        "tx": 0,
+        "dr": 0,
+        "dw": 0
+      },
+      {
+        "t": 1795213937000,
+        "cpu": 56.1,
+        "gpu": 78,
+        "mem": 75.88822960080208,
+        "cpuTemp": 61,
+        "gpuTemp": 77,
+        "gpuPower": null,
+        "power": 212.1,
+        "rx": 0,
+        "tx": 0,
+        "dr": 0,
+        "dw": 0
+      },
+      {
+        "t": 1795213947000,
+        "cpu": 59.7,
+        "gpu": 80.5,
+        "mem": 75.88822960080208,
+        "cpuTemp": 61,
+        "gpuTemp": 77,
+        "gpuPower": null,
+        "power": 218.2,
+        "rx": 0,
+        "tx": 0,
+        "dr": 0,
+        "dw": 0
+      },
+      {
+        "t": 1795213949000,
+        "cpu": 57.5,
+        "gpu": 79,
+        "mem": 75.88822960080208,
+        "cpuTemp": 61,
+        "gpuTemp": 77,
+        "gpuPower": null,
+        "power": 214.6,
+        "rx": 0,
+        "tx": 0,
+        "dr": 0,
+        "dw": 0
+      },
+      {
+        "t": 1795213951000,
+        "cpu": 45.7,
+        "gpu": 71.1,
+        "mem": 75.88822960080208,
+        "cpuTemp": 61,
+        "gpuTemp": 77,
+        "gpuPower": null,
+        "power": 195.1,
+        "rx": 0,
+        "tx": 0,
+        "dr": 0,
+        "dw": 0
+      },
+      {
+        "t": 1795213953000,
+        "cpu": 63,
+        "gpu": 82.7,
+        "mem": 75.88822960080208,
+        "cpuTemp": 61,
+        "gpuTemp": 77,
+        "gpuPower": null,
+        "power": 223.7,
+        "rx": 0,
+        "tx": 0,
+        "dr": 0,
+        "dw": 0
+      }
+    ]
+  },
+  {
+    "id": "old-htpc",
+    "name": "htpc",
+    "firstSeen": 1795213867000,
+    "order": 5,
+    "hostname": "htpc",
+    "platform": "linux",
+    "os": "Debian GNU/Linux 12 (bookworm)",
+    "lastSeen": 1795213867000,
+    "hw": {
+      "formFactor": "desktop",
+      "threads": 4
+    },
+    "macs": [
+      "b8:27:eb:11:22:33"
+    ],
+    "online": false,
+    "latest": {
+      "id": "old-htpc",
+      "hostname": "htpc",
+      "platform": "linux",
+      "os": "Debian GNU/Linux 12 (bookworm)",
+      "uptime": 7200,
+      "formFactor": "desktop",
+      "power": null,
+      "features": [],
+      "actions": [],
+      "macs": [
+        "b8:27:eb:11:22:33"
+      ],
+      "actionResult": null,
+      "appVersion": null,
+      "cpu": {
+        "name": "Intel(R) Celeron(R) J4125 CPU @ 2.00GHz",
+        "usage": 12.3,
+        "cores": [
+          10,
+          14,
+          9,
+          16
+        ],
+        "threads": 4,
+        "clockMHz": null,
+        "temp": 49,
+        "tempSource": null
+      },
+      "memory": {
+        "total": 8201322496,
+        "used": 2952790016
+      },
+      "gpus": [
+        {
+          "name": "Intel UHD Graphics 600",
+          "vendor": "Intel",
+          "usage": 4,
+          "temp": null,
+          "memUsed": null,
+          "memTotal": 0,
+          "power": null,
+          "powerLimit": null,
+          "fan": null,
+          "clockMHz": null
+        }
+      ],
+      "disks": [
+        {
+          "name": "/",
+          "label": null,
+          "total": 119000000000,
+          "used": 42000000000
+        }
+      ],
+      "net": {
+        "rx": 512,
+        "tx": 256
+      },
+      "diskIO": null,
+      "temps": [],
+      "fans": [],
+      "ai": [],
+      "receivedAt": 1795213867000,
+      "powerEst": {
+        "watts": 46.3,
+        "cpu": 16.7,
+        "gpu": 0,
+        "rest": 25,
+        "losses": 4.6,
+        "cpuMeasured": false,
+        "gpuMeasured": false,
+        "gpuEstimated": false
+      }
+    },
+    "history": [
+      {
+        "t": 1795213867000,
+        "cpu": 12.3,
+        "gpu": 4,
+        "mem": 36.00382764414097,
+        "cpuTemp": 49,
+        "gpuTemp": null,
+        "gpuPower": null,
+        "power": 46.3,
+        "rx": 512,
+        "tx": 256,
+        "dr": null,
+        "dw": null
+      }
+    ]
+  }
+]

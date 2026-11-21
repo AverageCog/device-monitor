@@ -1,0 +1,42 @@
+{
+  "beforeSaving": null,
+  "putFlat": {
+    "region": "US-CA",
+    "rate": 0.316,
+    "currency": "USD"
+  },
+  "putTou": {
+    "region": "custom",
+    "rate": 0.25,
+    "currency": "EUR",
+    "tou": [
+      {
+        "from": 0,
+        "to": 6.5,
+        "rate": 0.1235
+      },
+      {
+        "from": 16,
+        "to": 21,
+        "rate": 0.42
+      }
+    ]
+  },
+  "get": {
+    "region": "custom",
+    "rate": 0.25,
+    "currency": "EUR",
+    "tou": [
+      {
+        "from": 0,
+        "to": 6.5,
+        "rate": 0.1235
+      },
+      {
+        "from": 16,
+        "to": 21,
+        "rate": 0.42
+      }
+    ]
+  }
+}

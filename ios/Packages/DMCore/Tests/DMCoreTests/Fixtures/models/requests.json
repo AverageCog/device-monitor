@@ -1,0 +1,1269 @@
+[
+  {
+    "name": "invite-browser",
+    "method": "POST",
+    "path": "/api/invites",
+    "body": {
+      "kind": "browser",
+      "origin": "https://hub.test"
+    },
+    "status": 200,
+    "response": {
+      "code": "FIXTURE-invitation-code-0000000000000000000",
+      "origin": "https://hub.test",
+      "expires": 1795214485000
+    }
+  },
+  {
+    "name": "invite-browser-refused-for-browser-role",
+    "method": "POST",
+    "path": "/api/invites",
+    "body": {
+      "kind": "browser",
+      "origin": "https://hub.test"
+    },
+    "status": 403,
+    "response": {
+      "error": "Create this invitation on the hub."
+    }
+  },
+  {
+    "name": "invite-desktop-refused-for-client-role",
+    "method": "POST",
+    "path": "/api/invites",
+    "body": {
+      "kind": "desktop",
+      "origin": "https://hub.test"
+    },
+    "status": 403,
+    "response": {
+      "error": "Create this invitation on the hub."
+    }
+  },
+  {
+    "name": "rename",
+    "method": "PATCH",
+    "path": "/api/devices/f0e1d2c3-b4a5-4697-8879-6a5b4c3d2e1f",
+    "body": {
+      "name": "Lab PC"
+    },
+    "status": 200,
+    "response": {
+      "id": "f0e1d2c3-b4a5-4697-8879-6a5b4c3d2e1f",
+      "name": "Lab PC",
+      "firstSeen": 1795213867000,
+      "order": 4,
+      "hostname": "LAB-PC-03",
+      "platform": "windows",
+      "os": "Windows 10 Enterprise",
+      "lastSeen": 1795213885000,
+      "hw": {
+        "formFactor": "desktop",
+        "threads": 6
+      },
+      "macs": [
+        "00:1b:21:3c:4d:5e"
+      ],
+      "renamed": true,
+      "online": true,
+      "latest": {
+        "id": "f0e1d2c3-b4a5-4697-8879-6a5b4c3d2e1f",
+        "hostname": "LAB-PC-03",
+        "platform": "windows",
+        "os": "Windows 10 Enterprise",
+        "uptime": 45,
+        "formFactor": "desktop",
+        "power": null,
+        "features": [
+          "actions"
+        ],
+        "actions": [
+          "restart",
+          "shutdown"
+        ],
+        "macs": [
+          "00:1b:21:3c:4d:5e"
+        ],
+        "actionResult": null,
+        "appVersion": "1.2.32",
+        "cpu": {
+          "name": "Intel(R) Core(TM) i5-9500 CPU @ 3.00GHz",
+          "usage": 72.9,
+          "cores": [
+            50,
+            61,
+            39,
+            48,
+            55,
+            42
+          ],
+          "threads": 6,
+          "clockMHz": 3000,
+          "temp": 61,
+          "tempSource": "acpi"
+        },
+        "memory": {
+          "total": 16978788352,
+          "used": 12884901888
+        },
+        "gpus": [
+          {
+            "name": "AMD Radeon RX 6600",
+            "vendor": "AMD",
+            "usage": 89.2,
+            "temp": 77,
+            "memUsed": 3435973836.8,
+            "memTotal": 8589934592,
+            "power": null,
+            "powerLimit": null,
+            "fan": null,
+            "clockMHz": null
+          }
+        ],
+        "disks": [
+          {
+            "name": "C:",
+            "label": null,
+            "total": 255433101312,
+            "used": 243122896896
+          }
+        ],
+        "net": {
+          "rx": 0,
+          "tx": 0
+        },
+        "diskIO": {
+          "read": 0,
+          "write": 0
+        },
+        "temps": [],
+        "fans": [],
+        "ai": null,
+        "receivedAt": 1795213885000,
+        "powerEst": {
+          "watts": 239.8,
+          "cpu": 47,
+          "gpu": 143.8,
+          "rest": 25,
+          "losses": 24,
+          "cpuMeasured": false,
+          "gpuMeasured": false,
+          "gpuEstimated": true
+        }
+      },
+      "history": [
+        {
+          "t": 1795213867000,
+          "cpu": 45.1,
+          "gpu": 70.7,
+          "mem": 75.88822960080208,
+          "cpuTemp": 61,
+          "gpuTemp": 77,
+          "gpuPower": null,
+          "power": 194.1,
+          "rx": 0,
+          "tx": 0,
+          "dr": 0,
+          "dw": 0
+        },
+        {
+          "t": 1795213869000,
+          "cpu": 62,
+          "gpu": 82,
+          "mem": 75.88822960080208,
+          "cpuTemp": 61,
+          "gpuTemp": 77,
+          "gpuPower": null,
+          "power": 222,
+          "rx": 0,
+          "tx": 0,
+          "dr": 0,
+          "dw": 0
+        },
+        {
+          "t": 1795213871000,
+          "cpu": 66.4,
+          "gpu": 84.9,
+          "mem": 75.88822960080208,
+          "cpuTemp": 61,
+          "gpuTemp": 77,
+          "gpuPower": null,
+          "power": 229.1,
+          "rx": 0,
+          "tx": 0,
+          "dr": 0,
+          "dw": 0
+        },
+        {
+          "t": 1795213873000,
+          "cpu": 51.9,
+          "gpu": 75.3,
+          "mem": 75.88822960080208,
+          "cpuTemp": 61,
+          "gpuTemp": 77,
+          "gpuPower": null,
+          "power": 205.4,
+          "rx": 0,
+          "tx": 0,
+          "dr": 0,
+          "dw": 0
+        },
+        {
+          "t": 1795213875000,
+          "cpu": 50.6,
+          "gpu": 74.4,
+          "mem": 75.88822960080208,
+          "cpuTemp": 61,
+          "gpuTemp": 77,
+          "gpuPower": null,
+          "power": 203.2,
+          "rx": 0,
+          "tx": 0,
+          "dr": 0,
+          "dw": 0
+        },
+        {
+          "t": 1795213877000,
+          "cpu": 65.1,
+          "gpu": 84.1,
+          "mem": 75.88822960080208,
+          "cpuTemp": 61,
+          "gpuTemp": 77,
+          "gpuPower": null,
+          "power": 227.1,
+          "rx": 0,
+          "tx": 0,
+          "dr": 0,
+          "dw": 0
+        },
+        {
+          "t": 1795213879000,
+          "cpu": 70.3,
+          "gpu": 87.6,
+          "mem": 75.88822960080208,
+          "cpuTemp": 61,
+          "gpuTemp": 77,
+          "gpuPower": null,
+          "power": 235.7,
+          "rx": 0,
+          "tx": 0,
+          "dr": 0,
+          "dw": 0
+        },
+        {
+          "t": 1795213881000,
+          "cpu": 67,
+          "gpu": 85.3,
+          "mem": 75.88822960080208,
+          "cpuTemp": 61,
+          "gpuTemp": 77,
+          "gpuPower": null,
+          "power": 230.1,
+          "rx": 0,
+          "tx": 0,
+          "dr": 0,
+          "dw": 0
+        },
+        {
+          "t": 1795213883000,
+          "cpu": 62.5,
+          "gpu": 82.3,
+          "mem": 75.88822960080208,
+          "cpuTemp": 61,
+          "gpuTemp": 77,
+          "gpuPower": null,
+          "power": 222.7,
+          "rx": 0,
+          "tx": 0,
+          "dr": 0,
+          "dw": 0
+        },
+        {
+          "t": 1795213885000,
+          "cpu": 72.9,
+          "gpu": 89.2,
+          "mem": 75.88822960080208,
+          "cpuTemp": 61,
+          "gpuTemp": 77,
+          "gpuPower": null,
+          "power": 239.8,
+          "rx": 0,
+          "tx": 0,
+          "dr": 0,
+          "dw": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "order",
+    "method": "PUT",
+    "path": "/api/order",
+    "body": {
+      "ids": [
+        "4c2f9a7e1b3d4f6a8c0e2d4b6f8a1c3e",
+        "a3f1c9d2-7b64-4e0a-9c1d-2f5e8b7a6c40",
+        "5B8E2A11-93C4-5D7F-A012-6E4C9D3B7F21",
+        "f0e1d2c3-b4a5-4697-8879-6a5b4c3d2e1f",
+        "nas-01",
+        "old-htpc",
+        "retired-box"
+      ]
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "remove",
+    "method": "DELETE",
+    "path": "/api/devices/retired-box",
+    "body": null,
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "action-restart",
+    "method": "POST",
+    "path": "/api/devices/a3f1c9d2-7b64-4e0a-9c1d-2f5e8b7a6c40/action",
+    "body": {
+      "action": "restart"
+    },
+    "status": 200,
+    "response": {
+      "ok": true,
+      "id": "daf6f8028e33"
+    }
+  },
+  {
+    "name": "action-wake-fixture-hub",
+    "method": "POST",
+    "path": "/api/devices/a3f1c9d2-7b64-4e0a-9c1d-2f5e8b7a6c40/action",
+    "body": {
+      "action": "wake"
+    },
+    "status": 403,
+    "response": {
+      "error": "Host integrations disabled"
+    }
+  },
+  {
+    "name": "action-wake-no-mac",
+    "method": "POST",
+    "path": "/api/devices/nas-01/action",
+    "body": {
+      "action": "wake"
+    },
+    "status": 400,
+    "response": {
+      "error": "This device hasn't reported a network card address yet."
+    }
+  },
+  {
+    "name": "action-not-allowed",
+    "method": "POST",
+    "path": "/api/devices/5B8E2A11-93C4-5D7F-A012-6E4C9D3B7F21/action",
+    "body": {
+      "action": "restart"
+    },
+    "status": 409,
+    "response": {
+      "error": "Remote power control is turned off on Sams-MacBook-Pro."
+    }
+  },
+  {
+    "name": "action-unknown",
+    "method": "POST",
+    "path": "/api/devices/a3f1c9d2-7b64-4e0a-9c1d-2f5e8b7a6c40/action",
+    "body": {
+      "action": "explode"
+    },
+    "status": 400,
+    "response": {
+      "error": "unknown action"
+    }
+  },
+  {
+    "name": "energy-settings-flat",
+    "method": "PUT",
+    "path": "/api/energy/settings",
+    "body": {
+      "region": "US-CA",
+      "rate": 0.316,
+      "currency": "USD"
+    },
+    "status": 200,
+    "response": {
+      "region": "US-CA",
+      "rate": 0.316,
+      "currency": "USD"
+    }
+  },
+  {
+    "name": "energy-settings-flat-empty-tou",
+    "method": "PUT",
+    "path": "/api/energy/settings",
+    "body": {
+      "region": "DE",
+      "rate": 0.39,
+      "currency": "EUR",
+      "tou": []
+    },
+    "status": 200,
+    "response": {
+      "region": "DE",
+      "rate": 0.39,
+      "currency": "EUR"
+    }
+  },
+  {
+    "name": "energy-settings-tou",
+    "method": "PUT",
+    "path": "/api/energy/settings",
+    "body": {
+      "region": "custom",
+      "rate": 0.25,
+      "currency": "EUR",
+      "tou": [
+        {
+          "from": 16,
+          "to": 21,
+          "rate": 0.42
+        },
+        {
+          "from": 0,
+          "to": 6.5,
+          "rate": 0.123456
+        }
+      ]
+    },
+    "status": 200,
+    "response": {
+      "region": "custom",
+      "rate": 0.25,
+      "currency": "EUR",
+      "tou": [
+        {
+          "from": 0,
+          "to": 6.5,
+          "rate": 0.1235
+        },
+        {
+          "from": 16,
+          "to": 21,
+          "rate": 0.42
+        }
+      ]
+    }
+  },
+  {
+    "name": "energy-settings-bad-currency",
+    "method": "PUT",
+    "path": "/api/energy/settings",
+    "body": {
+      "region": "US",
+      "rate": 0.2,
+      "currency": "usd"
+    },
+    "status": 400,
+    "response": {
+      "error": "invalid settings"
+    }
+  },
+  {
+    "name": "energy-settings-bad-rate",
+    "method": "PUT",
+    "path": "/api/energy/settings",
+    "body": {
+      "region": "US",
+      "rate": 0,
+      "currency": "USD"
+    },
+    "status": 400,
+    "response": {
+      "error": "invalid settings"
+    }
+  },
+  {
+    "name": "energy-settings-bad-tou",
+    "method": "PUT",
+    "path": "/api/energy/settings",
+    "body": {
+      "region": "US",
+      "rate": 0.2,
+      "currency": "USD",
+      "tou": [
+        {
+          "from": 21,
+          "to": 16,
+          "rate": 0.4
+        }
+      ]
+    },
+    "status": 400,
+    "response": {
+      "error": "invalid settings"
+    }
+  },
+  {
+    "name": "energy-bad-bounds",
+    "method": "GET",
+    "path": "/api/energy?bounds=5,4",
+    "body": null,
+    "status": 400,
+    "response": {
+      "error": "bad bounds"
+    }
+  },
+  {
+    "name": "alerts-put",
+    "method": "PUT",
+    "path": "/api/alerts",
+    "body": {
+      "rules": [
+        {
+          "id": "138ac9e65858",
+          "type": "offline",
+          "device": "old-htpc",
+          "minutes": 1,
+          "enabled": true
+        },
+        {
+          "id": "b0b0b0b0b0b1",
+          "type": "offline",
+          "device": "nas-01",
+          "minutes": 1,
+          "enabled": true
+        },
+        {
+          "id": "5021aa0cccc6",
+          "type": "cpuTemp",
+          "device": "*",
+          "threshold": 90,
+          "minutes": 2,
+          "enabled": true
+        },
+        {
+          "id": "37192e83f0c5",
+          "type": "gpuTemp",
+          "device": "*",
+          "threshold": 85,
+          "minutes": 2,
+          "enabled": false
+        },
+        {
+          "id": "32b4c55dfa3c",
+          "type": "disk",
+          "device": "*",
+          "threshold": 90,
+          "minutes": 0,
+          "enabled": true
+        },
+        {
+          "id": "c0ffee123456",
+          "type": "cpu",
+          "device": "a3f1c9d2-7b64-4e0a-9c1d-2f5e8b7a6c40",
+          "threshold": 90,
+          "minutes": 0,
+          "enabled": true
+        },
+        {
+          "id": "feedfacecafe",
+          "type": "power",
+          "device": "*",
+          "threshold": 1000,
+          "minutes": 0,
+          "enabled": true
+        },
+        {
+          "id": "deadbeef0001",
+          "type": "dailyCost",
+          "device": "*",
+          "threshold": 0.01,
+          "minutes": 0,
+          "enabled": true
+        },
+        {
+          "id": "abcdef012345",
+          "type": "mem",
+          "device": "*",
+          "threshold": 97.5,
+          "minutes": 5,
+          "enabled": true
+        }
+      ],
+      "channels": {
+        "desktop": true,
+        "ntfy": {
+          "enabled": true,
+          "server": "https://ntfy.sh",
+          "topic": "dm-fixture-topic",
+          "email": "alerts@example.com"
+        },
+        "webhook": {
+          "enabled": true,
+          "url": "https://hooks.example.com/services/fixture"
+        }
+      },
+      "notifyResolved": true,
+      "tempUnit": "C"
+    },
+    "status": 200,
+    "response": {
+      "settings": {
+        "rules": [
+          {
+            "id": "138ac9e65858",
+            "type": "offline",
+            "device": "old-htpc",
+            "threshold": null,
+            "minutes": 1,
+            "enabled": true
+          },
+          {
+            "id": "b0b0b0b0b0b1",
+            "type": "offline",
+            "device": "nas-01",
+            "threshold": null,
+            "minutes": 1,
+            "enabled": true
+          },
+          {
+            "id": "5021aa0cccc6",
+            "type": "cpuTemp",
+            "device": "*",
+            "threshold": 90,
+            "minutes": 2,
+            "enabled": true
+          },
+          {
+            "id": "37192e83f0c5",
+            "type": "gpuTemp",
+            "device": "*",
+            "threshold": 85,
+            "minutes": 2,
+            "enabled": false
+          },
+          {
+            "id": "32b4c55dfa3c",
+            "type": "disk",
+            "device": "*",
+            "threshold": 90,
+            "minutes": 0,
+            "enabled": true
+          },
+          {
+            "id": "c0ffee123456",
+            "type": "cpu",
+            "device": "a3f1c9d2-7b64-4e0a-9c1d-2f5e8b7a6c40",
+            "threshold": 90,
+            "minutes": 0,
+            "enabled": true
+          },
+          {
+            "id": "feedfacecafe",
+            "type": "power",
+            "device": "*",
+            "threshold": 1000,
+            "minutes": 0,
+            "enabled": true
+          },
+          {
+            "id": "deadbeef0001",
+            "type": "dailyCost",
+            "device": "*",
+            "threshold": 0.01,
+            "minutes": 0,
+            "enabled": true
+          },
+          {
+            "id": "abcdef012345",
+            "type": "mem",
+            "device": "*",
+            "threshold": 97.5,
+            "minutes": 5,
+            "enabled": true
+          }
+        ],
+        "channels": {
+          "desktop": true,
+          "ntfy": {
+            "enabled": true,
+            "server": "https://ntfy.sh",
+            "topic": "dm-fixture-topic",
+            "email": "alerts@example.com"
+          },
+          "webhook": {
+            "enabled": true,
+            "url": "",
+            "keepUrl": true
+          }
+        },
+        "notifyResolved": true,
+        "tempUnit": "C"
+      },
+      "active": [
+        {
+          "ruleId": "32b4c55dfa3c",
+          "type": "disk",
+          "device": "f0e1d2c3-b4a5-4697-8879-6a5b4c3d2e1f",
+          "deviceName": "Lab PC",
+          "since": 1795213867000,
+          "value": 95.18065420935258,
+          "threshold": 90,
+          "title": "Lab PC: disk C: is 95% full",
+          "message": "Over your 90% limit · 12.3 GB free."
+        }
+      ]
+    }
+  },
+  {
+    "name": "alerts-test",
+    "method": "POST",
+    "path": "/api/alerts/test",
+    "body": null,
+    "status": 200,
+    "response": {}
+  },
+  {
+    "name": "alerts-put-keep-webhook",
+    "method": "PUT",
+    "path": "/api/alerts",
+    "body": {
+      "rules": [
+        {
+          "id": "138ac9e65858",
+          "type": "offline",
+          "device": "old-htpc",
+          "minutes": 1,
+          "enabled": true
+        },
+        {
+          "id": "b0b0b0b0b0b1",
+          "type": "offline",
+          "device": "nas-01",
+          "minutes": 1,
+          "enabled": true
+        },
+        {
+          "id": "5021aa0cccc6",
+          "type": "cpuTemp",
+          "device": "*",
+          "threshold": 90,
+          "minutes": 2,
+          "enabled": true
+        },
+        {
+          "id": "37192e83f0c5",
+          "type": "gpuTemp",
+          "device": "*",
+          "threshold": 85,
+          "minutes": 2,
+          "enabled": false
+        },
+        {
+          "id": "32b4c55dfa3c",
+          "type": "disk",
+          "device": "*",
+          "threshold": 90,
+          "minutes": 0,
+          "enabled": true
+        },
+        {
+          "id": "c0ffee123456",
+          "type": "cpu",
+          "device": "a3f1c9d2-7b64-4e0a-9c1d-2f5e8b7a6c40",
+          "threshold": 90,
+          "minutes": 0,
+          "enabled": true
+        },
+        {
+          "id": "feedfacecafe",
+          "type": "power",
+          "device": "*",
+          "threshold": 1000,
+          "minutes": 0,
+          "enabled": true
+        },
+        {
+          "id": "deadbeef0001",
+          "type": "dailyCost",
+          "device": "*",
+          "threshold": 0.01,
+          "minutes": 0,
+          "enabled": true
+        },
+        {
+          "id": "abcdef012345",
+          "type": "mem",
+          "device": "*",
+          "threshold": 97.5,
+          "minutes": 5,
+          "enabled": true
+        }
+      ],
+      "channels": {
+        "desktop": true,
+        "ntfy": {
+          "enabled": true,
+          "server": "https://ntfy.sh",
+          "topic": "dm-fixture-topic",
+          "email": "alerts@example.com"
+        },
+        "webhook": {
+          "enabled": true,
+          "keepUrl": true
+        }
+      },
+      "notifyResolved": false,
+      "tempUnit": "F"
+    },
+    "status": 200,
+    "response": {
+      "settings": {
+        "rules": [
+          {
+            "id": "138ac9e65858",
+            "type": "offline",
+            "device": "old-htpc",
+            "threshold": null,
+            "minutes": 1,
+            "enabled": true
+          },
+          {
+            "id": "b0b0b0b0b0b1",
+            "type": "offline",
+            "device": "nas-01",
+            "threshold": null,
+            "minutes": 1,
+            "enabled": true
+          },
+          {
+            "id": "5021aa0cccc6",
+            "type": "cpuTemp",
+            "device": "*",
+            "threshold": 90,
+            "minutes": 2,
+            "enabled": true
+          },
+          {
+            "id": "37192e83f0c5",
+            "type": "gpuTemp",
+            "device": "*",
+            "threshold": 85,
+            "minutes": 2,
+            "enabled": false
+          },
+          {
+            "id": "32b4c55dfa3c",
+            "type": "disk",
+            "device": "*",
+            "threshold": 90,
+            "minutes": 0,
+            "enabled": true
+          },
+          {
+            "id": "c0ffee123456",
+            "type": "cpu",
+            "device": "a3f1c9d2-7b64-4e0a-9c1d-2f5e8b7a6c40",
+            "threshold": 90,
+            "minutes": 0,
+            "enabled": true
+          },
+          {
+            "id": "feedfacecafe",
+            "type": "power",
+            "device": "*",
+            "threshold": 1000,
+            "minutes": 0,
+            "enabled": true
+          },
+          {
+            "id": "deadbeef0001",
+            "type": "dailyCost",
+            "device": "*",
+            "threshold": 0.01,
+            "minutes": 0,
+            "enabled": true
+          },
+          {
+            "id": "abcdef012345",
+            "type": "mem",
+            "device": "*",
+            "threshold": 97.5,
+            "minutes": 5,
+            "enabled": true
+          }
+        ],
+        "channels": {
+          "desktop": true,
+          "ntfy": {
+            "enabled": true,
+            "server": "https://ntfy.sh",
+            "topic": "dm-fixture-topic",
+            "email": "alerts@example.com"
+          },
+          "webhook": {
+            "enabled": true,
+            "url": "",
+            "keepUrl": true
+          }
+        },
+        "notifyResolved": false,
+        "tempUnit": "F"
+      },
+      "active": [
+        {
+          "ruleId": "feedfacecafe",
+          "type": "power",
+          "device": "4c2f9a7e1b3d4f6a8c0e2d4b6f8a1c3e",
+          "deviceName": "dgx-station",
+          "since": 1795213889000,
+          "value": 1265.8,
+          "threshold": 1000,
+          "title": "dgx-station: Power draw 1.27 kW",
+          "message": "Above 1.00 kW."
+        },
+        {
+          "ruleId": "32b4c55dfa3c",
+          "type": "disk",
+          "device": "f0e1d2c3-b4a5-4697-8879-6a5b4c3d2e1f",
+          "deviceName": "Lab PC",
+          "since": 1795213867000,
+          "value": 95.18065420935258,
+          "threshold": 90,
+          "title": "Lab PC: disk C: is 95% full",
+          "message": "Over your 90% limit · 12.3 GB free."
+        }
+      ]
+    }
+  },
+  {
+    "name": "alerts-put-bad-threshold",
+    "method": "PUT",
+    "path": "/api/alerts",
+    "body": {
+      "rules": [
+        {
+          "type": "cpu",
+          "device": "*",
+          "threshold": 0,
+          "minutes": 0
+        }
+      ],
+      "channels": {
+        "desktop": true,
+        "ntfy": {
+          "enabled": true,
+          "server": "https://ntfy.sh",
+          "topic": "dm-fixture-topic",
+          "email": "alerts@example.com"
+        },
+        "webhook": {
+          "enabled": true,
+          "keepUrl": true
+        }
+      },
+      "notifyResolved": false,
+      "tempUnit": "F"
+    },
+    "status": 400,
+    "response": {
+      "error": "invalid alert settings"
+    }
+  },
+  {
+    "name": "alerts-put-bad-type",
+    "method": "PUT",
+    "path": "/api/alerts",
+    "body": {
+      "rules": [
+        {
+          "type": "humidity",
+          "device": "*",
+          "threshold": 50,
+          "minutes": 0
+        }
+      ],
+      "channels": {
+        "desktop": true,
+        "ntfy": {
+          "enabled": true,
+          "server": "https://ntfy.sh",
+          "topic": "dm-fixture-topic",
+          "email": "alerts@example.com"
+        },
+        "webhook": {
+          "enabled": true,
+          "keepUrl": true
+        }
+      },
+      "notifyResolved": false,
+      "tempUnit": "F"
+    },
+    "status": 400,
+    "response": {
+      "error": "invalid alert settings"
+    }
+  },
+  {
+    "name": "alerts-put-offline-zero-minutes",
+    "method": "PUT",
+    "path": "/api/alerts",
+    "body": {
+      "rules": [
+        {
+          "type": "offline",
+          "device": "*",
+          "minutes": 0
+        }
+      ],
+      "channels": {
+        "desktop": true,
+        "ntfy": {
+          "enabled": true,
+          "server": "https://ntfy.sh",
+          "topic": "dm-fixture-topic",
+          "email": "alerts@example.com"
+        },
+        "webhook": {
+          "enabled": true,
+          "keepUrl": true
+        }
+      },
+      "notifyResolved": false,
+      "tempUnit": "F"
+    },
+    "status": 400,
+    "response": {
+      "error": "invalid alert settings"
+    }
+  },
+  {
+    "name": "alerts-put-bad-topic",
+    "method": "PUT",
+    "path": "/api/alerts",
+    "body": {
+      "rules": [
+        {
+          "id": "138ac9e65858",
+          "type": "offline",
+          "device": "old-htpc",
+          "minutes": 1,
+          "enabled": true
+        },
+        {
+          "id": "b0b0b0b0b0b1",
+          "type": "offline",
+          "device": "nas-01",
+          "minutes": 1,
+          "enabled": true
+        },
+        {
+          "id": "5021aa0cccc6",
+          "type": "cpuTemp",
+          "device": "*",
+          "threshold": 90,
+          "minutes": 2,
+          "enabled": true
+        },
+        {
+          "id": "37192e83f0c5",
+          "type": "gpuTemp",
+          "device": "*",
+          "threshold": 85,
+          "minutes": 2,
+          "enabled": false
+        },
+        {
+          "id": "32b4c55dfa3c",
+          "type": "disk",
+          "device": "*",
+          "threshold": 90,
+          "minutes": 0,
+          "enabled": true
+        },
+        {
+          "id": "c0ffee123456",
+          "type": "cpu",
+          "device": "a3f1c9d2-7b64-4e0a-9c1d-2f5e8b7a6c40",
+          "threshold": 90,
+          "minutes": 0,
+          "enabled": true
+        },
+        {
+          "id": "feedfacecafe",
+          "type": "power",
+          "device": "*",
+          "threshold": 1000,
+          "minutes": 0,
+          "enabled": true
+        },
+        {
+          "id": "deadbeef0001",
+          "type": "dailyCost",
+          "device": "*",
+          "threshold": 0.01,
+          "minutes": 0,
+          "enabled": true
+        },
+        {
+          "id": "abcdef012345",
+          "type": "mem",
+          "device": "*",
+          "threshold": 97.5,
+          "minutes": 5,
+          "enabled": true
+        }
+      ],
+      "channels": {
+        "desktop": true,
+        "ntfy": {
+          "enabled": true,
+          "topic": "has spaces"
+        },
+        "webhook": {
+          "enabled": true,
+          "keepUrl": true
+        }
+      },
+      "notifyResolved": false,
+      "tempUnit": "F"
+    },
+    "status": 400,
+    "response": {
+      "error": "invalid alert settings"
+    }
+  },
+  {
+    "name": "alerts-put-loopback-webhook",
+    "method": "PUT",
+    "path": "/api/alerts",
+    "body": {
+      "rules": [
+        {
+          "id": "138ac9e65858",
+          "type": "offline",
+          "device": "old-htpc",
+          "minutes": 1,
+          "enabled": true
+        },
+        {
+          "id": "b0b0b0b0b0b1",
+          "type": "offline",
+          "device": "nas-01",
+          "minutes": 1,
+          "enabled": true
+        },
+        {
+          "id": "5021aa0cccc6",
+          "type": "cpuTemp",
+          "device": "*",
+          "threshold": 90,
+          "minutes": 2,
+          "enabled": true
+        },
+        {
+          "id": "37192e83f0c5",
+          "type": "gpuTemp",
+          "device": "*",
+          "threshold": 85,
+          "minutes": 2,
+          "enabled": false
+        },
+        {
+          "id": "32b4c55dfa3c",
+          "type": "disk",
+          "device": "*",
+          "threshold": 90,
+          "minutes": 0,
+          "enabled": true
+        },
+        {
+          "id": "c0ffee123456",
+          "type": "cpu",
+          "device": "a3f1c9d2-7b64-4e0a-9c1d-2f5e8b7a6c40",
+          "threshold": 90,
+          "minutes": 0,
+          "enabled": true
+        },
+        {
+          "id": "feedfacecafe",
+          "type": "power",
+          "device": "*",
+          "threshold": 1000,
+          "minutes": 0,
+          "enabled": true
+        },
+        {
+          "id": "deadbeef0001",
+          "type": "dailyCost",
+          "device": "*",
+          "threshold": 0.01,
+          "minutes": 0,
+          "enabled": true
+        },
+        {
+          "id": "abcdef012345",
+          "type": "mem",
+          "device": "*",
+          "threshold": 97.5,
+          "minutes": 5,
+          "enabled": true
+        }
+      ],
+      "channels": {
+        "desktop": true,
+        "ntfy": {
+          "enabled": true,
+          "server": "https://ntfy.sh",
+          "topic": "dm-fixture-topic",
+          "email": "alerts@example.com"
+        },
+        "webhook": {
+          "enabled": true,
+          "url": "http://127.0.0.1:9/hook"
+        }
+      },
+      "notifyResolved": false,
+      "tempUnit": "F"
+    },
+    "status": 400,
+    "response": {
+      "error": "invalid alert settings"
+    }
+  },
+  {
+    "name": "history-bad-range",
+    "method": "GET",
+    "path": "/api/history/a3f1c9d2-7b64-4e0a-9c1d-2f5e8b7a6c40?from=10&to=5",
+    "body": null,
+    "status": 400,
+    "response": {
+      "error": "bad range"
+    }
+  },
+  {
+    "name": "history-unknown-device",
+    "method": "GET",
+    "path": "/api/history/nope",
+    "body": null,
+    "status": 404,
+    "response": {
+      "error": "not found"
+    }
+  },
+  {
+    "name": "alerts-clear-log",
+    "method": "DELETE",
+    "path": "/api/alerts/log",
+    "body": null,
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  }
+]
