@@ -246,6 +246,8 @@ struct DashboardGaugeRow: View {
                         .accessibilityIdentifier(DashboardID.gauge(gauge.kind, deviceID))
                 }
             }
+            // In the narrowest columns "75°C Warm" gets a little smaller rather than lose its word.
+            .minimumScaleFactor(0.8)
         }
     }
 
@@ -373,7 +375,8 @@ struct DashboardDetailsDisclosure<Content: View>: View {
     let deviceID: String
     let isExpanded: Bool
     let toggle: () -> Void
-    @ViewBuilder let content: Content
+    /// Made only while open, as the dashboard fills in a card's details only then.
+    @ViewBuilder let content: () -> Content
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -401,7 +404,7 @@ struct DashboardDetailsDisclosure<Content: View>: View {
             .accessibilityValue(isExpanded ? DashboardStrings.expanded : DashboardStrings.collapsed)
             .accessibilityIdentifier(DashboardID.detailsToggle(deviceID))
             if isExpanded {
-                content
+                content()
                     .transition(.opacity)
             }
         }

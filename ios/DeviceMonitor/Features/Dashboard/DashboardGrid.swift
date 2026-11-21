@@ -33,6 +33,9 @@ struct DashboardGrid: View {
         ScrollViewReader { scroll in
             ScrollView {
                 VStack(alignment: .leading, spacing: Theme.Layout.gridSpacing) {
+                    if DashboardScreen.headerPlacement(for: horizontalSizeClass) == .page {
+                        DashboardTitleBar(showsOfflineList: $showsOfflineList, placement: .page)
+                    }
                     if session.isDemo {
                         BannerView(DashboardStrings.demoBanner, kind: .info)
                             .accessibilityIdentifier(DashboardID.demoBanner)
@@ -187,8 +190,8 @@ struct DashboardGrid: View {
         if options.commits {
             // Long enough for the question to be seen to come up.
             try? await Task.sleep(for: .milliseconds(900))
-            if actions.renaming != nil { actions.commitRename(store: store) }
-            if actions.removing != nil { actions.commitRemove(store: store) }
+            if let subject = actions.renaming { actions.commitRename(subject, store: store) }
+            if let subject = actions.removing { actions.commitRemove(subject, store: store) }
         }
         if let failure = options.failure {
             actions.report(DashboardStrings.renameFailed(store.devices.first?.displayName ?? ""), .unreachable(failure))

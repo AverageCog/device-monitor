@@ -23,9 +23,12 @@ final class DashboardDeviceActionModel {
     var renameText = ""
     /// The device whose removal is being confirmed.
     var removing: Subject?
-    var failure: Failure?
-    /// Bumped when the hub has done what was asked, for the haptic.
+    /// What last went wrong. Kept once its alert has gone, so the text does not blank on the way out.
+    private(set) var failure: Failure?
+    var hasFailure = false
+    /// Bumped when the hub has done what was asked, and when it has not, for the haptics.
     private(set) var successes = 0
+    private(set) var failures = 0
 
     var isRenaming: Bool {
         get { renaming != nil }
@@ -35,11 +38,6 @@ final class DashboardDeviceActionModel {
     var isRemoving: Bool {
         get { removing != nil }
         set { if !newValue { removing = nil } }
-    }
-
-    var hasFailure: Bool {
-        get { failure != nil }
-        set { if !newValue { failure = nil } }
     }
 
     /// False when the hub would keep the old name: nothing is left of the text once cleaned.
@@ -60,9 +58,12 @@ final class DashboardDeviceActionModel {
     }
 
     /// Sends the name as the hub would store it. The new name shows when the hub announces it.
-    func commitRename(store: HubStore) {
-        guard let subject = renaming, let name = DeviceRename.sendable(renameText) else { return }
+    ///
+    /// The device comes from the question that was answered and not from `renaming`: by the time
+    /// a button's action runs, the alert may already have put its state away.
+    func commitRename(_ subject: Subject, store: HubStore) {
         renaming = nil
+        guard let name = DeviceRename.sendable(renameText) else { return }
         Task {
             do {
                 try await store.rename(device: subject.id, name: name)
@@ -74,8 +75,7 @@ final class DashboardDeviceActionModel {
     }
 
     /// The card goes when the hub announces the removal.
-    func commitRemove(store: HubStore) {
-        guard let subject = removing else { return }
+    func commitRemove(_ subject: Subject, store: HubStore) {
         removing = nil
         Task {
             do {
@@ -91,8 +91,12 @@ final class DashboardDeviceActionModel {
     /// is the session's to explain, and a cancelled request is nobody's.
     func report(_ title: String, _ error: HubError) {
         switch error.kind {
-        case .unauthorized, .cancelled: break
-        case .unreachable, .rejected, .other: failure = Failure(title: title, message: error.errorDescription ?? "")
+        case .unauthorized, .cancelled:
+            break
+        case .unreachable, .rejected, .other:
+            failure = Failure(title: title, message: error.errorDescription ?? "")
+            hasFailure = true
+            failures += 1
         }
     }
 }
@@ -161,19 +165,18 @@ private struct DashboardDeviceActionAlerts: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .alert(DeviceMenuItem.renamePrompt, isPresented: $model.isRenaming) {
+            .alert(DeviceMenuItem.renamePrompt, isPresented: $model.isRenaming, presenting: model.renaming) { subject in
                 TextField(DeviceMenuItem.renamePrompt, text: $model.renameText)
                     .textInputAutocapitalization(.words)
                     .autocorrectionDisabled()
-                    .accessibilityIdentifier(DashboardID.renameField)
                 Button(DashboardStrings.cancel, role: .cancel) {}
-                Button(DeviceMenuItem.rename.title) { model.commitRename(store: store) }
+                Button(DeviceMenuItem.rename.title) { model.commitRename(subject, store: store) }
                     .disabled(!model.canRename)
-            } message: {
+            } message: { _ in
                 Text(DashboardStrings.renameMessage)
             }
-            .alert(DeviceMenuItem.remove.title, isPresented: $model.isRemoving, presenting: model.removing) { _ in
-                Button(DashboardStrings.remove, role: .destructive) { model.commitRemove(store: store) }
+            .alert(DeviceMenuItem.remove.title, isPresented: $model.isRemoving, presenting: model.removing) { subject in
+                Button(DashboardStrings.remove, role: .destructive) { model.commitRemove(subject, store: store) }
                 Button(DashboardStrings.cancel, role: .cancel) {}
             } message: { subject in
                 Text(DeviceMenuItem.removeConfirmation(name: subject.name))
@@ -184,6 +187,6 @@ private struct DashboardDeviceActionAlerts: ViewModifier {
                 Text(failure.message)
             }
             .sensoryFeedback(.success, trigger: model.successes)
-            .sensoryFeedback(.error, trigger: model.failure) { _, new in new != nil }
+            .sensoryFeedback(.error, trigger: model.failures)
     }
 }

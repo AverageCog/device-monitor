@@ -1,9 +1,13 @@
 import DMCore
 import SwiftUI
 
-/// The Devices tab: the dashboard's main page (public/index.html). The navigation bar is its
-/// header (logo, product name, "3 of 4 devices online", "+"); below it the grid of cards for the
-/// devices that are online. The offline ones are a list behind the summary.
+/// The Devices tab: the dashboard's main page (public/index.html). Its header (logo, product name,
+/// "3 of 4 devices online", "+") is the navigation bar; below it the grid of cards for the devices
+/// that are online. The offline ones are a list behind the summary.
+///
+/// In a regular-width window the logo, name and summary head the page instead of the bar: on an
+/// iPad the tab bar floats where a bar's title would go, and the summary is the only way to the
+/// offline list.
 struct DashboardScreen: View {
     @Environment(HubStore.self) private var store
     @Environment(AppRouter.self) private var router
@@ -13,15 +17,26 @@ struct DashboardScreen: View {
     /// The rename and remove questions of the cards' menus. The offline list has its own.
     @State private var actions = DashboardDeviceActionModel()
 
+    /// Where the logo, name and summary go.
+    static func headerPlacement(for sizeClass: UserInterfaceSizeClass?) -> DashboardTitleBar.Placement {
+        #if DEBUG
+        if let forced = DashboardDebugOptions.current.header { return forced == "page" ? .page : .navigationBar }
+        #endif
+        return sizeClass == .regular ? .page : .navigationBar
+    }
+
     var body: some View {
+        let placement = Self.headerPlacement(for: horizontalSizeClass)
         DashboardGrid(showsOfflineList: $showsOfflineList)
             .environment(actions)
             // The bar shows the product instead; the tab keeps its name for the system and for tests.
             .navigationTitle(AppTab.devices.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .principal) {
-                    DashboardTitleBar(showsOfflineList: $showsOfflineList, isCompact: horizontalSizeClass == .compact)
+                if placement == .navigationBar {
+                    ToolbarItem(placement: .principal) {
+                        DashboardTitleBar(showsOfflineList: $showsOfflineList, placement: .navigationBar)
+                    }
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Button {
@@ -46,13 +61,19 @@ struct DashboardScreen: View {
     }
 }
 
-/// The dashboard's header in the navigation bar: the logo, the product name and the summary, which
-/// opens the offline list when there is one. As the bar gets narrower the summary takes its short
-/// form ("3/4 online"), then the name goes, as in a narrow browser window.
+/// The dashboard's header: the logo, the product name and the summary, which opens the offline list
+/// when there is one. As it gets narrower the summary takes its short form ("3/4 online"), then the
+/// name goes, as in a narrow browser window.
 struct DashboardTitleBar: View {
+    nonisolated enum Placement: Sendable {
+        /// In the navigation bar of a compact-width window; the offline list is a sheet.
+        case navigationBar
+        /// At the head of the page in a regular-width window; the offline list is a popover.
+        case page
+    }
+
     @Binding var showsOfflineList: Bool
-    /// Whether the offline list will be a sheet rather than a popover.
-    let isCompact: Bool
+    let placement: Placement
 
     @Environment(HubStore.self) private var store
     /// The outage "Reconnecting to hub…" is shown for.
@@ -72,11 +93,12 @@ struct DashboardTitleBar: View {
             row(summary, text: summary.compactText, showsName: false)
         }
         .popover(isPresented: $showsOfflineList) {
-            DashboardOfflineList(showsDone: isCompact)
+            // A sheet needs a way out of its own.
+            DashboardOfflineList(showsDone: placement == .navigationBar)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         // A bar does not grow with the text; past this size the system's large-content viewer takes over.
-        .dynamicTypeSize(...DynamicTypeSize.xLarge)
+        .dynamicTypeSize(...(placement == .navigationBar ? DynamicTypeSize.xLarge : .accessibility5))
         .task(id: outage) {
             guard let outage else {
                 shownOutage = nil

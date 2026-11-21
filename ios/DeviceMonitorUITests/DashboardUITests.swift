@@ -13,7 +13,6 @@ final class DashboardUITests: XCTestCase {
         static let loading = "devices-loading"
         static let offlineList = "offline-list"
         static let offlineDone = "offline-list-done-button"
-        static let renameField = "device-rename-field"
 
         static func grip(_ id: String) -> String { "device-grip-\(id)" }
         static func menu(_ id: String) -> String { "device-menu-\(id)" }

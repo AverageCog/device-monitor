@@ -15,13 +15,17 @@ import Foundation
 ///     -dm-dashboard-wake <sending|sent|failed> show the offline list's Wake buttons in that state
 ///     -dm-dashboard-rename <device id>         open the rename question for that device
 ///     -dm-dashboard-rename-text <text>         …with this typed instead of the current name
+///                                              (an underscore stands for a space)
 ///     -dm-dashboard-remove <device id>         open the remove confirmation for that device
 ///     -dm-dashboard-error <text>               show the failure alert with this explanation
-///                                              (underscores are shown as spaces)
+///                                              (an underscore stands for a space)
 ///     -dm-dashboard-scrub <0…1>                every chart starts scrubbed at that fraction of
 ///                                              its width, with its tooltip
 ///     -dm-dashboard-card-width <points>        the narrowest a column of the grid may be (290),
 ///                                              to see several columns on a phone
+///     -dm-dashboard-header <page|bar>          where the logo, name and summary go, whatever the
+///                                              window's width: at the head of the page (as in a
+///                                              regular-width window) or in the navigation bar
 ///     -dm-dashboard-state <loading|empty|all-offline>
 ///                                              loading: draw the state before the first snapshot;
 ///                                              empty: remove every device (demo hub only);
@@ -68,6 +72,7 @@ nonisolated struct DashboardDebugOptions: Sendable {
     var failure: String?
     var scrub: Double?
     var cardWidth: Double?
+    var header: String?
     var range: (id: String, range: String)?
     var move: (id: String, offset: Int)?
     var drag: Drag?
@@ -89,12 +94,13 @@ nonisolated struct DashboardDebugOptions: Sendable {
         showsOfflineList = arguments.contains("-dm-dashboard-offline")
         wake = value(after: "-dm-dashboard-wake")
         renameID = value(after: "-dm-dashboard-rename")
-        renameText = value(after: "-dm-dashboard-rename-text")
+        renameText = value(after: "-dm-dashboard-rename-text")?.replacingOccurrences(of: "_", with: " ")
         removeID = value(after: "-dm-dashboard-remove")
         commits = arguments.contains("-dm-dashboard-commit")
         failure = value(after: "-dm-dashboard-error")?.replacingOccurrences(of: "_", with: " ")
         scrub = value(after: "-dm-dashboard-scrub").flatMap(Double.init).map { min(1, max(0, $0)) }
         cardWidth = value(after: "-dm-dashboard-card-width").flatMap(Double.init).map { max(60, $0) }
+        header = value(after: "-dm-dashboard-header")
         let range = parts(after: "-dm-dashboard-range")
         if range.count == 2 { self.range = (range[0], range[1]) }
         let move = parts(after: "-dm-dashboard-move")

@@ -51,7 +51,6 @@ nonisolated enum DashboardID {
     static let emptyOfflineButton = "devices-empty-offline-button"
     static let offlineList = "offline-list"
     static let offlineDone = "offline-list-done-button"
-    static let renameField = "device-rename-field"
 
     /// A device's card in the grid, and its row in the offline list.
     static func row(_ id: String) -> String { "device-row-\(id)" }

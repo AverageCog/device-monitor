@@ -80,8 +80,8 @@ struct DashboardOfflineList: View {
             }
             if options.commits {
                 try? await Task.sleep(for: .milliseconds(900))
-                if actions.renaming != nil { actions.commitRename(store: store) }
-                if actions.removing != nil { actions.commitRemove(store: store) }
+                if let subject = actions.renaming { actions.commitRename(subject, store: store) }
+                if let subject = actions.removing { actions.commitRemove(subject, store: store) }
             }
             if options.wake == "press", let id = model.rows.first(where: \.canWake)?.id { wake(id) }
         }
