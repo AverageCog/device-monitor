@@ -110,6 +110,11 @@ import Testing
             editor.setThreshold(of: id, toText: field, unit: .fahrenheit, locale: F.enUS)
         }
         #expect(editor.rule(id)?.threshold == stored)
+        // So does opening it where Celsius is shown: the field says 93.33, and the limit stays.
+        let celsiusField = AlertThresholds.fieldText(stored, kind: .cpuTemp, unit: .celsius, locale: F.enUS)
+        #expect(celsiusField == "93.33")
+        editor.setThreshold(of: id, toText: celsiusField, unit: .celsius, locale: F.enUS)
+        #expect(editor.rule(id)?.threshold == stored)
         // Text in the user's locale.
         editor.setThreshold(of: "abcdef012345", toText: "97,25", unit: .fahrenheit, locale: Locale(identifier: "de_DE"))
         #expect(editor.rule("abcdef012345")?.threshold == 97.25)   // memory, a percentage: no conversion

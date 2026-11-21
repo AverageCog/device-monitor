@@ -105,23 +105,32 @@ public enum AlertRuleCatalog {
 }
 
 /// Showing and editing a rule's limit in the user's unit. The hub stores temperatures in Celsius
-/// and writes them in whole degrees of `AlertSettings.tempUnit`; everything else is stored as shown.
+/// and writes them in whole degrees of `AlertSettings.tempUnit`; everything else is stored as
+/// entered. A field never shows more than `maxDecimals` of it.
 public enum AlertThresholds {
+    /// The most decimals a limit is shown with: enough for money, and for a temperature that was
+    /// entered in Fahrenheit and is looked at in Celsius (195 °F is stored as 90.55555555555556).
+    public static let maxDecimals = 2
+
     /// The number to show for a stored limit: whole degrees Fahrenheit for a temperature when the
-    /// unit is Fahrenheit (as the hub rounds them in its own texts), the stored number otherwise.
+    /// unit is Fahrenheit (as the hub rounds them in its own texts), otherwise the stored number
+    /// to `maxDecimals`.
     public static func displayValue(_ stored: Double, kind: AlertRule.Kind, unit: TemperatureUnit) -> Double {
-        isFahrenheit(kind, unit) ? JS.round(stored * 9 / 5 + 32) : stored
+        if isFahrenheit(kind, unit) { return JS.round(stored * 9 / 5 + 32) }
+        // Whole numbers are shown as they are, however large.
+        guard stored.isFinite, stored != stored.rounded() else { return stored }
+        return Double(JS.toFixed(stored, maxDecimals)) ?? stored
     }
 
     /// The limit to store for a number the user entered.
     ///
     /// Fahrenheit is converted exactly, so the hub's alert texts show the number that was typed.
     /// Entering the number that is already on screen changes nothing: a limit someone saved as
-    /// 90.3 °C shows as 195 °F and stays 90.3 °C when the form is saved untouched.
+    /// 90.3 °C shows as 195 °F and stays 90.3 °C when the form is saved untouched, and one
+    /// entered as 195 °F shows as 90.56 °C and stays 90.55555555555556.
     public static func storedValue(fromDisplay entered: Double, kind: AlertRule.Kind, unit: TemperatureUnit, current: Double? = nil) -> Double {
-        guard isFahrenheit(kind, unit) else { return entered }
         if let current, displayValue(current, kind: kind, unit: unit) == entered { return current }
-        return (entered - 32) * 5 / 9
+        return isFahrenheit(kind, unit) ? (entered - 32) * 5 / 9 : entered
     }
 
     /// The limits the hub accepts, in the unit shown: 68…302 for a temperature in Fahrenheit.
