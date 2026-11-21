@@ -78,7 +78,7 @@ public struct PriceEditor: Sendable, Equatable {
     /// Decides the decimal separator of the rate fields.
     public let locale: Locale
     /// The periods in force before "One rate" was chosen, so "Time of use" brings them back for as
-    /// long as this editor lives.
+    /// long as this editor lives. `remember(_:)` carries them over to another editor.
     public private(set) var rememberedPeriods: [TouPeriod]?
     /// Text of the flat rate field.
     public private(set) var rateText: String
@@ -203,6 +203,14 @@ public struct PriceEditor: Sendable, Equatable {
         }
         let tou = rememberedPeriods.flatMap { $0.isEmpty ? nil : $0 } ?? [TouPeriod(from: 16, to: 21, rate: s.rate)]
         return sendable(EnergySettings(region: s.region, rate: s.rate, currency: s.currency, tou: tou))
+    }
+
+    /// Hands this editor the periods another one remembered. The dashboard has a single `lastTou`
+    /// for as long as its page is open, however often the settings dialog is. An app that makes
+    /// an editor for every screen showing the price keeps `rememberedPeriods` beside them: handed
+    /// over before an action and read back after it, all its editors share one memory.
+    public mutating func remember(_ periods: [TouPeriod]?) {
+        rememberedPeriods = periods
     }
 
     public mutating func setPeriodStart(at index: Int, hour: Double) -> EnergySettings? {
