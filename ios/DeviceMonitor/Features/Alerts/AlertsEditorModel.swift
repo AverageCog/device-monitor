@@ -1,3 +1,4 @@
+import Accessibility
 import DMCore
 import Observation
 import SwiftUI
@@ -67,8 +68,9 @@ final class AlertsEditorModel {
     private(set) var saveFailure: String?
     /// The hub's settings changed (another app, the dashboard) while this draft had edits.
     private(set) var changedElsewhere = false
-    /// Counted for the haptics and the "Saved" note: saves and tests that went through, and
-    /// requests that did not.
+    /// True for a moment after a save went through.
+    private(set) var wasJustSaved = false
+    /// Counted for the haptics: saves and tests that went through, and requests that did not.
     private(set) var saves = 0
     private(set) var tests = 0
     private(set) var failures = 0
@@ -117,6 +119,8 @@ final class AlertsEditorModel {
         if current.isDirty, !isSaving { changedElsewhere = true }
         current.hubChanged(settings)
         editor = current
+        // A test result is about the settings the hub had then.
+        if test != .sending { test = .idle }
         if !current.isDirty { settled() }
     }
 
@@ -132,14 +136,30 @@ final class AlertsEditorModel {
             #endif
             try await store.saveAlerts(body)
         } catch {
-            saveFailure = HubError(error).errorDescription ?? "The hub did not save the alert settings."
+            let reason = HubError(error).errorDescription ?? "The hub did not save the alert settings."
+            saveFailure = reason
             failures += 1
+            // The banner appears at the top of the form, which VoiceOver may be far from.
+            AccessibilityNotification.Announcement("Not saved. \(reason)").post()
             return
         }
         // What the hub stored: topics trimmed, channels without an address switched off again.
         editor?.hubSaved(store.alerts.settings ?? body)
         settled()
+        if test != .sending { test = .idle }
         saves += 1
+        AccessibilityNotification.Announcement("Alert settings saved").post()
+        confirmSave()
+    }
+
+    /// "Saved" takes the Save button's place for a moment.
+    private func confirmSave() {
+        let save = saves
+        wasJustSaved = true
+        Task {
+            try? await Task.sleep(for: .seconds(2.5))
+            if saves == save { wasJustSaved = false }
+        }
     }
 
     /// Throws the edits away.

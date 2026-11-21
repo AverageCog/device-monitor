@@ -8,7 +8,7 @@ import SwiftUI
 /// Limits are shown and typed in the unit this device displays temperatures in, and kept in the
 /// hub's (°C): `AlertThresholds` converts, and `AlertValidation` words what is wrong.
 struct AlertsRuleScreen: View {
-    @Bindable var model: AlertsEditorModel
+    let model: AlertsEditorModel
     let ruleID: String
     let directory: AlertsDirectory
 

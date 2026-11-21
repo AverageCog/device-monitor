@@ -13,7 +13,6 @@ struct AlertsSettingsScreen: View {
     @Environment(Preferences.self) private var preferences
     @Environment(\.horizontalSizeClass) private var sizeClass
     @FocusState private var focus: AlertsField?
-    @State private var savedNote = false
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -23,7 +22,7 @@ struct AlertsSettingsScreen: View {
                         let unit = AlertsLaunch.unit(preferences.temperatureUnit)
                         let currency = store.energySettings?.currency
                         let issues = editor.issues(unit: unit, currency: currency)
-                        AlertsEditorStatus(model: model, editor: editor, savedNote: savedNote)
+                        AlertsEditorStatus(model: model, editor: editor)
                         AlertsDeviceSection(hubSendsToApps: editor.saved.channels.desktop)
                             .id(AlertsAnchor.iphone)
                         AlertsRulesSection(model: model, editor: editor, issues: issues, directory: directory, unit: unit, currency: currency)
@@ -80,14 +79,6 @@ struct AlertsSettingsScreen: View {
         .modifier(AlertsFollowHub(model: model))
         .sensoryFeedback(.success, trigger: model.saves + model.tests)
         .sensoryFeedback(.error, trigger: model.failures)
-        .onChange(of: model.saves) {
-            // "Saved" stays for a moment, then makes room again.
-            savedNote = true
-            Task {
-                try? await Task.sleep(for: .seconds(3))
-                savedNote = false
-            }
-        }
     }
 }
 
@@ -106,6 +97,19 @@ struct AlertsSaveItem: ToolbarContent {
             if model.isSaving {
                 ProgressView()
                     .accessibilityLabel("Saving")
+            } else if model.wasJustSaved, !model.isDirty {
+                // In the button's place, where the eye already is, and without moving the form.
+                HStack(spacing: 5) {
+                    Image(systemName: "checkmark")
+                        .font(.footnote.weight(.bold))
+                        .accessibilityHidden(true)
+                    Text("Saved")
+                        .dmFont(.bodyStrong)
+                }
+                .foregroundStyle(Theme.good)
+                .padding(.horizontal, Theme.Spacing.s)
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("alerts-saved")
             } else {
                 Button("Save") {
                     Task { await model.save(to: store) }
@@ -136,33 +140,28 @@ private struct AlertsCancelButton: View {
 }
 
 /// What the draft has to say for itself, above the form: a save that failed, a hub that has
-/// moved on, fields that keep Save from working, a save that went through.
+/// moved on, fields that keep Save from working.
 private struct AlertsEditorStatus: View {
     let model: AlertsEditorModel
     let editor: AlertSettingsEditor
-    let savedNote: Bool
 
     var body: some View {
-        let lines = VStack(spacing: Theme.Spacing.s) {
-            if let failure = model.saveFailure {
-                BannerView("Not saved. \(failure)", kind: .critical)
-                    .accessibilityIdentifier("alerts-save-error")
+        let hasErrors = editor.isDirty && editor.hasErrors
+        if model.saveFailure != nil || model.changedElsewhere || hasErrors {
+            VStack(spacing: Theme.Spacing.s) {
+                if let failure = model.saveFailure {
+                    BannerView("Not saved. \(failure)", kind: .critical)
+                        .accessibilityIdentifier("alerts-save-error")
+                }
+                if model.changedElsewhere {
+                    BannerView("These settings were changed on the hub while you were editing. Saving replaces them with yours.", kind: .warning)
+                        .accessibilityIdentifier("alerts-changed-elsewhere")
+                }
+                if hasErrors {
+                    BannerView("Some fields need to be put right before this can be saved.", kind: .warning)
+                        .accessibilityIdentifier("alerts-has-errors")
+                }
             }
-            if model.changedElsewhere {
-                BannerView("These settings were changed on the hub while you were editing. Saving replaces them with yours.", kind: .warning)
-                    .accessibilityIdentifier("alerts-changed-elsewhere")
-            }
-            if editor.isDirty, editor.hasErrors {
-                BannerView("Some fields need to be put right before this can be saved.", kind: .warning)
-                    .accessibilityIdentifier("alerts-has-errors")
-            }
-            if savedNote, !editor.isDirty, model.saveFailure == nil {
-                BannerView("Saved on the hub.", kind: .success)
-                    .accessibilityIdentifier("alerts-saved")
-            }
-        }
-        if model.saveFailure != nil || model.changedElsewhere || (editor.isDirty && editor.hasErrors) || (savedNote && !editor.isDirty) {
-            lines
         }
     }
 }

@@ -68,8 +68,9 @@ struct AlertsScreen: View {
                 } label: {
                     Label("Alert settings", systemImage: "slider.horizontal.3")
                 }
-                // Nothing to edit before the hub has said what its rules are.
-                .disabled(model.editor == nil)
+                // Nothing to edit before the hub has said what its rules are. (Asked of the store,
+                // not the draft: this screen is not to be redrawn for every keystroke in the editor.)
+                .disabled(store.alerts.settings == nil)
                 .accessibilityIdentifier("alerts-settings-button")
             }
         }
@@ -104,7 +105,6 @@ struct AlertsScreen: View {
             if failure != .cancelled { loadFailure = failure.errorDescription ?? "The hub did not answer." }
         }
     }
-
 }
 
 /// Keeps the draft in step with the hub's settings: a draft without edits follows them. On each
@@ -294,6 +294,7 @@ private struct AlertsRowMenu<Content: View>: View {
                     } label: {
                         Label("Show history", systemImage: AppTab.history.systemImage)
                     }
+                    .accessibilityIdentifier("alert-show-history")
                 }
                 if let rule = actions.ruleID {
                     Button {
@@ -301,6 +302,7 @@ private struct AlertsRowMenu<Content: View>: View {
                     } label: {
                         Label("Edit rule", systemImage: "slider.horizontal.3")
                     }
+                    .accessibilityIdentifier("alert-edit-rule")
                 }
             } label: {
                 content

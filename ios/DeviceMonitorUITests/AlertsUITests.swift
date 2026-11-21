@@ -370,7 +370,7 @@ final class AlertsUITests: XCTestCase {
         XCTAssertTrue(app.element(withIdentifier: AlertsID.openSettings).waitForExistence(timeout: 5), "…and the editor leads to the Settings app")
         let toggle = app.element(withIdentifier: AlertsID.notifyToggle)
         XCTAssertTrue(toggle.exists)
-        XCTAssertFalse(toggle.isEnabled, "The switch cannot do what iOS forbids")
+        XCTAssertEqual(toggle.value as? String, "Off", "The switch does not claim what iOS forbids")
         attachScreenshot(of: app, named: "alert-notifications-blocked")
     }
 
