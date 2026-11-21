@@ -5,7 +5,7 @@ import SwiftUI
 /// Debug-only entry points: the component gallery, a routing check, the PhaseContainer check and,
 /// when the app runs on a demo hub, ways to take that hub away.
 ///
-/// A section for any screen to embed (the interim Devices tab does; Settings is a good home).
+/// A section for any screen to embed (the Devices tab has it at the end of its grid).
 /// The gallery and the probe open over the tabs whether or not this section is on screen
 /// (`-dm-gallery`, `-dm-probe`), so nothing breaks if a screen leaves it out.
 struct DebugTools: View {
