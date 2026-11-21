@@ -42,7 +42,7 @@ struct DashboardCard: View, Equatable {
         let model = DeviceCardModel(device: device, unit: unit, latestVersions: store.latestVersions, now: store.clock.now)
         VStack(alignment: .leading, spacing: Theme.Spacing.m) {
             header(model)
-            DashboardGaugeRow(gauges: model.gauges, deviceID: model.id)
+            DashboardGaugeRow(gauges: model.gauges, deviceID: model.id, unit: unit)
             DashboardCardChart(deviceID: model.id, series: series)
             DashboardStats(stats: model.stats)
                 .accessibilityElement(children: .contain)
@@ -222,6 +222,8 @@ nonisolated struct DashboardGripGlyph: Shape {
 struct DashboardGaugeRow: View {
     let gauges: [DeviceGaugeModel]
     let deviceID: String
+    /// The unit of the temperatures beside the gauges, which decides how wide the widest is.
+    let unit: TemperatureUnit
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     /// How wide a gauge beside its line would like to be. The gauge draws its reading and label in
@@ -229,23 +231,33 @@ struct DashboardGaugeRow: View {
     /// first accessibility size, over 160 at the largest.
     @ScaledMetric(relativeTo: .title3) private var scaledDiameter: CGFloat = 62
     @State private var rowWidth: CGFloat = 0
+    @State private var widestCaptionWidth: CGFloat = 0
 
-    /// The smallest a gauge beside its line is, as it is at the first accessibility size.
+    /// The smallest a gauge beside its line is, as it is at the first accessibility size. At the
+    /// largest sizes a phone's row cannot hold even this beside the widest temperature; the gauge
+    /// keeps this size there, and a long temperature gets smaller rather than lose its reading.
     private static let smallestDiameter: CGFloat = 96
-    /// The most of the row a gauge takes, which leaves its line room for "30.1 / 60 GB".
-    private static let largestShare: CGFloat = 0.45
 
     var body: some View {
         if dynamicTypeSize.isAccessibilitySize {
-            let diameter = min(scaledDiameter, max(Self.smallestDiameter, rowWidth * Self.largestShare))
+            // A gauge grows only into room the widest line beside it leaves: at the larger sizes a
+            // temperature with its word takes most of a phone's row, and cut short it loses its
+            // reading. Rounded down, so the line is never a fraction of a point short.
+            let besideWidest = (rowWidth - Theme.Spacing.l - widestCaptionWidth).rounded(.down)
+            let diameter = min(scaledDiameter, max(Self.smallestDiameter, besideWidest))
             VStack(alignment: .leading, spacing: Theme.Spacing.s) {
                 ForEach(gauges) { gauge in
                     HStack(spacing: Theme.Spacing.l) {
                         GaugeView(value: gauge.value, label: gauge.label, color: gauge.tint.dashboardColor)
                             .frame(width: diameter)
                         caption(gauge.caption)
-                        Spacer(minLength: 0)
+                            // A temperature gets smaller, as the memory line does, where even the
+                            // smallest gauge leaves it too little room.
+                            .minimumScaleFactor(0.7)
                     }
+                    // Not a spacer: the stack's spacing would come before it too, and take from
+                    // the line what the gauge has left it.
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(gauge.label)
                     .accessibilityValue(Self.spokenValue(gauge))
@@ -255,6 +267,13 @@ struct DashboardGaugeRow: View {
             // The rows fill the card's width whatever size the gauges are, so this never moves
             // with what it decides.
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { rowWidth = $0 }
+            .background(alignment: .topLeading) {
+                widestCaption
+                    .fixedSize()
+                    .hidden()
+                    .accessibilityHidden(true)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { widestCaptionWidth = $0 }
+            }
         } else {
             GaugeRow {
                 ForEach(gauges) { gauge in
@@ -266,6 +285,14 @@ struct DashboardGaugeRow: View {
             // In the narrowest columns "75°C Warm" gets a little smaller rather than lose its word.
             .minimumScaleFactor(0.8)
         }
+    }
+
+    /// At least as wide as any temperature beside a gauge: three digits and the longer of the two
+    /// words ("100°C Warm", "212°F Warm"). A hint is narrower, and the memory line gets smaller
+    /// where it has to. A fixed text and not the readings on show, so that the gauges of every
+    /// card keep one size when a reading turns Warm or gains a digit.
+    private var widestCaption: some View {
+        TempPill(Format.fmtTemp(100, unit), level: .warm)
     }
 
     /// "28%, 59°C, Normal, ACPI sensor": the reading, then what is under the gauge.

@@ -598,8 +598,8 @@ final class DashboardUITests: XCTestCase {
     }
 
     /// At accessibility sizes each gauge has a row of its own, its line beside it. The gauge draws
-    /// its reading and label in proportion to its size, so it grows with the text for them to:
-    /// at the largest size it is well over the size it has at the first.
+    /// its reading and label in proportion to its size, so it grows with the text for them to, as
+    /// far as the line beside it leaves room: on a phone, at the second size but not the largest.
     @MainActor
     func testTheGaugesGrowWithTheText() {
         func gaugeHeight(at size: String) -> CGFloat {
@@ -612,8 +612,31 @@ final class DashboardUITests: XCTestCase {
             return height
         }
         let first = gaugeHeight(at: "UICTContentSizeCategoryAccessibilityM")
-        let largest = gaugeHeight(at: "UICTContentSizeCategoryAccessibilityXXXL")
+        let second = gaugeHeight(at: "UICTContentSizeCategoryAccessibilityL")
         XCTAssertGreaterThan(first, 0)
-        XCTAssertGreaterThan(largest, first * 1.3, "The gauge grew from \(first) to \(largest) points")
+        XCTAssertGreaterThan(second, first * 1.1, "The gauge grew from \(first) to \(second) points")
+    }
+
+    /// The demo's DGX Spark has a GPU that reads Warm. At the larger accessibility sizes "71°C
+    /// Warm" takes most of a phone's row (about 206 points at AccessibilityXXL); gauges that grew
+    /// into that room cut it to "71… W…". They grow only into what the widest temperature
+    /// leaves, and the three of a card keep one size whatever the readings say.
+    @MainActor
+    func testTheGaugesLeaveTheTemperatureItsRoom() {
+        let app = launchDemo(["-dm-dashboard-scroll", "spark", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXL"])
+        let rows = ["cpu", "gpu", "memory"].map { app.element(withIdentifier: DashboardID.gauge($0, "spark")) }
+        for row in rows {
+            XCTAssertTrue(row.waitForExistence(timeout: 10), "Missing \(row)")
+        }
+        attachScreenshot(of: app, named: "dashboard-gauges-warm-temperature")
+
+        let gpu = rows[1].frame
+        // A row is as wide as the card's content and as tall as its gauge, which is 100 wide
+        // for 98 high; the stack has 16 points between the gauge and its line.
+        let room = gpu.width - gpu.height * 100 / 98 - 16
+        XCTAssertGreaterThanOrEqual(room, 200, "The GPU's temperature has \(room) points beside a gauge in a row of \(gpu.width)")
+        for row in rows {
+            XCTAssertEqual(row.frame.height, gpu.height, accuracy: 1, "The gauges are one size: \(row.frame) and \(gpu)")
+        }
     }
 }
