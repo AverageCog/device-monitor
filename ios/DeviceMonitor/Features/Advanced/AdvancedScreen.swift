@@ -136,6 +136,8 @@ private struct AdvancedPage: View {
     let width: CGFloat
     let options: AdvancedDebugOptions
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     /// From here the range control sits beside the first heading instead of above it.
     private static let wideLayout: CGFloat = 600
 
@@ -175,7 +177,9 @@ private struct AdvancedPage: View {
     }
 
     @ViewBuilder private var heading: some View {
-        if width >= Self.wideLayout {
+        // At the accessibility text sizes the control needs more than its place beside the
+        // heading to show its labels in full; above it, it has the page's width.
+        if width >= Self.wideLayout, !dynamicTypeSize.isAccessibilitySize {
             HStack(alignment: .center, spacing: Theme.Spacing.l) {
                 SectionLabel(AdvancedModel.electricityHeading, size: .large)
                 AdvancedRangeControl(controller: controller)
@@ -197,12 +201,31 @@ private struct AdvancedRangeControl: View {
     let controller: AdvancedController
 
     @Environment(\.layoutDirection) private var layoutDirection
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var width: CGFloat = 0
+    @ScaledMetric(relativeTo: .callout) private var labelSize: CGFloat = DMTextStyle.callout.size
+
+    /// What `DMSegmentedControl` keeps clear on either side of a label.
+    private static let segmentPadding: CGFloat = 11
 
     var body: some View {
         let ranges = AdvancedRange.allCases
+        // The segments share the width equally, so each must hold the longest label. The control
+        // cuts short a label that does not fit, which at the largest text sizes on a phone
+        // leaves "30…": there the three go one under the other instead.
+        let widest = ranges.map { AdvancedTextMeasure.width(of: $0.label, style: .callout, size: labelSize) }.max() ?? 0
+        let sideBySide = CGFloat(ranges.count) * (widest + 2 * Self.segmentPadding)
+        ViewThatFits(in: .horizontal) {
+            segments(ranges)
+                .frame(minWidth: sideBySide, maxWidth: .infinity)
+            rows(ranges)
+        }
+        .sensoryFeedback(.selection, trigger: controller.range)
+    }
+
+    private func segments(_ ranges: [AdvancedRange]) -> some View {
         let selection = Binding(get: { controller.range }, set: { controller.select($0) })
-        DMSegmentedControl(
+        return DMSegmentedControl(
             AdvancedStrings.timeRange, selection: selection,
             segments: ranges.map { DMSegment($0, $0.label, identifier: $0.rawValue) },
             fillsWidth: true, identifier: "advanced-range"
@@ -220,7 +243,49 @@ private struct AdvancedRangeControl: View {
                 controller.select(ranges[layoutDirection == .rightToLeft ? ranges.count - 1 - index : index])
             }
         )
-        .sensoryFeedback(.selection, trigger: controller.range)
+    }
+
+    /// The same control turned on its side: a row for each range, the chosen one on its plate.
+    /// The names for VoiceOver and for UI tests are the segmented control's.
+    private func rows(_ ranges: [AdvancedRange]) -> some View {
+        VStack(spacing: 0) {
+            ForEach(ranges, id: \.self) { range in
+                let isOn = range == controller.range
+                Button {
+                    controller.select(range)
+                } label: {
+                    HStack(spacing: Theme.Spacing.s) {
+                        Text(range.label)
+                            .dmFont(.callout)
+                            .foregroundStyle(isOn ? Theme.textPrimary : Theme.textMuted)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 0)
+                        Image(systemName: "checkmark")
+                            .font(.system(size: labelSize * 0.7, weight: .semibold))
+                            .foregroundStyle(Theme.textPrimary)
+                            .opacity(isOn ? 1 : 0)
+                            .accessibilityHidden(true)
+                    }
+                    .padding(.horizontal, AdvancedTableMetrics.rowPadding)
+                    .padding(.vertical, Theme.Spacing.s)
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .background(isOn ? Theme.surface2 : .clear)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(isOn ? .isSelected : [])
+                .accessibilityIdentifier("advanced-range-\(range.rawValue)")
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous)
+                .strokeBorder(Theme.border, lineWidth: Theme.Layout.hairline)
+        }
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: controller.range)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(AdvancedStrings.timeRange)
+        .accessibilityIdentifier("advanced-range")
     }
 }
 
