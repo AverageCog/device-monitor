@@ -46,7 +46,7 @@ public enum HubPairing {
         }
 
         let label = Enrollment.cleanName(name)
-        guard let body = try? JSONEncoder().encode(label.isEmpty ? [:] : ["name": label]) else { throw HubError.invalidRequest }
+        guard let body = try? HubJSON.encode(Wire.MobilePair(name: label.isEmpty ? nil : label)) else { throw HubError.invalidRequest }
         let pinned = connect(.require(pin: pin))
         defer { pinned.invalidate() }
         let reply = try await pinned.data(

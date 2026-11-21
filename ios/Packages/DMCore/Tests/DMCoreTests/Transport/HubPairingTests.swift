@@ -52,6 +52,8 @@ import Testing
         #expect(redeem.authorization == "Bearer " + F.code)
         #expect(redeem.contentType == "application/json")
         #expect(redeem.json == ["name": "Matt's iPhone"])
+        #expect(redeem.body == (try HubJSON.encode(Wire.MobilePair(name: "Matt's iPhone"))))
+        #expect(redeem.body == Data(#"{"name":"Matt's iPhone"}"#.utf8))
         #expect(redeem.limit == 65536)
         #expect(hub.policies == [.capture, .require(pin: F.pin("A"))])
         #expect(Set(hub.invalidated) == [.capture, .require(pin: F.pin("A"))])
@@ -76,6 +78,11 @@ import Testing
         #expect(hub.calls[1].json["name"] == "bell" + String(repeating: "x", count: 56))
         // Without a name in the answer, the label that was sent is kept.
         #expect(enrollment.name == "bell" + String(repeating: "x", count: 56))
+
+        // Encoded like every other request body (`HubJSON`), which leaves a slash as it is.
+        let slashed = Self.hub()
+        _ = try await Self.pair(slashed, name: "Sam's iPhone / iPad")
+        #expect(slashed.calls[1].body == Data(#"{"name":"Sam's iPhone / iPad"}"#.utf8))
 
         let odd = Self.hub(member: #"{"id":"\#(F.id)","client":"\#(F.client)","proof":"\#(F.proof)","name":"  tab\there  "}"#)
         #expect(try await Self.pair(odd).name == "tabhere")
