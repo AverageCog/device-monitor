@@ -47,7 +47,6 @@ enum OnboardingCopy {
 
     static let scannerInstruction = "Point the camera at the code shown on the hub."
     static let scannerPreparing = "Starting the camera…"
-    static let scannerViewfinder = "Camera viewfinder"
     static let torch = "Torch"
     static let close = "Close"
     static let pasteInstead = "Paste instead"

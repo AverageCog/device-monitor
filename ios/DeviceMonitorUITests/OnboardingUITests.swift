@@ -150,7 +150,8 @@ final class OnboardingUITests: XCTestCase {
     func testTheScannerSaysWhatToDoWithoutCameraAccess() {
         let app = launch(["-dm-phase", "onboarding", "-dm-onboarding-scanner", "denied"])
         XCTAssertTrue(app.element(withIdentifier: OnboardingID.scanner).waitForExistence(timeout: 20), "-dm-onboarding-scanner opens the scanner")
-        XCTAssertTrue(app.staticTexts["Camera access is off"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.element(withIdentifier: OnboardingID.scannerNotice).waitForExistence(timeout: 5), "No picture: a notice instead")
+        XCTAssertTrue(app.staticTexts["Camera access is off"].exists)
         XCTAssertTrue(app.buttons[OnboardingID.scannerSettings].exists, "A denied camera is changed in Settings")
         attachScreenshot(of: app, named: "scanner-denied")
 
@@ -172,6 +173,7 @@ final class OnboardingUITests: XCTestCase {
             XCTAssertTrue(message.waitForExistence(timeout: 20), "A \(kind) code is explained")
             XCTAssertTrue(message.label.contains(text), "\(kind): \(message.label)")
             XCTAssertTrue(app.element(withIdentifier: OnboardingID.scannerInstruction).exists, "The scanner stays up")
+            XCTAssertTrue(app.element(withIdentifier: OnboardingID.scannerTorch).exists, "The torch is offered while scanning")
             XCTAssertEqual(app.sessionState?.phase, "onboarding")
             XCTAssertFalse(app.element(withIdentifier: ID.pairError).exists, "Nothing was tried with that code")
             attachScreenshot(of: app, named: "scanner-\(kind)")
