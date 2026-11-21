@@ -61,11 +61,12 @@ private struct HistoryRoot: View {
                 controller.setUnit(unit)
             }
             // Back from an outage or from the background: what failed is asked again, and the
-            // window moves up to now without waiting for the next half minute.
+            // window moves up to now without waiting for the next half minute. This is called
+            // behind the other tabs as well; `tick()` does nothing there.
             .onChange(of: store.isLive) { _, isLive in
                 if isLive { controller.tick() }
             }
-            // From appearing to disappearing: a tab that is not showing asks the hub for nothing.
+            // From appearing to disappearing: a tab that is not showing keeps nothing current.
             .task { await controller.run() }
             .onDisappear { controller.leave() }
     }

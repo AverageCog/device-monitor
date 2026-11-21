@@ -20,6 +20,8 @@ final class HistoryUITests: XCTestCase {
         static let retry = "history-retry-button"
         static let loading = "history-loading"
         static let addDevice = "history-add-device-button"
+        /// DEBUG builds only: what `-dm-history-away` found, see HistoryDebugOptions in the app.
+        static let debug = "history-debug"
 
         static func device(_ id: String) -> String { "history-device-\(id)" }
         static func range(_ name: String) -> String { "history-range-\(name)" }
@@ -310,6 +312,23 @@ final class HistoryUITests: XCTestCase {
         XCTAssertFalse(app.element(withIdentifier: HistoryID.range).exists)
         add.tap()
         XCTAssertTrue(app.element(withIdentifier: "screen-add-device").waitForExistence(timeout: 10), "It opens the shared Add device sheet")
+    }
+
+    @MainActor
+    func testATabThatIsNotShowingLeavesTheHubAlone() {
+        // -dm-history-away shows the Devices tab once the charts are up, takes the demo hub away
+        // for a moment, and comes back with what History did meanwhile.
+        let app = launch(["-dm-tab", "history", "-dm-history-away"])
+        waitForHistory(of: "Gaming PC", in: app)
+
+        let probe = app.element(withIdentifier: HistoryID.debug)
+        XCTAssertTrue(wait(upTo: 60) { probe.exists && probe.label.contains("away=done") }, "-dm-history-away did not come back to the History tab")
+        let report = probe.label
+        XCTAssertTrue(report.contains("reconnected=1"), "The stream was to be lost and found again behind another tab, got: \(report)")
+        XCTAssertTrue(report.contains("loads=0"), "History asked the hub for charts nobody was looking at, got: \(report)")
+        // What it left alone it catches up on: coming back moves the window up to now.
+        XCTAssertTrue(wait(upTo: 20) { probe.exists && !probe.label.contains("since=0") }, "Back on screen History did not ask the hub again, got: \(probe.label)")
+        XCTAssertTrue(app.element(withIdentifier: HistoryID.chart("utilization")).waitForExistence(timeout: 20), "Back on screen the charts are there")
     }
 
     @MainActor

@@ -94,6 +94,9 @@ final class HistoryController {
     @ObservationIgnored private var waitingReload: Bool?
     /// The points the newest request asked for.
     @ObservationIgnored private var requestedPoints: Int?
+    /// The page is on screen: from `run()` to `leave()`. The tab lives on behind the others once
+    /// it has been opened, and there it keeps nothing current.
+    @ObservationIgnored private var isOnScreen = false
     @ObservationIgnored private var pointerTime: Double?
     @ObservationIgnored private var pinch: Pinch?
     /// A finger is resting on a chart; a pointer hovering over one does not count.
@@ -252,6 +255,9 @@ final class HistoryController {
     /// For as long as the page is on screen: loads, then moves the window to now every thirty
     /// seconds (`hv.timer`).
     func run() async {
+        // The page was gone again before this got to start, and `leave()` has had the last word.
+        guard !Task.isCancelled else { return }
+        isOnScreen = true
         missedTick = false
         // The unit may have been changed in Settings while this tab was not on screen.
         #if DEBUG
@@ -271,8 +277,11 @@ final class HistoryController {
     }
 
     /// `if (!hv.zoomed) { setHvWindow(); loadHistory(); }`, and a second try after a failure.
+    ///
+    /// Only while the page is on screen. The dashboard stops `hv.timer` when it leaves the history
+    /// page; here the connection coming back calls this too, whichever tab is showing.
     func tick() {
-        guard deviceID != nil else { return }
+        guard isOnScreen, deviceID != nil else { return }
         if isInteracting {
             missedTick = true
             return
@@ -285,8 +294,9 @@ final class HistoryController {
         }
     }
 
-    /// The page left the screen.
+    /// The page left the screen. `run()` brings it up to date when it is back.
     func leave() {
+        isOnScreen = false
         cancelInteraction()
         missedTick = false
     }

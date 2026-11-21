@@ -23,6 +23,14 @@ import SwiftUI
 ///                                            (the charts stay, the header shows progress);
 ///                                            switching: the same, with the next device selected
 ///                                            (its name over the faded charts of the first)
+///     -dm-history-away                       once the first answer is on screen: shows the Devices
+///                                            tab, takes a demo hub away for a moment (the stream
+///                                            reconnects, the tabs stay), and comes back. The
+///                                            invisible element `history-debug` then says what
+///                                            happened, e.g. "away=done;reconnected=1;loads=0;since=1":
+///                                            whether the stream was lost and found again, how many
+///                                            answers History took from the hub while it was not
+///                                            showing, and how many since. Needs `-dm-demo`.
 ///
 /// Nothing here is stored: the range and the unit apply to this launch only, and the hub is not
 /// told anything. `-dm-history-zoom` goes through the same code as a real drag.
@@ -44,6 +52,7 @@ nonisolated struct HistoryDebugOptions: Sendable, Equatable {
     var selection: Fractions?
     var zoom: Fractions?
     var scenario: Scenario?
+    var leaves = false
 
     static let current = HistoryDebugOptions(arguments: ProcessInfo.processInfo.arguments)
 
@@ -70,6 +79,7 @@ nonisolated struct HistoryDebugOptions: Sendable, Equatable {
         selection = fractions(after: "-dm-history-select")
         zoom = fractions(after: "-dm-history-zoom")
         scenario = value(after: "-dm-history-state").flatMap(Scenario.init(rawValue:))
+        leaves = arguments.contains("-dm-history-away")
     }
 
     /// A chart this wide stands in for the real ones: what is marked on it is turned into times
@@ -119,6 +129,9 @@ struct HistoryDebugDriver: View {
 
     @Environment(HubStore.self) private var store
     @Environment(AppRouter.self) private var router
+    @Environment(SessionController.self) private var session
+    /// What `-dm-history-away` found, and the answers shown by the time it came back.
+    @State private var away: (report: String, loads: Int)?
 
     var body: some View {
         Color.clear
@@ -126,6 +139,16 @@ struct HistoryDebugDriver: View {
                 apply(after: count)
             }
             .accessibilityHidden(true)
+            .overlay(alignment: .topLeading) {
+                if let away {
+                    Color.clear
+                        .frame(width: 1, height: 1)
+                        .allowsHitTesting(false)
+                        .accessibilityElement()
+                        .accessibilityLabel("\(away.report);since=\(controller.loadCount - away.loads)")
+                        .accessibilityIdentifier("history-debug")
+                }
+            }
     }
 
     private func apply(after count: Int) {
@@ -146,6 +169,9 @@ struct HistoryDebugDriver: View {
             default:
                 break
             }
+            if options.leaves {
+                Task { await leaveAndReturn() }
+            }
             if let zoom = options.zoom {
                 controller.beginSelection(from: HistoryDebugOptions.x(zoom.a), to: HistoryDebugOptions.x(zoom.a), chartWidth: HistoryDebugOptions.chartWidth)
                 controller.moveSelection(to: HistoryDebugOptions.x(zoom.b))
@@ -159,6 +185,36 @@ struct HistoryDebugDriver: View {
         } else if let inspect = options.inspect {
             controller.point(at: HistoryDebugOptions.x(inspect), chartWidth: HistoryDebugOptions.chartWidth)
         }
+    }
+
+    /// `-dm-history-away`: another tab, a short outage behind it, and back.
+    private func leaveAndReturn() async {
+        func pause(_ seconds: Double) async {
+            try? await Task.sleep(for: .seconds(seconds))
+        }
+        func waitUntil(live: Bool) async -> Bool {
+            var tries = 0
+            while store.isLive != live, tries < 80 {
+                await pause(0.1)
+                tries += 1
+            }
+            return store.isLive == live
+        }
+        await pause(1)
+        let before = controller.loadCount
+        router.selectedTab = .devices
+        await pause(1)
+        // Well inside the ten seconds after which the session gives the tabs up: the stream is
+        // found again at its first new attempt, three seconds after it was lost.
+        session.demoHub?.setAvailability(.unreachable)
+        let lost = await waitUntil(live: false)
+        await pause(1.5)
+        session.demoHub?.setAvailability(.reachable)
+        let found = await waitUntil(live: true)
+        await pause(2)
+        let loads = controller.loadCount
+        away = ("away=done;reconnected=\(lost && found ? 1 : 0);loads=\(loads - before)", loads)
+        router.selectedTab = .history
     }
 }
 
