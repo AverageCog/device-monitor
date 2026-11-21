@@ -844,7 +844,7 @@ struct SessionControllerTests {
         try await eventually("the demo is live") { h.session.phase == .live }
         await h.session.disconnect()
         #expect(h.session.phase == .onboarding && !h.session.isDemo && h.credentials.calls == ["load"])
-        h.session.pairAgain()                               // only for a paired hub
+        h.session.pairAgain()                               // nothing is paired and no demo runs
         #expect(h.credentials.calls == ["load"])
     }
 
@@ -880,6 +880,31 @@ struct SessionControllerTests {
         // Leaving the demo works from there too.
         await h.session.disconnect()
         #expect(h.session.phase == .onboarding)
+    }
+
+    @Test func aDemoHubThatRefusesTheAppCanBeLeftWithEitherButtonOfTheRevokedScreen() async throws {
+        let h = SessionHarness()
+        h.session.launch()
+        h.session.startDemo()
+        let demo = try #require(h.session.demoHub)
+        try await eventually("the demo is live") { h.session.phase == .live }
+        demo.revokeEnrollment()
+        try await advance(h.clock, until: "revoked") { h.session.phase == .revoked }
+
+        // "Try again" asks the same demo hub, which still refuses…
+        h.session.retryNow()
+        #expect(h.session.phase == .connecting && h.session.isDemo && h.session.demoHub === demo)
+        try await advance(h.clock, until: "revoked again") { h.session.phase == .revoked }
+        // …and "Pair again" leads out, though there is no enrollment to forget.
+        h.session.pairAgain()
+        #expect(h.session.phase == .onboarding && !h.session.isDemo && h.session.store == nil && h.session.demoHub == nil)
+        #expect(h.credentials.calls == ["load"])
+
+        // A demo started after that is a new hub, which accepts the app.
+        h.session.startDemo()
+        try await eventually("the demo is live again") { h.session.phase == .live }
+        h.session.pairAgain()                               // from the tabs too
+        #expect(h.session.phase == .onboarding && !h.session.isDemo)
     }
 
     // MARK: Background

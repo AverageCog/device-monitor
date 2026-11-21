@@ -399,8 +399,13 @@ public final class SessionController {
     }
 
     /// "Pair again": forgets the enrollment, on this device only, and returns to onboarding. For
-    /// the `.revoked` phase, where the hub has nothing left to be told.
+    /// the `.revoked` phase, where the hub has nothing left to be told. In demo mode this is
+    /// `stopDemo()`: a demo hub can be made to refuse the app too, and has no enrollment to forget.
     public func pairAgain() {
+        if isDemo {
+            stopDemo()
+            return
+        }
         guard hub != nil, !isDisconnecting else { return }
         end()
         // A pending rotation proof cannot write a pin back: it finds the enrollment gone.
