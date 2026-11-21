@@ -39,11 +39,21 @@ final class HubFlowUITests: XCTestCase {
         let first = try live(app, origin: origin, "paired")
         // The NAS stops reporting soon after the hub starts, and the living-room PC never does.
         XCTAssertTrue((5...6).contains(first.online), "online: \(first.online)")
-        for id in Self.devices {
-            XCTAssertTrue(app.deviceRow(id).waitForExistence(timeout: 10), "\(id) is listed")
+        // A card for every device that reports; the NAS may have gone by now.
+        for id in Self.devices.dropLast(2) {
+            XCTAssertTrue(app.deviceRow(id).waitForExistence(timeout: 10), "\(id) has a card")
         }
         XCTAssertEqual(app.deviceRow("gaming").label, "Gaming PC")
-        XCTAssertEqual(app.deviceRow("htpc").value as? String, "offline")
+        // An offline device has no card: it is in the list that the summary opens.
+        let offline = app.deviceRow("htpc")
+        XCTAssertFalse(offline.exists, "An offline device has no card")
+        app.element(withIdentifier: "devices-summary").tap()
+        XCTAssertTrue(offline.waitForExistence(timeout: 10), "htpc is in the offline list")
+        XCTAssertTrue((offline.value as? String ?? "").hasPrefix("offline"), "got: \(String(describing: offline.value))")
+        // The list's Done button on a phone; on an iPad it is a popover, which a tap beside it closes.
+        let done = app.element(withIdentifier: "offline-list-done-button")
+        if done.waitForExistence(timeout: 2) { done.tap() } else { app.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.9)).tap() }
+        XCTAssertTrue(wait(upTo: 10) { !offline.exists }, "The offline list closes")
         XCTAssertEqual(try phones(control).map { $0["name"] as? String }, [Self.phoneName], "The hub lists this phone under the name it gave")
         waitForSession(of: app, "reports keep arriving") { $0.readings != first.readings && $0.heartbeat > first.heartbeat }
         attachScreenshot(of: app, named: "hub-2-live")

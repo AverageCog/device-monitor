@@ -46,6 +46,8 @@ final class SmokeUITests: XCTestCase {
         let open = app.buttons["debug-open-history"]
         XCTAssertTrue(open.waitForExistence(timeout: 20))
         XCTAssertTrue(app.deviceRow("gaming").waitForExistence(timeout: 10), "The demo's devices have arrived")
+        // The debug tools are under the cards, several screens down the page.
+        XCTAssertTrue(app.scrollUp(app.element(withIdentifier: "screen-devices"), until: open, swipes: 12), "The debug tools can be scrolled to")
         open.tap()
 
         XCTAssertTrue(app.navigationBars["History"].waitForExistence(timeout: 5), "openHistory(deviceID:) switches to the History tab")
@@ -76,6 +78,8 @@ final class SmokeUITests: XCTestCase {
 
         let link = app.buttons["debug-gallery-link"]
         XCTAssertTrue(link.waitForExistence(timeout: 20))
+        // The debug tools are under the cards, several screens down the page.
+        XCTAssertTrue(app.scrollUp(app.element(withIdentifier: "screen-devices"), until: link, swipes: 12), "The debug tools can be scrolled to")
         link.tap()
 
         let gallery = app.scrollViews["gallery-screen"]
