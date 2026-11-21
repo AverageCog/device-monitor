@@ -248,7 +248,10 @@ Debug builds understand these; a release build has none of them.
 
 The interim `OnboardingScreen` reads `-dm-invitation` and `-dm-name` itself; whatever replaces it
 keeps that. In demo mode and in a `-dm-phase` session the `DebugTools` section also has a **Demo hub**
-menu that makes the hub unreachable, silent or revoke this app.
+menu that makes the hub unreachable, silent or revoke this app. Two tests in `DemoFlowUITests` open
+that menu (`debug-hub-menu`) at the end of the Devices tab, and two in `SmokeUITests` tap other rows
+of the section there: a Devices tab that leaves `DebugTools` out has to give those tests another
+way in.
 
 Debug builds also expose the session as one invisible accessibility element, `debug-session`, whose
 label reads `phase=live;demo=0;connection=live;devices=7;online=5;heartbeat=…;readings=…;hub=…`.
@@ -282,8 +285,8 @@ xcodebuild -project ios/DeviceMonitor.xcodeproj -scheme DeviceMonitor \
 
 - `SmokeUITests`: the wiring of the shell.
 - `DemoFlowUITests`: the app end to end without a hub. Demo mode with readings that keep changing,
-  every phase's screen, the way out of the failure screens, a hub that goes away and comes back, the
-  shared sheets.
+  every phase's screen, the way out of the failure screens, a hub that goes away and comes back, a
+  demo hub that refuses the app, the shared sheets.
 - `RegressionUITests`: things that broke once (state kept by a phase screen, out-of-range readings,
   VoiceOver grouping of the gauges, the gallery at the largest text size).
 - `HubFlowUITests`: the app against a real hub. Skipped unless started by `Tools/e2e.sh`.
