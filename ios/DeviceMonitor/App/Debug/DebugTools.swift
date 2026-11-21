@@ -85,10 +85,10 @@ struct DebugScreenHost: View {
                         }
                     }
             }
-            .preferredColorScheme(.dark)
+            .dmAppearance()
         case .phaseContainer:
             PhaseContainerProbe()
-                .preferredColorScheme(.dark)
+                .dmAppearance()
         }
     }
 }

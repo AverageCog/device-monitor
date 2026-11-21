@@ -22,7 +22,7 @@ Five tabs:
 - **Alerts.** What is firing now and the hub's log. The rules and channels editor (ntfy, webhook,
   the Device Monitor apps), a test alert, and notifications on this device. The hub evaluates the
   rules (`alerts.js`); the web dashboard has no page for them.
-- **Settings.** Temperature unit, the hub this device is paired with and its TLS identity, a
+- **Settings.** Temperature unit, appearance (System, Light or Dark), the hub this device is paired with and its TLS identity, a
   dashboard link to share with a browser, the electricity price and its editor (under Advanced
   settings), **Disconnect…**, version and license.
 
@@ -184,7 +184,7 @@ the ntfy app. Alert settings say the same.
 - The name the hub shows for a phone is set when it pairs and cannot be changed afterwards.
 - **Disconnect** while the hub is unreachable leaves the phone in the hub's list; remove it there.
 - One window. On iPad the app does not open a second window of itself (see [Info.plist](#infoplist)).
-- Dark appearance only, and English only.
+- English only.
 
 ## Layout
 
@@ -246,7 +246,7 @@ tests run without a simulator, so it does not import UIKit or SwiftUI.
 ### Info.plist
 
 Most keys are generated from `INFOPLIST_KEY_*` build settings of the app target (display name, usage
-descriptions, orientations, dark interface style, export compliance). `DeviceMonitor/Info.plist`
+descriptions, orientations, export compliance). `DeviceMonitor/Info.plist`
 holds only what has no such setting: `UILaunchScreen`, `UIBackgroundModes`,
 `BGTaskSchedulerPermittedIdentifiers` and `UIApplicationSceneManifest`. The two are merged at build
 time. There are no App Transport Security exceptions.
@@ -294,7 +294,7 @@ Everything that is not a view is in DMCore. Three objects carry the app:
   `showElectricityPrice()`. The tab shell presents those sheets, so any screen can ask for one.
 
 `Preferences` (DMCore) holds what the user chose on this device (temperature unit, chart ranges,
-notifications), in `UserDefaults` under the dashboard's own key names with a `dm.` prefix.
+notifications, appearance), in `UserDefaults` under the dashboard's own key names with a `dm.` prefix.
 
 `AppModel` creates these once, when the app has finished launching, and `RootView` shows the screen
 for the phase. The tabs exist only while the phase is `live`.
@@ -372,6 +372,14 @@ is not connected still answers requests.
 `DesignSystem/Theme.swift` has the dashboard's colours, radii and spacing; the other files in that
 folder are the components (gauges, pills, cards, stat cells, tiles, the mini chart, buttons, segmented
 control, chips, banners, empty states, settings rows). Every component has a `#Preview`.
+
+Every colour comes in a light and a dark value and follows the colour scheme of the view it is drawn
+in. The dark values are the dashboard's; the light ones are the app's own (the dashboard has no light
+theme), and every one used as text keeps 4.5:1 on the page and on every surface. Settings' choice is
+applied at the root by `AppAppearance` (`DesignSystem/Appearance.swift`), and each sheet or popover
+applies it to itself with `dmAppearance()`. The scanner stays dark while it shows the camera, whatever
+the choice. The launch screen follows the system's setting, because it shows before the app can read
+the choice.
 
 Debug builds have a **component gallery** with all of them and three mock device cards. It opens over
 the tabs from the Debug section at the end of the Devices tab (`DebugTools`), or straight from a
@@ -546,6 +554,7 @@ It is read instead of the stored value; what the app saves during that launch is
 | Argument | Effect |
 |---|---|
 | `-dm.unit <C\|F>` | temperature unit |
+| `-dm.appearance <system\|light\|dark>` | appearance; `system` follows the simulator's own setting |
 | `-dm.range <10m\|1h\|6h>` | the range of a card that has none of its own |
 | `-dm.cardRanges {}` | no card has a range of its own |
 | `-dm.notifications YES` | the choice behind "Notify on this iPhone" is on; the switch shows it only where iOS allows notifications |

@@ -25,6 +25,7 @@ import Testing
         #expect(!preferences.isAdvancedSettingsExpanded)
         #expect(!preferences.notificationsEnabled)
         #expect(preferences.lastSeenAlertID == nil && preferences.lastSeenAlertTime == nil)
+        #expect(preferences.appearance == .system)
     }
 
     @Test func storedValuesAreReadBack() {
@@ -106,6 +107,21 @@ import Testing
         #expect(Preferences(defaults: defaults).cardRange(for: "ws") == .tenMinutes)
     }
 
+    @Test func theAppearanceIsStoredAndReadBack() {
+        let (preferences, defaults) = Self.make()
+        preferences.appearance = .light
+        #expect(defaults.string(forKey: Key.appearance.rawValue) == "light")
+        #expect(Preferences(defaults: defaults).appearance == .light)
+        preferences.appearance = .dark
+        #expect(Preferences(defaults: defaults).appearance == .dark)
+        preferences.appearance = .system
+        #expect(defaults.string(forKey: Key.appearance.rawValue) == "system")
+
+        for unknown in ["", "Light", "auto", "1"] {
+            #expect(Self.make([.appearance: unknown]).0.appearance == .system)
+        }
+    }
+
     @Test func theNewestSeenAlertOnlyMovesForward() {
         let (preferences, defaults) = Self.make()
         preferences.markAlertSeen(StoreFixtures.alert("b", t: 2000))
@@ -126,9 +142,11 @@ import Testing
         preferences.notificationsEnabled = true
         preferences.setCardRange(.hour, for: "ws")
         preferences.markAlertSeen(id: "x", time: 5)
+        preferences.appearance = .light
         preferences.forgetHub()
         #expect(preferences.cardRange(for: "ws") == .tenMinutes && preferences.lastSeenAlertID == nil && preferences.lastSeenAlertTime == nil)
         #expect(preferences.temperatureUnit == .fahrenheit && preferences.historyRange == .week && preferences.notificationsEnabled)
+        #expect(preferences.appearance == .light)
         let again = Preferences(defaults: defaults)
         #expect(again.cardRange(for: "ws") == .tenMinutes && again.lastSeenAlertID == nil && again.temperatureUnit == .fahrenheit)
     }
@@ -150,6 +168,9 @@ import Testing
         observe { _ = preferences.lastSeenAlertID }
         preferences.markAlertSeen(id: "a", time: 1)
         #expect(changes.count == 3)
+        observe { _ = preferences.appearance }                                  // what the root's colour scheme follows
+        preferences.appearance = .dark
+        #expect(changes.count == 4)
     }
 
     @Test func rangesAreTheHubsAndTheDashboardsLabels() {

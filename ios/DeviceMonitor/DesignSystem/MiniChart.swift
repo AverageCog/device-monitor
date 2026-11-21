@@ -393,5 +393,4 @@ private struct ChartTooltipLayout: Layout {
     .padding()
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .background(Theme.page)
-    .preferredColorScheme(.dark)
 }

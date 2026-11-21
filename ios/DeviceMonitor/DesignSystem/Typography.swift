@@ -154,5 +154,4 @@ extension View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
     .background(Theme.page)
-    .preferredColorScheme(.dark)
 }

@@ -38,7 +38,7 @@ struct ElectricityPriceSheet: View {
             }
             .dmScreen()
         }
-        .preferredColorScheme(.dark)
+        .dmAppearance()
     }
 }
 

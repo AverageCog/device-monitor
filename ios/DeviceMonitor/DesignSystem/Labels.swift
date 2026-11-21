@@ -368,5 +368,4 @@ struct DetailsDisclosure<Content: View>: View {
         .padding()
     }
     .background(Theme.page)
-    .preferredColorScheme(.dark)
 }

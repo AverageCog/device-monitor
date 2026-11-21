@@ -17,6 +17,7 @@ public struct SettingsOverview: Sendable, Equatable {
     public enum Labels {
         public static let title = "Settings"
         public static let temperatureUnit = "Temperature unit"
+        public static let appearance = "Appearance"
         public static let pairedAs = "Paired as"
         public static let exitDemo = "Exit demo"
         public static let disconnect = "Disconnect\u{2026}"

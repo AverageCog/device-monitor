@@ -2,7 +2,8 @@ import Foundation
 import Observation
 
 /// What the user chose on this device: the dashboard's display preferences (`PREF_KEYS` in
-/// public/index.html, same values, defaults and validation) plus two things only the app has.
+/// public/index.html, same values, defaults and validation) plus what only the app has: the
+/// notification switch, the alert last seen and the appearance.
 /// Nothing here is a secret.
 ///
 /// Every property can be bound to directly (`@Bindable var preferences`); a value that the
@@ -31,6 +32,8 @@ public final class Preferences {
         case alertSeenID = "dm.alertSeenID"
         /// Milliseconds since 1970. App only.
         case alertSeenTime = "dm.alertSeenTime"
+        /// "system", "light" or "dark". App only: the dashboard has one, dark, look.
+        case appearance = "dm.appearance"
     }
 
     @ObservationIgnored private let defaults: UserDefaults
@@ -44,6 +47,7 @@ public final class Preferences {
     private var notifications: Bool
     private var seenID: String?
     private var seenTime: Double?
+    private var look: Appearance
 
     /// Reads what `defaults` holds. Pass a suite of your own in tests and previews.
     public init(defaults: UserDefaults = .standard) {
@@ -63,6 +67,7 @@ public final class Preferences {
         notifications = defaults.bool(forKey: Key.notifications.rawValue)
         seenID = text(.alertSeenID)
         seenTime = defaults.object(forKey: Key.alertSeenTime.rawValue) == nil ? nil : defaults.double(forKey: Key.alertSeenTime.rawValue)
+        look = text(.appearance).flatMap(Appearance.init(rawValue:)) ?? .system
     }
 
     // MARK: Display
@@ -141,6 +146,15 @@ public final class Preferences {
         }
     }
 
+    /// Light or dark, or whichever the system is in (the default).
+    public var appearance: Appearance {
+        get { look }
+        set {
+            look = newValue
+            defaults.set(newValue.rawValue, forKey: Key.appearance.rawValue)
+        }
+    }
+
     /// The newest alert log entry the user has looked at, and when it happened.
     public var lastSeenAlertID: String? { seenID }
     public var lastSeenAlertTime: Double? { seenTime }
@@ -184,5 +198,19 @@ public final class Preferences {
     private static func encodeChoices(_ choices: [String: String]) -> String {
         let data = try? JSONSerialization.data(withJSONObject: choices, options: [.sortedKeys])
         return data.map { String(decoding: $0, as: UTF8.self) } ?? "{}"
+    }
+}
+
+/// How the app looks: as the system is set, or always light or always dark.
+public enum Appearance: String, Sendable, Hashable, CaseIterable {
+    case system, light, dark
+
+    /// The word on its segment in Settings.
+    public var label: String {
+        switch self {
+        case .system: "System"
+        case .light: "Light"
+        case .dark: "Dark"
+        }
     }
 }

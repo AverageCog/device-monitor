@@ -51,7 +51,7 @@ struct DashboardOfflineList: View {
         .frame(minWidth: 320, minHeight: 220)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
-        .preferredColorScheme(.dark)
+        .dmAppearance()
         .tint(Theme.accent)
         .dashboardDeviceActions(actions)
         .sensoryFeedback(.success, trigger: wakeOutcomes.sent)

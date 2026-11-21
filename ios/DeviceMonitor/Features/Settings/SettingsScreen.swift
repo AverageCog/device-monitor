@@ -3,7 +3,7 @@ import SwiftUI
 import UIKit
 
 /// The Settings tab: the dashboard's settings dialog (#settingsDlg in public/index.html) as a
-/// paired phone sees it. Display unit, this device and the way out, a browser link to share, the
+/// paired phone sees it. Display unit and appearance, this device and the way out, a browser link to share, the
 /// hub, the electricity price under "Advanced settings", and the app itself. What only a
 /// computer has (firewall, start at sign-in, updates, quit) is not here.
 struct SettingsScreen: View {
@@ -19,7 +19,7 @@ struct SettingsScreen: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(spacing: Theme.Spacing.xl) {
-                    SettingsUnitSection()
+                    SettingsDisplaySection()
                     SettingsDeviceSection(overview: overview)
                         .id(SettingsAnchor.device)
                     SettingsHubSection(overview: overview)
@@ -74,10 +74,11 @@ nonisolated enum SettingsAnchor: String, Hashable, Sendable {
     case link
 }
 
-// MARK: - Temperature unit
+// MARK: - Display
 
-/// `#setUnit`: every screen follows at once, because they all read `Preferences`.
-private struct SettingsUnitSection: View {
+/// `#setUnit`, and the app's own appearance: every screen follows at once, because they all read
+/// `Preferences`.
+private struct SettingsDisplaySection: View {
     @Environment(Preferences.self) private var preferences
 
     var body: some View {
@@ -90,8 +91,17 @@ private struct SettingsUnitSection: View {
                     identifier: "settings-unit"
                 )
             }
+            // Three words do not fit beside the title on a phone: the control has a line of its own.
+            SettingsRow(SettingsOverview.Labels.appearance, layout: .stacked) {
+                DMSegmentedControl(
+                    SettingsOverview.Labels.appearance, selection: $preferences.appearance,
+                    segments: Appearance.allCases.map { DMSegment($0, $0.label, identifier: $0.rawValue) },
+                    fillsWidth: true, identifier: "settings-appearance"
+                )
+            }
         }
         .sensoryFeedback(.selection, trigger: preferences.temperatureUnit)
+        .sensoryFeedback(.selection, trigger: preferences.appearance)
     }
 }
 
@@ -468,5 +478,4 @@ struct SettingsRowButtonStyle: ButtonStyle {
 
 #Preview("License") {
     NavigationStack { SettingsLicenseScreen() }
-        .preferredColorScheme(.dark)
 }

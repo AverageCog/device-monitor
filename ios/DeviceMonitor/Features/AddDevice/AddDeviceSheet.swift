@@ -43,7 +43,7 @@ struct AddDeviceSheet: View {
             }
             .dmScreen()
         }
-        .preferredColorScheme(.dark)
+        .dmAppearance()
         // The link is made when the sheet opens (the dashboard's enrollmentOptions), and is gone
         // with it: $('#addDlg').addEventListener('close', () => { invitationRequest++; … }).
         .onAppear {

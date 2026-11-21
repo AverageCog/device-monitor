@@ -254,5 +254,4 @@ struct MonoBlock: View {
         .padding()
     }
     .background(Theme.page)
-    .preferredColorScheme(.dark)
 }

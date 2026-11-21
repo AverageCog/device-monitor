@@ -125,5 +125,4 @@ private struct OnboardingDial: View, Animatable {
     .padding(40)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .background(Theme.page)
-    .preferredColorScheme(.dark)
 }

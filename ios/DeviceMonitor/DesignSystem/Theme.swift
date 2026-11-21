@@ -1,63 +1,78 @@
 import SwiftUI
+import UIKit
 
-/// Design tokens shared by every screen. The values are the dashboard's `:root` variables and
-/// recurring literals in public/index.html, so the app reads as the same product.
+/// Design tokens shared by every screen. The dark values are the dashboard's `:root` variables and
+/// recurring literals in public/index.html, so the app reads as the same product. The light values
+/// are the app's own (the dashboard is dark only): the same warm greys turned over, and every hue a
+/// step darker so that, wherever it is text, it keeps 4.5:1 on the page and on every surface.
+///
+/// Each colour follows the colour scheme of the view it is drawn in, so `.preferredColorScheme`
+/// at the root (`AppAppearance`) decides which half every screen shows.
 nonisolated enum Theme {
     // MARK: Surfaces
 
     /// Screen background (`--page`).
-    static let page = Color(hex: 0x0D0D0D)
+    static let page = Color(light: 0xF3F2EE, dark: 0x0D0D0D)
     /// Cards and tiles (`--surface-1`).
-    static let surface1 = Color(hex: 0x1A1A19)
+    static let surface1 = Color(light: 0xFFFFFF, dark: 0x1A1A19)
     /// Controls, pills and menus (`--surface-2`).
-    static let surface2 = Color(hex: 0x232321)
+    static let surface2 = Color(light: 0xE9E8E3, dark: 0x232321)
     /// A pressed secondary control (`.btn:hover`).
-    static let surfacePressed = Color(hex: 0x2C2C2A)
+    static let surfacePressed = Color(light: 0xDDDCD6, dark: 0x2C2C2A)
     /// Tooltip and code-block background (`.tip`, `.cmd code`).
-    static let inset = Color(hex: 0x0B0B0B)
+    static let inset = Color(light: 0xF6F5F2, dark: 0x0B0B0B)
 
     // MARK: Text
 
-    static let textPrimary = Color(hex: 0xF0EFEC)
-    static let textSecondary = Color(hex: 0xC3C2B7)
-    /// Labels and hints.
-    static let textMuted = Color(hex: 0x898781)
-    /// Muted text on surface-2 (the word in a pill, a field's placeholder). There `textMuted` is
-    /// 4.38:1, short of the 4.5:1 WCAG AA asks of small text; this is 4.62:1, four steps lighter.
-    /// On the page, surface-1 and inset `textMuted` itself passes (5.41, 4.85 and 5.48:1).
-    static let textMutedOnSurface2 = Color(hex: 0x8D8B85)
-    /// Text and glyphs on an accent fill (`.btn.primary`).
-    static let onAccent = Color(hex: 0x0B0B0B)
+    static let textPrimary = Color(light: 0x1A1A19, dark: 0xF0EFEC)
+    static let textSecondary = Color(light: 0x44433E, dark: 0xC3C2B7)
+    /// Labels and hints. Light: 4.75:1 on surface-2, 5.2 on the page, 5.83 on surface-1.
+    static let textMuted = Color(light: 0x67655F, dark: 0x898781)
+    /// Muted text on surface-2 (the word in a pill, a field's placeholder). In the dark there
+    /// `textMuted` is 4.38:1, short of the 4.5:1 WCAG AA asks of small text; this is 4.62:1, four
+    /// steps lighter. On the page, surface-1 and inset `textMuted` itself passes (5.41, 4.85 and
+    /// 5.48:1). In the light `textMuted` already passes on surface-2; this is 4.97:1.
+    static let textMutedOnSurface2 = Color(light: 0x64625C, dark: 0x8D8B85)
+    /// Text and glyphs on an accent fill (`.btn.primary`). Light: 6.25:1 on the accent.
+    static let onAccent = Color(light: 0xFFFFFF, dark: 0x0B0B0B)
     /// Destructive menu items and buttons (`.menu .danger`).
-    static let dangerText = Color(hex: 0xE66767)
+    static let dangerText = Color(light: 0xB3261E, dark: 0xE66767)
 
     // MARK: Lines
 
     /// Gauge track, chart grid lines, bar track.
-    static let grid = Color(hex: 0x2C2C2A)
+    static let grid = Color(light: 0xE3E2DC, dark: 0x2C2C2A)
     /// Chart baseline.
-    static let axis = Color(hex: 0x383835)
+    static let axis = Color(light: 0xC9C8C1, dark: 0x383835)
     /// One-point hairlines around and between surfaces.
-    static let border = Color.white.opacity(0.10)
+    static let border = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark ? UIColor(white: 1, alpha: 0.10) : UIColor(white: 0, alpha: 0.10)
+    })
+    /// Under a card lifted to be moved (`box-shadow: 0 24px 60px rgba(0,0,0,.65)`); softer in the light.
+    static let liftShadow = Color(uiColor: UIColor { traits in
+        UIColor(white: 0, alpha: traits.userInterfaceStyle == .dark ? 0.65 : 0.18)
+    })
 
     // MARK: Series
 
-    static let cpu = Color(hex: 0x3987E5)
-    static let gpu = Color(hex: 0xD95926)
-    static let mem = Color(hex: 0x199E70)
+    static let cpu = Color(light: 0x1E64BA, dark: 0x3987E5)
+    static let gpu = Color(light: 0xAA4316, dark: 0xD95926)
+    static let mem = Color(light: 0x0C7150, dark: 0x199E70)
 
     // MARK: Status
 
-    static let good = Color(hex: 0x0CA30C)
-    static let warning = Color(hex: 0xFAB219)
-    static let serious = Color(hex: 0xEC835A)
-    static let critical = Color(hex: 0xD03B3B)
+    static let good = Color(light: 0x127212, dark: 0x0CA30C)
+    static let warning = Color(light: 0x8A5D00, dark: 0xFAB219)
+    static let serious = Color(light: 0xA8461C, dark: 0xEC835A)
+    static let critical = Color(light: 0xB82E2E, dark: 0xD03B3B)
 
     /// Primary buttons and selection.
-    static let accent = Color(hex: 0x9085E9)
+    static let accent = Color(light: 0x5B4FC4, dark: 0x9085E9)
 
     /// Per-device colours of the Advanced view (`DEVICE_COLORS`), cycled when there are more devices.
-    static let deviceSeries: [Color] = [cpu, gpu, mem, accent, warning, serious, Color(hex: 0x4FB3BF), Color(hex: 0xC97FD0)]
+    static let deviceSeries: [Color] = [
+        cpu, gpu, mem, accent, warning, serious, Color(light: 0x1A6F79, dark: 0x4FB3BF), Color(light: 0x9447A0, dark: 0xC97FD0),
+    ]
 
     static func deviceSeriesColor(at index: Int) -> Color {
         deviceSeries[((index % deviceSeries.count) + deviceSeries.count) % deviceSeries.count]
@@ -130,6 +145,27 @@ nonisolated extension Color {
     }
 }
 
+nonisolated extension Color {
+    /// `light` in the light colour scheme and `dark` in the dark one, both opaque sRGB `0xRRGGBB`.
+    init(light: UInt32, dark: UInt32) {
+        self.init(uiColor: UIColor { traits in
+            UIColor(hex: traits.userInterfaceStyle == .dark ? dark : light)
+        })
+    }
+}
+
+nonisolated extension UIColor {
+    /// An opaque sRGB colour from `0xRRGGBB`.
+    convenience init(hex: UInt32) {
+        self.init(
+            red: CGFloat((hex >> 16) & 0xFF) / 255,
+            green: CGFloat((hex >> 8) & 0xFF) / 255,
+            blue: CGFloat(hex & 0xFF) / 255,
+            alpha: 1
+        )
+    }
+}
+
 nonisolated extension Theme {
     /// `fmtPct` from the dashboard: a rounded percentage, or an en dash when there is no reading.
     static func percentText(_ value: Double?) -> String {
@@ -173,5 +209,4 @@ nonisolated extension Theme {
     .padding()
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .background(Theme.surface1)
-    .preferredColorScheme(.dark)
 }

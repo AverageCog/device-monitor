@@ -13,6 +13,7 @@ struct OnboardingScannerSheet: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dmColorScheme) private var appearance
     @State private var model: OnboardingScannerModel
     /// The room the layout leaves the window, between the instruction and the controls, in the
     /// viewfinder's coordinates.
@@ -44,7 +45,6 @@ struct OnboardingScannerSheet: View {
                 .accessibilityIdentifier("screen-pair-scanner")
                 .navigationTitle(OnboardingCopy.scan)
                 .navigationBarTitleDisplayMode(.inline)
-                .toolbarColorScheme(.dark, for: .navigationBar)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button(OnboardingCopy.close) { dismiss() }
@@ -52,6 +52,9 @@ struct OnboardingScannerSheet: View {
                     }
                 }
         }
+        // Dark over the picture whatever the appearance, as in the Camera app: the text and the
+        // window's marks are light on the shade. A notice has the chosen appearance.
+        .preferredColorScheme(showsViewfinder ? .dark : appearance)
         .presentationDetents([.large])
         .task {
             model.onInvitation = onInvitation

@@ -136,5 +136,4 @@ struct StatusDot: View {
     .padding()
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .background(Theme.surface1)
-    .preferredColorScheme(.dark)
 }

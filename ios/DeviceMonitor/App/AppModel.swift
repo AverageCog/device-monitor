@@ -141,9 +141,8 @@ extension View {
         environment(session)
             .environment(session.preferences)
             .environment(router)
-            // The palette is dark only; Info.plist pins UIUserInterfaceStyle as well so system
-            // surfaces (launch screen, alerts) never flash light.
-            .preferredColorScheme(.dark)
+            // Light, dark or the system's, as chosen in Settings.
+            .modifier(AppAppearance(preferences: session.preferences))
             .tint(Theme.accent)
     }
 }

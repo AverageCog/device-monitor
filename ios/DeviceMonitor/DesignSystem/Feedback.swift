@@ -224,5 +224,4 @@ struct BannerView: View {
         .padding()
     }
     .background(Theme.page)
-    .preferredColorScheme(.dark)
 }

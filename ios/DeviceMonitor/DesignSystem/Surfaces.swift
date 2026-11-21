@@ -10,12 +10,12 @@ extension View {
             }
     }
 
-    /// Page background and dark bars for a top-level screen. Apply inside the `NavigationStack`.
+    /// Page background, and bars in the page's colour, for a top-level screen. Apply inside the
+    /// `NavigationStack`.
     func dmScreen() -> some View {
         background(Theme.page.ignoresSafeArea())
             .scrollContentBackground(.hidden)
             .toolbarBackground(Theme.page.opacity(0.9), for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
     }
 }
 
@@ -75,5 +75,4 @@ struct Hairline: View {
     .padding()
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .background(Theme.page)
-    .preferredColorScheme(.dark)
 }

@@ -415,7 +415,7 @@ private struct DashboardLiftedCardBody: View {
             }
             .compositingGroup()
             // box-shadow: 0 24px 60px rgba(0,0,0,.65)
-            .shadow(color: .black.opacity(raised ? 0.65 : 0), radius: 30, y: 24)
+            .shadow(color: raised ? Theme.liftShadow : .clear, radius: 30, y: 24)
             .scaleEffect(raised ? 1.02 : 1)
             .offset(x: reorder.liftOrigin.x, y: reorder.liftOrigin.y)
             .allowsHitTesting(false)

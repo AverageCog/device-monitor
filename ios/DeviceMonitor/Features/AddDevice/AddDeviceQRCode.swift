@@ -76,5 +76,4 @@ struct AddDeviceQRPlaceholder<Content: View>: View {
     .padding()
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .background(Theme.page)
-    .preferredColorScheme(.dark)
 }

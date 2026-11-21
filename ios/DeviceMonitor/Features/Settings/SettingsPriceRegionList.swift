@@ -81,5 +81,4 @@ struct SettingsPriceRegionList: View {
     NavigationStack {
         SettingsPriceRegionList(selection: "US-CA") { _ in }
     }
-    .preferredColorScheme(.dark)
 }

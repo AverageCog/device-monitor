@@ -442,7 +442,6 @@ private struct EagerCardGrid: Layout {
 
 #Preview {
     NavigationStack { ComponentGallery() }
-        .preferredColorScheme(.dark)
         .tint(Theme.accent)
 }
 #endif

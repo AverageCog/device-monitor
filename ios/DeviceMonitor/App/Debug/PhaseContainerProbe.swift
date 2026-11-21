@@ -51,7 +51,6 @@ private struct ProbeState: View {
 
 #Preview {
     PhaseContainerProbe()
-        .preferredColorScheme(.dark)
         .tint(Theme.accent)
 }
 #endif

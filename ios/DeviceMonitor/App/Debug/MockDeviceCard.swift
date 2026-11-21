@@ -258,6 +258,5 @@ struct MockDeviceCard: View {
         .padding(Theme.Layout.screenPaddingCompact)
     }
     .background(Theme.page)
-    .preferredColorScheme(.dark)
 }
 #endif
