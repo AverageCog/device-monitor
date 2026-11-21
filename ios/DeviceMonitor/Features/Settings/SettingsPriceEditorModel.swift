@@ -103,6 +103,16 @@ final class SettingsPriceEditorModel {
         revision += 1
         let steps = script?.steps ?? []
         script?.steps = []
+        if let isTime = script?.startsWhen {
+            // DEBUG launch argument only: the steps below wait their turn behind this.
+            enqueue {
+                var tries = 0
+                while !isTime(store), tries < 100 {
+                    tries += 1
+                    try? await Task.sleep(for: .milliseconds(100))
+                }
+            }
+        }
         for step in steps {
             perform { editor, _ in step(&editor) }
         }
@@ -134,7 +144,11 @@ final class SettingsPriceEditorModel {
     func perform(_ action: @escaping @MainActor (inout PriceEditor, PriceEditor.Focus) -> EnergySettings?) {
         guard phase == .ready else { return }
         enqueue { [self] in
+            // What "One rate" replaced is remembered for the session, not by this editor: it may
+            // have been chosen in the other one, or in this one before it was last closed.
+            if let store { editor.remember(SettingsPriceMemory.periods(for: store)) }
             let body = action(&editor, focus)
+            if let store { SettingsPriceMemory.remember(editor.rememberedPeriods, for: store) }
             revision += 1
             if let body { await send(body) }
         }
@@ -233,5 +247,27 @@ final class SettingsPriceEditorModel {
             throw HubError.cancelled
         case nil: try await store.saveEnergySettings(body)
         }
+    }
+}
+
+/// The time-of-use periods that "One rate" last replaced, for as long as the app stays with a
+/// hub, so that "Time of use" brings them back. The dashboard keeps them in `lastTou`, a
+/// variable of its page ("Switching back and forth keeps the periods you had, for this session",
+/// public/index.html), where they outlast its settings dialog. Here the editor under "Advanced
+/// settings" and the one in `ElectricityPriceSheet` are made anew whenever they are shown, each
+/// with a model of its own, so what they remember is kept here for both.
+enum SettingsPriceMemory {
+    /// The session the periods belong to: the session controller makes a store for every hub
+    /// it follows, and lets go of it on disconnecting.
+    private static weak var store: HubStore?
+    private static var periods: [TouPeriod]?
+
+    static func periods(for store: HubStore) -> [TouPeriod]? {
+        self.store === store ? periods : nil
+    }
+
+    static func remember(_ periods: [TouPeriod]?, for store: HubStore) {
+        self.store = store
+        self.periods = periods
     }
 }

@@ -28,7 +28,7 @@ struct SettingsPriceEditor: View {
 
     @Environment(HubStore.self) private var store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var model = SettingsPriceEditorModel(script: SettingsLaunch.price)
+    @State private var model: SettingsPriceEditorModel
     /// What the rate fields show while they are being typed in; the editor hears of a field when
     /// the keyboard leaves it.
     @State private var drafts: [SettingsPriceField: String] = [:]
@@ -37,6 +37,11 @@ struct SettingsPriceEditor: View {
     @State private var showsRegions = false
     @State private var width: CGFloat = 0
     @FocusState private var focused: SettingsPriceField?
+
+    init(placement: Placement) {
+        self.placement = placement
+        _model = State(initialValue: SettingsPriceEditorModel(script: SettingsLaunch.price(in: placement)))
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.m) {

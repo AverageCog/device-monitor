@@ -32,6 +32,10 @@ import UIKit
 //         save-lost    a change the hub made although the app was told it could not be
 //                      reached: the hub's own news of the new price arrives first
 //         save-late    the same, with the hub's news a second after the failure
+//         remembered   for both editors at once (`-dm-tab settings -dm-settings-advanced open
+//                      -dm-sheet electricityPrice`): the one in Settings sets two periods and
+//                      goes back to "One rate"; then the one in the sheet chooses "Time of use",
+//                      which brings the two back
 //         regions      the "Where you live" list is open
 //     -dm-settings-width <points> lay the Settings tab, the price sheet and the add-device sheet
 //                                 out at that width and shrink the picture to fit the screen, to
@@ -48,7 +52,7 @@ nonisolated struct SettingsDebugOptions: Sendable {
     }
 
     enum Price: String, Sendable {
-        case tou, invalid, full, loading, regions
+        case tou, invalid, full, loading, regions, remembered
         case loadError = "load-error"
         case saveError = "save-error"
         case saveLost = "save-lost"
@@ -144,6 +148,8 @@ nonisolated enum SettingsLaunch {
         var newsOfFailedSave: Duration?
         /// Changes made once the editor has loaded, as taps and typing would make them.
         var steps: [@Sendable (inout PriceEditor) -> EnergySettings?] = []
+        /// The steps wait until this holds, for up to ten seconds: for another editor to go first.
+        var startsWhen: (@MainActor @Sendable (HubStore) -> Bool)?
         var showsRegions = false
     }
 
@@ -205,9 +211,10 @@ nonisolated enum SettingsLaunch {
         #endif
     }
 
-    static var price: PriceScript? {
+    /// The price editor shown in `placement`.
+    static func price(in placement: SettingsPriceEditor.Placement) -> PriceScript? {
         #if DEBUG
-        SettingsDebugOptions.current.price.map(script(for:))
+        SettingsDebugOptions.current.price.map { script(for: $0, in: placement) }
         #else
         nil
         #endif
@@ -226,7 +233,7 @@ nonisolated enum SettingsLaunch {
         }
     }
 
-    private static func script(for price: SettingsDebugOptions.Price) -> PriceScript {
+    private static func script(for price: SettingsDebugOptions.Price, in placement: SettingsPriceEditor.Placement) -> PriceScript {
         let timeOfUse: @Sendable (inout PriceEditor) -> EnergySettings? = { $0.setMode(.timeOfUse) }
         let otherMode: @Sendable (inout PriceEditor) -> EnergySettings? = { $0.setMode($0.mode == .flat ? .timeOfUse : .flat) }
         switch price {
@@ -247,6 +254,14 @@ nonisolated enum SettingsLaunch {
             return PriceScript(saveAnswer: .failure(unreachable), newsOfFailedSave: .zero, steps: [otherMode])
         case .saveLate:
             return PriceScript(saveAnswer: .failure(unreachable), newsOfFailedSave: .seconds(1), steps: [otherMode])
+        case .remembered:
+            if placement == .settings {
+                return PriceScript(steps: [timeOfUse, { $0.addPeriod() }, { $0.setMode(.flat) }])
+            }
+            // Once the editor in Settings has put its periods away and the hub is back to one rate.
+            return PriceScript(steps: [timeOfUse], startsWhen: { store in
+                SettingsPriceMemory.periods(for: store)?.isEmpty == false && store.energySettings?.tou.isEmpty != false
+            })
         case .regions:
             return PriceScript(showsRegions: true)
         }

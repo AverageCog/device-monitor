@@ -386,6 +386,80 @@ final class SettingsUITests: XCTestCase {
         }
     }
 
+    /// "One rate" puts the periods away for the session, as the dashboard's `lastTou` outlives its
+    /// settings dialog: "Time of use" brings them back in a sheet opened anew, and in the editor
+    /// under "Advanced settings", which was not on screen when they were put away.
+    @MainActor
+    func testPeriodsPutAwayComeBackInWhicheverEditorAsksNext() {
+        let sheet = "price", inline = "settings-price"
+        let app = launch(["-dm-demo", "-dm-tab", "settings", "-dm-settings-advanced", "closed", "-dm-sheet", "electricityPrice"])
+        XCTAssertTrue(app.element(withIdentifier: SID.priceSheet).waitForExistence(timeout: 20))
+        let flat = app.buttons[SID.mode(sheet, "flat")]
+        let timeOfUse = app.buttons[SID.mode(sheet, "time-of-use")]
+        let second = app.element(withIdentifier: SID.periodRateField(sheet, 1))
+        let done = app.buttons[SID.priceDone]
+        XCTAssertTrue(wait(upTo: 10) { flat.exists && flat.isSelected }, "The demo hub opens with one rate")
+
+        // Two periods, back to one rate, and the sheet is closed.
+        timeOfUse.tap()
+        XCTAssertTrue(app.element(withIdentifier: SID.periodRateField(sheet, 0)).waitForExistence(timeout: 10))
+        XCTAssertFalse(second.exists, "Time of use starts with one period")
+        let add = app.buttons[SID.addPeriod(sheet)]
+        reveal(add, in: app, screen: SID.priceSheet, underTabs: false)
+        add.tap()
+        XCTAssertTrue(second.waitForExistence(timeout: 10), "A second period")
+        reveal(flat, in: app, screen: SID.priceSheet, underTabs: false)
+        flat.tap()
+        XCTAssertTrue(wait(upTo: 10) { flat.isSelected && !second.exists }, "One rate again")
+        done.tap()
+        XCTAssertTrue(wait(upTo: 5) { !app.element(withIdentifier: SID.priceSheet).exists })
+
+        // A sheet opened anew brings both back.
+        let change = app.buttons[SID.priceButton]
+        reveal(change, in: app)
+        change.tap()
+        XCTAssertTrue(app.element(withIdentifier: SID.priceSheet).waitForExistence(timeout: 5))
+        XCTAssertTrue(wait(upTo: 10) { flat.exists && flat.isSelected })
+        timeOfUse.tap()
+        XCTAssertTrue(second.waitForExistence(timeout: 10), "Both periods are back in a new sheet")
+        XCTAssertTrue(app.buttons["Remove 4 pm to 9 pm"].exists && app.buttons["Remove 9 pm to 10 pm"].exists)
+        attachScreenshot(of: app, named: "price-periods-remembered")
+        flat.tap()
+        XCTAssertTrue(wait(upTo: 10) { flat.isSelected && !second.exists })
+        done.tap()
+        XCTAssertTrue(wait(upTo: 5) { !app.element(withIdentifier: SID.priceSheet).exists })
+
+        // So does the editor in Settings, made only now.
+        let toggle = app.buttons[SID.advancedToggle]
+        reveal(toggle, in: app)
+        toggle.tap()
+        let inlineFlat = app.buttons[SID.mode(inline, "flat")]
+        let inlineTimeOfUse = app.buttons[SID.mode(inline, "time-of-use")]
+        reveal(inlineTimeOfUse, in: app)
+        XCTAssertTrue(wait(upTo: 10) { inlineFlat.isSelected })
+        inlineTimeOfUse.tap()
+        let inlineSecond = app.element(withIdentifier: SID.periodRateField(inline, 1))
+        XCTAssertTrue(inlineSecond.waitForExistence(timeout: 10), "Both periods are back in Settings")
+        attachScreenshot(of: app, named: "settings-periods-remembered")
+
+        // Folded away again, so the next launch finds it as this one did.
+        reveal(toggle, in: app)
+        toggle.tap()
+        XCTAssertTrue(wait(upTo: 5) { toggle.value as? String == "Collapsed" })
+    }
+
+    /// The same without a tap, both editors on screen at once: the one in Settings puts two
+    /// periods away, the one in the sheet asks for them (`-dm-settings-price remembered`).
+    @MainActor
+    func testPeriodsPutAwayInSettingsComeBackInTheSheet() {
+        let app = launch([
+            "-dm-demo", "-dm-tab", "settings", "-dm-settings-advanced", "open", "-dm-sheet", "electricityPrice", "-dm-settings-price", "remembered",
+        ])
+        XCTAssertTrue(app.element(withIdentifier: SID.priceSheet).waitForExistence(timeout: 20))
+        XCTAssertTrue(app.element(withIdentifier: SID.periodRateField("price", 1)).waitForExistence(timeout: 20), "Two periods, not the one a first switch starts with")
+        XCTAssertTrue(app.buttons["Remove 4 pm to 9 pm"].exists && app.buttons["Remove 9 pm to 10 pm"].exists)
+    }
+
     // MARK: - Add a device
 
     @MainActor
