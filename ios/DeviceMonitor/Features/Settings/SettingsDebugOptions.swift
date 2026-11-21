@@ -1,5 +1,6 @@
 import DMCore
-import Foundation
+import SwiftUI
+import UIKit
 
 // DEBUG launch arguments of the Settings tab, the electricity price editor and the add-device
 // sheet, so that every state can be opened without a tap (screenshots, UI tests). Combine them
@@ -29,6 +30,11 @@ import Foundation
 //         load-error   the hub could not be asked for the price
 //         save-error   a change the hub could not be told about
 //         regions      the "Where you live" list is open
+//     -dm-settings-width <points> lay the Settings tab, the price sheet and the add-device sheet
+//                                 out at that width and shrink the picture to fit the screen, to
+//                                 look at the arrangement of an iPad or of a phone on its side
+//                                 where only an upright phone can be had (nothing can be tapped
+//                                 accurately in that picture)
 //
 // `loading`, `error`, `load-error` and `save-error` stand in for the hub's answer; the demo hub
 // itself is left alone, so the rest of the app keeps running.
@@ -52,6 +58,7 @@ nonisolated struct SettingsDebugOptions: Sendable {
     var link: Link?
     var invite: Link?
     var price: Price?
+    var width: CGFloat?
 
     static let current = SettingsDebugOptions(arguments: ProcessInfo.processInfo.arguments)
 
@@ -69,9 +76,38 @@ nonisolated struct SettingsDebugOptions: Sendable {
         link = value(after: "-dm-settings-link").flatMap(Link.init(rawValue:))
         invite = value(after: "-dm-settings-invite").flatMap(Link.init(rawValue:))
         price = value(after: "-dm-settings-price").flatMap(Price.init(rawValue:))
+        width = value(after: "-dm-settings-width").flatMap(Double.init).flatMap { $0 >= 200 && $0 <= 2000 ? CGFloat($0) : nil }
+    }
+}
+
+/// `-dm-settings-width`: the content at the asked width, drawn smaller.
+private struct SettingsDebugWidth: ViewModifier {
+    let width: CGFloat
+
+    func body(content: Content) -> some View {
+        let screen = (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.screen.bounds.width ?? width
+        content
+            .frame(width: width)
+            .scaleEffect(min(1, screen / width), anchor: .top)
     }
 }
 #endif
+
+extension View {
+    /// Applies `-dm-settings-width` in a DEBUG build; the view itself otherwise.
+    @ViewBuilder
+    func settingsDebugWidth() -> some View {
+        #if DEBUG
+        if let width = SettingsDebugOptions.current.width {
+            modifier(SettingsDebugWidth(width: width))
+        } else {
+            self
+        }
+        #else
+        self
+        #endif
+    }
+}
 
 /// What a DEBUG launch argument asked these screens to open with. In a release build every answer
 /// is nil or false and nothing is read.

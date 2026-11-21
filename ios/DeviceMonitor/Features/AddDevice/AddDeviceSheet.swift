@@ -22,6 +22,7 @@ struct AddDeviceSheet: View {
                     }
                     .frame(maxWidth: 560)
                     .padding(Theme.Layout.screenPadding(for: sizeClass))
+                    .settingsDebugWidth()
                     .frame(maxWidth: .infinity)
                 }
                 .task {
