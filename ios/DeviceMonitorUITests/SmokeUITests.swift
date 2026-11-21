@@ -1,25 +1,31 @@
 import XCTest
 
-/// Proves the scheme, the test bundle and the app shell are wired together.
-/// Launch arguments understood by DEBUG builds: `-dm-phase <onboarding|connecting|live|unreachable|revoked>`.
+/// Proves the scheme, the test bundle and the app shell are wired together. Every test names the
+/// session it wants with a DEBUG launch argument (see DebugLaunchOptions in the app), so none
+/// depends on what an earlier run left in the simulator's Keychain.
 final class SmokeUITests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
     }
 
     @MainActor
-    func testFirstLaunchShowsOnboarding() {
+    func testAnUnpairedAppShowsOnboarding() {
         let app = XCUIApplication()
+        app.launchArguments = ["-dm-memory-credentials"]
         app.launch()
 
-        XCTAssertTrue(app.element(withIdentifier: "onboarding-screen").waitForExistence(timeout: 20), "A fresh install starts in onboarding")
+        XCTAssertTrue(app.element(withIdentifier: ID.onboarding).waitForExistence(timeout: 20), "An app that is not paired starts in onboarding")
         XCTAssertFalse(app.tabBars.firstMatch.exists, "The tabs are not shown before pairing")
+        for identifier in [ID.invitationField, ID.nameField, ID.connectButton, ID.demoButton] {
+            XCTAssertTrue(app.element(withIdentifier: identifier).exists, "Missing \(identifier)")
+        }
+        XCTAssertEqual(app.sessionState?.phase, "onboarding")
     }
 
     @MainActor
     func testLiveShellHasFiveTabs() {
         let app = XCUIApplication()
-        app.launchArguments = ["-dm-phase", "live"]
+        app.launchArguments = ["-dm-demo"]
         app.launch()
 
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 20), "The live phase shows the tab bar")
@@ -34,35 +40,38 @@ final class SmokeUITests: XCTestCase {
     @MainActor
     func testRouterOpensHistoryForADevice() {
         let app = XCUIApplication()
-        app.launchArguments = ["-dm-phase", "live"]
+        app.launchArguments = ["-dm-demo"]
         app.launch()
 
         let open = app.buttons["debug-open-history"]
         XCTAssertTrue(open.waitForExistence(timeout: 20))
+        XCTAssertTrue(app.deviceRow("gaming").waitForExistence(timeout: 10), "The demo's devices have arrived")
         open.tap()
 
-        XCTAssertTrue(app.navigationBars["History"].waitForExistence(timeout: 5), "openHistory(for:) switches to the History tab")
+        XCTAssertTrue(app.navigationBars["History"].waitForExistence(timeout: 5), "openHistory(deviceID:) switches to the History tab")
         let history = app.element(withIdentifier: "screen-history")
         XCTAssertTrue(history.waitForExistence(timeout: 5))
-        XCTAssertTrue(history.label.contains("demo-device"), "History received the device id, got: \(history.label)")
+        XCTAssertTrue(history.label.contains("Gaming PC"), "History received the device id, got: \(history.label)")
     }
 
     @MainActor
-    func testFailurePhasesOfferAWayOut() {
+    func testLaunchArgumentsOpenATabAndASheet() {
         let app = XCUIApplication()
-        app.launchArguments = ["-dm-phase", "unreachable"]
+        app.launchArguments = ["-dm-demo", "-dm-history", "spark", "-dm-sheet", "electricityPrice"]
         app.launch()
 
-        XCTAssertTrue(app.buttons["unreachable-retry-button"].waitForExistence(timeout: 20))
-        app.buttons["unreachable-change-button"].tap()
-        XCTAssertTrue(app.element(withIdentifier: "onboarding-screen").waitForExistence(timeout: 5), "Change setup returns to onboarding")
+        XCTAssertTrue(app.element(withIdentifier: "screen-electricity-price").waitForExistence(timeout: 20), "-dm-sheet presents the shared sheet")
+        app.buttons["electricity-price-done-button"].tap()
+        let history = app.element(withIdentifier: "screen-history")
+        XCTAssertTrue(history.waitForExistence(timeout: 5), "-dm-history opens the History tab")
+        XCTAssertTrue(history.label.contains("DGX Spark"), "got: \(history.label)")
     }
 
     /// Opens the debug component gallery and attaches screenshots of it (`macrun <wt> shots`).
     @MainActor
     func testComponentGalleryRenders() {
         let app = XCUIApplication()
-        app.launchArguments = ["-dm-phase", "live"]
+        app.launchArguments = ["-dm-demo"]
         app.launch()
 
         let link = app.buttons["debug-gallery-link"]
@@ -78,21 +87,7 @@ final class SmokeUITests: XCTestCase {
             gallery.swipeUp(velocity: .slow)
             attachScreenshot(of: app, named: "gallery-\(page)")
         }
-    }
-
-    @MainActor
-    private func attachScreenshot(of app: XCUIApplication, named name: String) {
-        let attachment = XCTAttachment(screenshot: app.screenshot())
-        attachment.name = name
-        attachment.lifetime = .keepAlways
-        add(attachment)
-    }
-}
-
-extension XCUIApplication {
-    /// Any element with this accessibility identifier, whatever its type.
-    @MainActor
-    func element(withIdentifier identifier: String) -> XCUIElement {
-        descendants(matching: .any).matching(identifier: identifier).firstMatch
+        app.buttons["gallery-close-button"].tap()
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 5), "Closing the gallery returns to the tabs")
     }
 }
