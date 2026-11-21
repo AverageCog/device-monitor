@@ -103,6 +103,14 @@ The Device Monitor app for iPhone and iPad shows the dashboard a connected deskt
 
 Only the hub app or the headless hub's local operator can create these invitations and see the list.
 
+<p>
+<img src="docs/screenshots/ios-devices.png" alt="The Devices tab on an iPhone: a device card with Details open" width="240">
+<img src="docs/screenshots/ios-history.png" alt="The History tab on an iPhone: utilization, temperature and GPU power charts" width="240">
+<img src="docs/screenshots/ios-advanced.png" alt="The Advanced tab on an iPhone: electricity use and cost" width="240">
+</p>
+
+The app is built from `ios/` with Xcode. See [ios/README.md](ios/README.md).
+
 ## Temperatures
 
 | Sensor | Source |
