@@ -71,6 +71,44 @@ import Testing
         h.store.stop()
     }
 
+    @Test func aStoreStoppedBeforeItConnectedStillAsksWhenStartedAgain() async throws {
+        let h = StoreHarness()
+        let loaded = AlertsResponse(events: [F.alert("e1", t: 1)])
+        // Like the real client, a request made by a cancelled task fails.
+        h.hub.on {
+            $0.alerts = {
+                if Task.isCancelled { throw HubError.cancelled }
+                return loaded
+            }
+        }
+        // All within one turn of the main actor: the first run never gets as far as connecting,
+        // and what it asked for is cancelled with it.
+        h.store.start()
+        h.store.stop()
+        h.store.start()
+        try await eventually("the second run asked again") { h.store.alerts == AlertsState(loaded) }
+        try await h.connection(0).send(.snapshot([]))
+        try await eventually("the store is live") { h.store.connection == .live }
+        try await h.idle()
+        #expect(h.hub.connections.count == 1 && h.hub.calls("alerts").count == 2)
+        h.store.stop()
+    }
+
+    @Test func aVersionAnnouncedWhileAskingIsNotOverwritten() async throws {
+        let h = StoreHarness()
+        let connection = try await h.goLive()
+        let answer = Gate<String?>()
+        h.hub.on { $0.latestVersion = { platform in platform == .windows ? try await answer.wait() : "1.2.33" } }
+        let refresh = Task { try await h.store.refreshLatestVersions() }
+        try await eventually("the request is out") { answer.arrivals == 1 }
+        connection.send(.update(platform: "windows", version: "1.2.34"))
+        try await eventually("the update is announced") { h.store.latestVersions["windows"] == "1.2.34" }
+        answer.open("1.2.33")                                      // read before the new installer was published
+        try await refresh.value
+        #expect(h.store.latestVersions == ["windows": "1.2.34", "mac": "1.2.33"])
+        h.store.stop()
+    }
+
     @Test func aRefusalWhileFetchingExtrasStopsTheStore() async throws {
         let h = StoreHarness()
         h.hub.on { $0.alerts = { throw F.refused(401, "Open a fresh dashboard invitation.") } }

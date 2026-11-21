@@ -210,6 +210,8 @@ public final class HubStore {
         epoch += 1
         streamToken += 1
         streamTask = nil
+        // Requests for the extras are cancelled with everything else, so they count as not made.
+        fetchedForAttempt = 0
         tasks.cancelAll()
     }
 
@@ -350,8 +352,10 @@ public final class HubStore {
     public func refreshLatestVersions() async throws(HubError) {
         var first: HubError?
         for platform in UpdatePlatform.allCases {
+            let known = state.latestVersions[platform.rawValue]
             do {
-                if let version = try await api.latestVersion(platform: platform) {
+                // An `update` event that arrived meanwhile is newer than this answer.
+                if let version = try await api.latestVersion(platform: platform), state.latestVersions[platform.rawValue] == known {
                     change { $0.latestVersions[platform.rawValue] = version }
                 }
             } catch {
