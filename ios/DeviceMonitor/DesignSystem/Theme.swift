@@ -22,6 +22,10 @@ nonisolated enum Theme {
     static let textSecondary = Color(hex: 0xC3C2B7)
     /// Labels and hints.
     static let textMuted = Color(hex: 0x898781)
+    /// Muted text on surface-2 (the word in a pill, a field's placeholder). There `textMuted` is
+    /// 4.38:1, short of the 4.5:1 WCAG AA asks of small text; this is 4.62:1, four steps lighter.
+    /// On the page, surface-1 and inset `textMuted` itself passes (5.41, 4.85 and 5.48:1).
+    static let textMutedOnSurface2 = Color(hex: 0x8D8B85)
     /// Text and glyphs on an accent fill (`.btn.primary`).
     static let onAccent = Color(hex: 0x0B0B0B)
     /// Destructive menu items and buttons (`.menu .danger`).

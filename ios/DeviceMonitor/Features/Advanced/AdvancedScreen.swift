@@ -200,9 +200,7 @@ private struct AdvancedPage: View {
 private struct AdvancedRangeControl: View {
     let controller: AdvancedController
 
-    @Environment(\.layoutDirection) private var layoutDirection
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var width: CGFloat = 0
     @ScaledMetric(relativeTo: .callout) private var labelSize: CGFloat = DMTextStyle.callout.size
 
     /// What `DMSegmentedControl` keeps clear on either side of a label.
@@ -210,9 +208,9 @@ private struct AdvancedRangeControl: View {
 
     var body: some View {
         let ranges = AdvancedRange.allCases
-        // The segments share the width equally, so each must hold the longest label. The control
-        // cuts short a label that does not fit, which at the largest text sizes on a phone
-        // leaves "30…": there the three go one under the other instead.
+        // The segments share the width equally, so each must hold the longest label. At the
+        // largest text sizes on a phone "30 days" does not fit a third of it: there the three
+        // go one under the other instead.
         let widest = ranges.map { AdvancedTextMeasure.width(of: $0.label, style: .callout, size: labelSize) }.max() ?? 0
         let sideBySide = CGFloat(ranges.count) * (widest + 2 * Self.segmentPadding)
         ViewThatFits(in: .horizontal) {
@@ -229,19 +227,6 @@ private struct AdvancedRangeControl: View {
             AdvancedStrings.timeRange, selection: selection,
             segments: ranges.map { DMSegment($0, $0.label, identifier: $0.rawValue) },
             fillsWidth: true, identifier: "advanced-range"
-        )
-        // The control is as tall as the system's own segmented control; a touch just above or
-        // below a segment still chooses it.
-        .frame(minHeight: 44)
-        .contentShape(Rectangle())
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
-        .simultaneousGesture(
-            SpatialTapGesture().onEnded { tap in
-                guard width > 0 else { return }
-                let slot = Int(tap.location.x / (width / CGFloat(ranges.count)))
-                let index = min(ranges.count - 1, max(0, slot))
-                controller.select(ranges[layoutDirection == .rightToLeft ? ranges.count - 1 - index : index])
-            }
         )
     }
 

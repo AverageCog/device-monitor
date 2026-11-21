@@ -196,7 +196,9 @@ private struct DMToggleBody: View {
 
 extension View {
     /// The look of a text input (`select`, `.set-price input`): surface-2, hairline border, radius 8.
-    /// Use on a `TextField` with `.textFieldStyle(.plain)`.
+    /// Use on a `TextField` with `.textFieldStyle(.plain)`. Give it a prompt in
+    /// `Theme.textMutedOnSurface2`: on surface-2 both `textMuted` and the system's placeholder
+    /// colour are too faint to read.
     func dmField(isInvalid: Bool = false) -> some View {
         dmFont(.body)
             .foregroundStyle(Theme.textPrimary)

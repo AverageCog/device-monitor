@@ -21,6 +21,8 @@ enum ID {
     static let disconnectButton = "settings-disconnect-button"
     /// DEBUG builds only: see SessionProbe in the app.
     static let sessionProbe = "debug-session"
+    /// DEBUG builds only: what the tab shell told VoiceOver (AnnouncementProbe in the app).
+    static let announcements = "debug-announcements"
     /// DEBUG builds only: the menu that directs a demo hub, in DebugTools. A pop-up button.
     static let debugHubMenu = "debug-hub-menu"
 

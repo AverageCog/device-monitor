@@ -62,7 +62,7 @@ struct TempPill: View {
             if let word = level.word {
                 Text(word)
                     .dmFont(.micro)
-                    .foregroundStyle(Theme.textMuted)
+                    .foregroundStyle(Theme.textMutedOnSurface2)
             }
         }
         .lineLimit(1)
