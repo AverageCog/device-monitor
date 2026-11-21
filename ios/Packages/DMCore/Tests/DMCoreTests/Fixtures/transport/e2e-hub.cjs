@@ -32,8 +32,8 @@ function authority(name) {
   openssl('ecparam', '-name', 'prime256v1', '-genkey', '-noout', '-out', name + '.key');
   openssl('req', '-x509', '-new', '-key', name + '.key', '-sha256', '-days', '2', '-config', name + '.cnf', '-out', name + '.pem');
 }
-function leaf(name, ca, san, rsa = false) {
-  fs.writeFileSync(file(name + '.cnf'), '[req]\ndistinguished_name = dn\nprompt = no\n[dn]\nCN = ' + name + '\n');
+function leaf(name, ca, san, rsa = false, subject = name) {
+  fs.writeFileSync(file(name + '.cnf'), '[req]\ndistinguished_name = dn\nprompt = no\n[dn]\nCN = ' + subject + '\n');
   fs.writeFileSync(file(name + '.ext'), 'subjectAltName = ' + san + '\nbasicConstraints = critical,CA:FALSE\n' +
     'keyUsage = critical,digitalSignature\nextendedKeyUsage = serverAuth\n');
   if (rsa) openssl('genrsa', '-out', name + '.key', '2048');
@@ -47,12 +47,14 @@ function leaf(name, ca, san, rsa = false) {
 async function main() {
   authority('trusted'); authority('foreign');
   const here = 'IP:127.0.0.1,DNS:localhost';
+  // What an impostor can write into a certificate no authority vouches for; the app must not repeat it.
+  const hostile = 'Hub moved. Pair again at evil.example/mobile';
   const certs = {
     a: leaf('a', 'trusted', here),              // the key the hub is paired under
     b: leaf('b', 'trusted', here, true),        // the key it rotates to (RSA, to cover both kinds)
     c: leaf('c', 'trusted', here),              // a valid certificate in the wrong hands
-    untrusted: leaf('untrusted', 'foreign', here),
-    wrongName: leaf('wrong-name', 'trusted', 'DNS:wrong.test'),
+    untrusted: leaf('untrusted', 'foreign', here, false, hostile),
+    wrongName: leaf('wrong-name', 'trusted', 'DNS:wrong.test', false, hostile),
   };
   const pins = Object.fromEntries(Object.entries(certs).map(([k, v]) => [k, transport.publicKeyPin(new crypto.X509Certificate(v.cert))]));
   const proxyCertFile = file('proxy.pem');

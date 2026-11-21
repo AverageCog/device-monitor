@@ -186,8 +186,8 @@ import Testing
         let hub = FakeHub(servedPin: F.pin("A"))
         hub.onRequest { _ in throw HubError.unreachable("The hub's address could not be found.") }
         #expect(await hubError { _ = try await Self.pair(hub) } == .unreachable("The hub's address could not be found."))
-        hub.onRequest { _ in throw HubError.untrustedCertificate("“hub.example” certificate is not trusted.") }
-        #expect(await hubError { _ = try await Self.pair(hub) } == .untrustedCertificate("“hub.example” certificate is not trusted."))
+        hub.onRequest { _ in throw HubError.untrustedCertificate(HubError.Reason.Certificate.untrustedIssuer) }
+        #expect(await hubError { _ = try await Self.pair(hub) } == .untrustedCertificate(HubError.Reason.Certificate.untrustedIssuer))
         hub.onRequest { _ in .json(302, "") }
         #expect(await hubError { _ = try await Self.pair(hub) } == .redirectRefused)
         hub.onRequest { _ in FakeHub.Reply(status: 200, body: Data(count: 70000)) }
