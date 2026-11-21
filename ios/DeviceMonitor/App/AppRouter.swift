@@ -29,24 +29,61 @@ nonisolated enum AppTab: String, CaseIterable, Identifiable, Hashable, Sendable 
     }
 }
 
-/// Navigation state shared by every screen: which tab is showing and which device History is on.
-/// Injected with `.environment(router)`; read with `@Environment(AppRouter.self)`.
+/// A sheet any screen can ask for. The tab shell presents it (`MainTabView`), so it does not
+/// matter which tab is showing or which screen asked.
+nonisolated enum AppSheet: String, Identifiable, Hashable, Sendable {
+    /// The "+" of the dashboard: share a browser link, how to add computers (`AddDeviceSheet`).
+    case addDevice
+    /// The electricity price editor (`ElectricityPriceSheet`), reached from Settings and Advanced.
+    case electricityPrice
+
+    var id: String { rawValue }
+}
+
+/// Navigation state shared by every screen: which tab is showing, which device History is on and
+/// which shared sheet is up. Injected with `.environment(router)`; read with
+/// `@Environment(AppRouter.self)`.
 @Observable
 final class AppRouter {
     var selectedTab: AppTab = .devices
     /// The device the History tab shows. `nil` lets History pick the first device.
     var historyDeviceID: String?
+    /// The shared sheet on show. A screen with a sheet of its own up dismisses that first.
+    var sheet: AppSheet?
+
+    #if DEBUG
+    /// The debug screen covering the tabs: the component gallery or a probe (see App/Debug).
+    var debugScreen: DebugScreen?
+    #endif
 
     /// Shows a device's history from anywhere: selects it and switches to the History tab
     /// (the dashboard's `#/history/<id>`).
-    func openHistory(for deviceID: String) {
+    func openHistory(deviceID: String) {
         historyDeviceID = deviceID
+        sheet = nil
         selectedTab = .history
     }
 
-    /// Back to the first tab with nothing selected, e.g. after pairing with a different hub.
+    /// Switches to the Alerts tab.
+    func showAlerts() {
+        sheet = nil
+        selectedTab = .alerts
+    }
+
+    /// Presents the "Add a device" sheet.
+    func showAddDevice() {
+        sheet = .addDevice
+    }
+
+    /// Presents the electricity price editor.
+    func showElectricityPrice() {
+        sheet = .electricityPrice
+    }
+
+    /// Back to the first tab with nothing selected or presented, e.g. after pairing with a different hub.
     func reset() {
         selectedTab = .devices
         historyDeviceID = nil
+        sheet = nil
     }
 }

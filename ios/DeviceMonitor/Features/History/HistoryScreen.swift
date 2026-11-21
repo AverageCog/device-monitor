@@ -1,22 +1,24 @@
+import DMCore
 import SwiftUI
 
-// PLACEHOLDER — the History feature replaces this file wholesale.
+// INTERIM — replaced by the History feature.
 // The device to show comes from `AppRouter.historyDeviceID` (nil: pick the first device).
 struct HistoryScreen: View {
+    @Environment(HubStore.self) private var store
     @Environment(AppRouter.self) private var router
 
     var body: some View {
-        FeaturePlaceholder(
-            systemImage: AppTab.history.systemImage,
-            message: router.historyDeviceID.map { "History charts for device \($0) go here." } ?? "History charts go here.",
-            identifier: "screen-history"
-        )
-        .navigationTitle("History")
+        FeaturePlaceholder(systemImage: AppTab.history.systemImage, message: message, identifier: "screen-history")
+            .navigationTitle("History")
+    }
+
+    private var message: String {
+        guard let id = router.historyDeviceID else { return "History charts go here." }
+        return "History charts for \(store.device(id)?.displayName ?? "an unknown device") (\(id)) go here."
     }
 }
 
 #Preview {
     NavigationStack { HistoryScreen().dmScreen() }
-        .environment(AppRouter())
-        .preferredColorScheme(.dark)
+        .demoEnvironment()
 }
