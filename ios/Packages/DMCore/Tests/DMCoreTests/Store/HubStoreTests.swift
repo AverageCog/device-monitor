@@ -1143,6 +1143,87 @@ import Testing
         h.store.stop()
     }
 
+    /// Takes the store live, loses the stream and reconnects, with the hub holding back its
+    /// answer to the alerts the reconnect asks for.
+    func reconnectAskingForAlerts(_ h: StoreHarness) async throws -> Gate<AlertsResponse> {
+        let first = try await h.goLive()
+        first.fail(.unreachable("The connection to the hub was lost."))
+        try await eventually("the store noticed") { Self.isReconnecting(h.store) }
+        let answer = Gate<AlertsResponse>()
+        h.hub.on { $0.alerts = { try await answer.wait() } }
+        await h.clock.waitForSleepers(2)
+        h.clock.advance(by: 3000)
+        try await h.connection(1).send(.status([:]))
+        try await eventually("the reconnect asks what was missed") { h.store.connection == .live && answer.arrivals == 1 }
+        return answer
+    }
+
+    @Test func aRefreshWhileAReconnectIsAskingWaitsForThatAnswer() async throws {
+        let h = StoreHarness()
+        let answer = try await reconnectAskingForAlerts(h)
+        // The notifier, catching up on what it missed at the same moment.
+        let refresh = Task { try await h.store.refreshAlerts() }
+        await settle()
+        #expect(h.hub.calls("alerts").count == 2)                  // at the start, and on the reconnect
+        let missed = AlertsResponse(events: [F.alert("e1", t: 1)])
+        answer.open(missed)
+        try await refresh.value
+        #expect(h.store.alerts == AlertsState(missed) && h.hub.calls("alerts").count == 2)
+
+        // An answer that is in already is not handed out again: a pull to refresh asks the hub.
+        h.hub.on { $0.alerts = { AlertsResponse() } }
+        try await h.store.refreshAlerts()
+        #expect(h.store.alerts.events.isEmpty && h.hub.calls("alerts").count == 3)
+        h.store.stop()
+    }
+
+    @Test func aRefreshWhileAReconnectIsAskingGetsItsFailure() async throws {
+        let h = StoreHarness()
+        let answer = try await reconnectAskingForAlerts(h)
+        let refresh = Task { await storeError { try await h.store.refreshAlerts() } }
+        await settle()
+        answer.fail(.unreachable("The hub did not answer in time."))
+        #expect(await refresh.value == .unreachable("The hub did not answer in time."))
+        #expect(h.hub.calls("alerts").count == 2 && h.store.connection == .live)
+        h.store.stop()
+    }
+
+    @Test func stoppingEndsARefreshThatWaitsForTheReconnect() async throws {
+        let h = StoreHarness()
+        let answer = try await reconnectAskingForAlerts(h)
+        let refresh = Task { await storeError { try await h.store.refreshAlerts() } }
+        await settle()
+        h.store.stop()
+        answer.open(AlertsResponse(events: [F.alert("late", t: 1)]))   // too late: nobody is asking any more
+        #expect(await refresh.value == .cancelled)
+        try await eventually("nothing is left running") { h.store.activeTaskCount == 0 }
+        #expect(h.store.alerts.events.isEmpty && h.hub.calls("alerts").count == 2)
+    }
+
+    @Test func onTheFirstConnectionARefreshAsksForItself() async throws {
+        let h = StoreHarness()
+        let early = Gate<AlertsResponse>(), asked = Counter()
+        let missed = AlertsResponse(events: [F.alert("e1", t: 1)])
+        h.hub.on {
+            $0.alerts = {
+                if asked.increment() == 1 { return try await early.wait() }
+                return missed
+            }
+        }
+        h.store.start()
+        // Also when the test fails: a refresh waiting on the start-up request ends only with the store.
+        defer { h.store.stop() }
+        try await h.connection(0).send(.snapshot([]))
+        try await eventually("the store is live") { h.store.connection == .live && early.arrivals == 1 }
+        // The store asked as it started, before the stream opened: an alert logged in between is
+        // in neither that answer nor the stream. Awaited only once it has asked: a refresh that
+        // waited for that held-back answer instead would wait past the time limit.
+        let refresh = Task { try await h.store.refreshAlerts() }
+        try await eventually("the refresh asks for itself") { asked.count == 2 }
+        try await refresh.value
+        #expect(asked.count == 2 && h.store.alerts == AlertsState(missed))
+    }
+
     // MARK: Stopping, suspending, going away
 
     @Test func stopEndsEverythingTheStoreHadRunning() async throws {

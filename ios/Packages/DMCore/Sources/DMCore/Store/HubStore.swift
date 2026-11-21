@@ -128,6 +128,8 @@ public final class HubStore {
     /// Connection attempts so far; names the attempt the extra state was last fetched for.
     @ObservationIgnored private var attempt = 0
     @ObservationIgnored private var fetchedForAttempt = 0
+    /// The alerts asked for when the stream went live on `attempt`, until the hub has answered.
+    @ObservationIgnored private var liveAlertsFetch: (attempt: Int, task: Task<Result<Void, HubError>, Never>)?
     /// The newest series request per device; an answer to an older one is dropped.
     @ObservationIgnored private var seriesRequests: [String: Int] = [:]
     /// Bumped whenever the stream brings news of the value and whenever a save or a clear is
@@ -228,6 +230,7 @@ public final class HubStore {
         streamTask = nil
         // Requests for the extras are cancelled with everything else, so they count as not made.
         fetchedForAttempt = 0
+        liveAlertsFetch = nil
         tasks.cancelAll()
     }
 
@@ -268,7 +271,7 @@ public final class HubStore {
             connection = .live
             failedAttempts = 0
             // Whatever changed while there was no stream was not announced to this app.
-            fetchExtras(for: attempt)
+            fetchExtras(for: attempt, live: true)
         }
         let now = clock.now
         let before = state
@@ -359,14 +362,28 @@ public final class HubStore {
     // MARK: - What the stream does not carry
 
     /// Published versions, the saved price, alerts and hub info, once per connection attempt:
-    /// asked for alongside the first, and again whenever a later one goes live.
-    private func fetchExtras(for attempt: Int) {
+    /// asked for alongside the first, and again whenever a later one goes live (`live: true`).
+    private func fetchExtras(for attempt: Int, live: Bool = false) {
         guard fetchedForAttempt != attempt else { return }
         fetchedForAttempt = attempt
         let store = Unretained(store: self)
         tasks.run { [api] in _ = try? await HubStore.refreshLatestVersions(of: store, from: api) }
         tasks.run { [api] in _ = try? await HubStore.refreshEnergySettings(of: store, from: api) }
-        tasks.run { [api] in _ = try? await HubStore.refreshAlerts(of: store, from: api) }
+        let alerts = tasks.run { [api] () async -> Result<Void, HubError> in
+            let answer: Result<Void, HubError>
+            do {
+                try await HubStore.refreshAlerts(of: store, from: api)
+                answer = .success(())
+            } catch {
+                answer = .failure(HubError(error))
+            }
+            if live, store.store?.liveAlertsFetch?.attempt == attempt { store.store?.liveAlertsFetch = nil }
+            return answer
+        }
+        // Asked once the stream is open, this answer and the stream between them miss nothing,
+        // so `refreshAlerts()` waits for it rather than ask again. The one asked as the store
+        // starts goes out before the stream opens: an alert logged in between is in neither.
+        if live { liveAlertsFetch = (attempt, alerts) }
         tasks.run { [api] in _ = try? await HubStore.refreshInfo(of: store, from: api) }
     }
 
@@ -614,8 +631,15 @@ public final class HubStore {
 
     // MARK: - Alerts
 
-    /// Fetches settings, what is firing and the log.
+    /// Fetches settings, what is firing and the log. While the store is still waiting for what
+    /// it asked as the stream went live, waits for that answer instead.
     public func refreshAlerts() async throws(HubError) {
+        // Every reconnect asks, to catch up on what was announced while there was no stream, and
+        // the notifier asks at the same moment for the same reason: one request does for both.
+        // An answer that is in already is not reused, so that a pull to refresh asks the hub.
+        if connection == .live, let fetch = liveAlertsFetch, fetch.attempt == attempt {
+            return try await fetch.task.value.get()
+        }
         try await HubStore.refreshAlerts(of: Unretained(store: self), from: api)
     }
 
@@ -660,8 +684,8 @@ public final class HubStore {
             // the answer says: an alert that fired or cleared since, a device removed, someone
             // else's rules, or just the hub's announcements still arriving. Only the hub can
             // say which. The save itself went through, so failing to ask is not the caller's
-            // failure.
-            _ = try? await refreshAlerts()
+            // failure. Asked afresh: a reconnect's request may have gone out before the save.
+            _ = try? await HubStore.refreshAlerts(of: Unretained(store: self), from: api)
         }
     }
 
@@ -690,8 +714,8 @@ public final class HubStore {
         change { $0.alerts.events.removeAll { known.contains($0.id) } }
         // What arrived since was logged just before the hub emptied its log or just after, and
         // only the hub can say which. The log was cleared either way, so failing to ask is not
-        // the caller's failure; the entries in doubt then stay on show.
-        if !state.alerts.events.isEmpty { _ = try? await refreshAlerts() }
+        // the caller's failure; the entries in doubt then stay on show. Asked afresh, as after a save.
+        if !state.alerts.events.isEmpty { _ = try? await HubStore.refreshAlerts(of: Unretained(store: self), from: api) }
     }
 
     /// Log entries newer than the one the user last looked at.
@@ -748,7 +772,8 @@ public final class HubStore {
 private final class TaskBag: Sendable {
     private struct State: Sendable {
         var nextID: UInt64 = 0
-        var tasks: [UInt64: Task<Void, Never>] = [:]
+        /// How to cancel each.
+        var tasks: [UInt64: @Sendable () -> Void] = [:]
     }
 
     private let state = OSAllocatedUnfairLock(initialState: State())
@@ -760,21 +785,22 @@ private final class TaskBag: Sendable {
     var count: Int { state.withLock { $0.tasks.count } }
 
     @discardableResult
-    func run(_ operation: @escaping @MainActor @Sendable () async -> Void) -> Task<Void, Never> {
+    func run<Success: Sendable>(_ operation: @escaping @MainActor @Sendable () async -> Success) -> Task<Success, Never> {
         state.withLock { state in
             state.nextID += 1
             let id = state.nextID
             // Started under the lock, so its own removal cannot come before it is entered.
             let task = Task { @MainActor [weak self] in
-                await operation()
+                let result = await operation()
                 self?.state.withLock { _ = $0.tasks.removeValue(forKey: id) }
+                return result
             }
-            state.tasks[id] = task
+            state.tasks[id] = { task.cancel() }
             return task
         }
     }
 
     func cancelAll() {
-        state.withLock { Array($0.tasks.values) }.forEach { $0.cancel() }
+        state.withLock { Array($0.tasks.values) }.forEach { $0() }
     }
 }
