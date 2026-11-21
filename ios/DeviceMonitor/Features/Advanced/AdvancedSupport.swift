@@ -2,8 +2,8 @@ import DMCore
 import SwiftUI
 import UIKit
 
-/// The few words of this screen the dashboard has no counterpart for: it keeps quiet when its
-/// totals cannot be loaded, which a phone on a mobile network cannot afford to.
+/// The few words of this screen that `AdvancedModel` does not have, because the dashboard does
+/// not: it keeps quiet when its totals cannot be loaded, and it has no rows that open.
 nonisolated enum AdvancedStrings {
     /// `title="Time range"` of #advRange.
     static let timeRange = "Time range"

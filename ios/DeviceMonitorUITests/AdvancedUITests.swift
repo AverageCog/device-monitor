@@ -65,11 +65,34 @@ final class AdvancedUITests: XCTestCase {
         XCTAssertTrue(arrived, "The totals did not arrive: \(value(of: energy))", file: file, line: line)
     }
 
-    /// Brings `element` clear of the tab bar.
+    /// Scrolls the page until `element` is between the navigation bar and the tab bar. The page is
+    /// one eager stack, so an element has a frame wherever it is; dragging by exactly what is
+    /// missing cannot overshoot something in the middle of the page the way a swipe can.
     @MainActor
     private func reveal(_ element: XCUIElement, in app: XCUIApplication, file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertTrue(element.waitForExistence(timeout: 10), "\(element) is not on the page", file: file, line: line)
         let screen = app.element(withIdentifier: AdvancedID.screen)
-        XCTAssertTrue(app.scrollUp(screen, until: element, swipes: 14), "Could not scroll to \(element)", file: file, line: line)
+        let centre = screen.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        for _ in 0..<40 {
+            let navigationBar = app.navigationBars.firstMatch
+            let tabBar = app.tabBars.firstMatch
+            let top = (navigationBar.exists ? navigationBar.frame.maxY : app.frame.minY) + 12
+            let bottom = (tabBar.exists ? tabBar.frame.minY : app.frame.maxY) - 12
+            let frame = element.frame
+            // How far the element's top is below the band's top, and its bottom below the band's bottom.
+            let above = frame.minY - top
+            let below = frame.maxY - bottom
+            if above >= -8, below <= 8 { return }
+            // Down by what is hidden under the title; or up by what is hidden under the tab bar,
+            // but never so far that the top goes under the title.
+            let move = above < 0 ? above : min(below, above)
+            // Taller than the band, and its top is where it should be.
+            if abs(move) < 8 { return }
+            // A drag only starts to scroll after some ten points.
+            let distance = max(-260, min(260, move)) + (move > 0 ? 10 : -10)
+            centre.press(forDuration: 0.05, thenDragTo: centre.withOffset(CGVector(dx: 0, dy: -distance)), withVelocity: .slow, thenHoldForDuration: 0.2)
+        }
+        XCTFail("Could not scroll to \(element); it is at \(element.frame)", file: file, line: line)
     }
 
     // MARK: Totals

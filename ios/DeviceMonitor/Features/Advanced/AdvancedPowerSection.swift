@@ -201,6 +201,7 @@ struct AdvancedPowerSection: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(row.name)
                 .accessibilityValue(spoken(row))
+                .accessibilityAction(named: AppTab.history.title) { router.openHistory(deviceID: row.deviceID) }
                 .accessibilityIdentifier("advanced-power-row-\(row.deviceID)")
         } else {
             Button {
@@ -211,6 +212,7 @@ struct AdvancedPowerSection: View {
             .buttonStyle(AdvancedRowButtonStyle())
             .accessibilityLabel(row.name)
             .accessibilityValue("\(spoken(row)), \(isOpen(row) ? AdvancedStrings.expanded : AdvancedStrings.collapsed)")
+            .accessibilityAction(named: AppTab.history.title) { router.openHistory(deviceID: row.deviceID) }
             .accessibilityIdentifier("advanced-power-row-\(row.deviceID)")
         }
     }

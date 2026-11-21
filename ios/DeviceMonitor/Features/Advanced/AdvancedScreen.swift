@@ -148,7 +148,7 @@ private struct AdvancedPage: View {
                 .padding(.top, 12)
             AdvancedChartPanel(controller: controller, preselected: options.bucket)
                 .padding(.top, 16)
-                // The tooltip floats above the panel, over what comes before it.
+                // A tooltip with many rows can reach past the panel; it stays on top of what follows.
                 .zIndex(1)
                 .id(AdvancedSection.chart)
             AdvancedPowerSection(controller: controller, width: width, options: options)
@@ -268,7 +268,9 @@ private struct AdvancedTiles: View {
         let roomy = Int((width + spacing) / (Self.dashboardTileWidth + spacing))
         let tight = Int((width + spacing) / (Theme.Layout.tileMinWidth + spacing))
         let fitting = max(1, roomy, min(4, tight))
-        let columns = dynamicTypeSize.isAccessibilitySize ? max(1, fitting / 2) : fitting
+        // Four tiles in three columns leave one on a row of its own; two rows of two read better.
+        let even = fitting == 3 ? 2 : fitting
+        let columns = dynamicTypeSize.isAccessibilitySize ? max(1, even / 2) : even
         EqualColumnsLayout(columns: columns, columnSpacing: spacing, rowSpacing: spacing) {
             ForEach(controller.tiles) { tile in
                 Tile(label: tile.label, value: tile.value, sub: tile.sub)

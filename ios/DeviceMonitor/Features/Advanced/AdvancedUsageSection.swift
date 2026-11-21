@@ -124,6 +124,7 @@ struct AdvancedUsageSection: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(row.name)
                 .accessibilityValue(spoken(row))
+                .accessibilityAction(named: AppTab.history.title) { router.openHistory(deviceID: row.deviceID) }
                 .accessibilityIdentifier("advanced-usage-row-\(row.deviceID)")
             }
         }
@@ -203,6 +204,7 @@ struct AdvancedUsageSection: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(row.name)
         .accessibilityValue(spoken(row))
+        .accessibilityAction(named: AppTab.history.title) { router.openHistory(deviceID: row.deviceID) }
         .accessibilityIdentifier("advanced-usage-row-\(row.deviceID)")
     }
 
