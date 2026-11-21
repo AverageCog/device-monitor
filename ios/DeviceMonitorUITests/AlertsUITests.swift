@@ -562,6 +562,28 @@ final class AlertsUITests: XCTestCase {
     }
 
     @MainActor
+    func testLeavingTheHubTakesItsNotificationsAlong() {
+        // A paired session that disconnects as soon as it is live. Notification Centre cannot be
+        // looked at from here, so the probe tells what the notifier did; with the hub gone it is
+        // read on the demo's Alerts tab, the one place it is shown.
+        let app = launchPaired("-dm-alerts-probe", "-dm-then", "disconnect")
+        let demo = app.element(withIdentifier: ID.demoButton)
+        XCTAssertTrue(demo.waitForExistence(timeout: 30), "Disconnected: back at onboarding")
+        demo.tap()
+        let tab = app.tabBars.buttons["Alerts"]
+        XCTAssertTrue(tab.waitForExistence(timeout: 20))
+        tab.tap()
+
+        let probe = app.element(withIdentifier: "debug-alerts-notifier")
+        XCTAssertTrue(probe.waitForExistence(timeout: 10))
+        let left = probe.label.range(of: "hub: left, its notifications removed")
+        XCTAssertNotNil(left, "What was posted about the hub goes with it: \(probe.label)")
+        if let left, let up = probe.label.range(of: "stream: up") {
+            XCTAssertTrue(up.lowerBound < left.lowerBound, "…once it had been connected: \(probe.label)")
+        }
+    }
+
+    @MainActor
     func testTheEditorHoldsUpAtTheLargestTextSize() {
         let app = XCUIApplication()
         app.launchArguments = [
