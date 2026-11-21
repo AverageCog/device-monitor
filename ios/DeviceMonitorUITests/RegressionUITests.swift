@@ -77,6 +77,73 @@ final class RegressionUITests: XCTestCase {
         }
     }
 
+    /// A segment's plate is 32 points tall, and only the plate took a touch: short of the 44 points
+    /// a finger needs, and the °C / °F segments are narrower than that as well.
+    @MainActor
+    func testASegmentTakesATouchJustAboveOrBelowItsPlate() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-dm-gallery", "selection"]
+        app.launch()
+
+        let sixHours = app.buttons["gallery-range-6h"]
+        let oneHour = app.buttons["gallery-range-1h"]
+        XCTAssertTrue(sixHours.waitForExistence(timeout: 20))
+        XCTAssertTrue(wait(upTo: 5) { sixHours.isHittable }, "The gallery has scrolled to the segmented control")
+        XCTAssertFalse(sixHours.isSelected)
+        XCTAssertFalse(oneHour.isSelected)
+        // The element's frame is the area that takes a touch, centred on the plate.
+        XCTAssertGreaterThanOrEqual(sixHours.frame.height, 44, "6 h takes a touch over \(sixHours.frame)")
+
+        // 19 points from the middle is 3 points beyond the edge of a 32-point plate.
+        sixHours.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).withOffset(CGVector(dx: 0, dy: -19)).tap()
+        XCTAssertTrue(wait(upTo: 5) { sixHours.isSelected }, "A touch just above 6 h chooses it")
+        oneHour.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).withOffset(CGVector(dx: 0, dy: 19)).tap()
+        XCTAssertTrue(wait(upTo: 5) { oneHour.isSelected }, "A touch just below 1 h chooses it")
+    }
+
+    /// At the largest text sizes on a phone the price editor's mode read "One rate | Time of…".
+    /// Labels that do not fit side by side now go one under the other, whole and still choosable.
+    @MainActor
+    func testSegmentsWhoseLabelsDoNotFitGoOneUnderTheOther() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-dm-gallery", "selection"]
+        app.launch()
+
+        let flat = app.buttons["gallery-narrow-flat"]
+        let timeOfUse = app.buttons["gallery-narrow-tou"]
+        XCTAssertTrue(timeOfUse.waitForExistence(timeout: 20))
+        XCTAssertTrue(flat.exists)
+        XCTAssertTrue(timeOfUse.isSelected)
+        XCTAssertLessThanOrEqual(flat.frame.maxY, timeOfUse.frame.minY + 1, "One rate \(flat.frame) is not above Time of use \(timeOfUse.frame)")
+        XCTAssertEqual(flat.frame.width, timeOfUse.frame.width, accuracy: 1, "Each row is as wide as the control")
+
+        flat.tap()
+        XCTAssertTrue(wait(upTo: 5) { flat.isSelected && !timeOfUse.isSelected }, "A row is chosen like a segment")
+    }
+
+    /// The price editor in Settings at the largest text size on a phone: the mode whole, one
+    /// segment under the other.
+    @MainActor
+    func testThePriceModeIsWholeAtTheLargestTextSize() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-dm-demo", "-dm-tab", "settings", "-dm-settings-advanced", "open", "-dm-settings-scroll", "advanced",
+            "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL",
+        ]
+        app.launch()
+
+        let flat = app.buttons["settings-price-mode-flat"]
+        let timeOfUse = app.buttons["settings-price-mode-time-of-use"]
+        XCTAssertTrue(flat.waitForExistence(timeout: 20))
+        XCTAssertTrue(timeOfUse.exists)
+        XCTAssertEqual(timeOfUse.label, "Time of use")
+        // Side by side, the two need more than an upright phone's width at this size.
+        if app.frame.width < 500 {
+            XCTAssertLessThanOrEqual(flat.frame.maxY, timeOfUse.frame.minY + 1, "One rate \(flat.frame) is not above Time of use \(timeOfUse.frame)")
+        }
+        attachScreenshot(of: app, named: "settings-price-mode-largest-text")
+    }
+
     /// At the largest text size the gallery used to open part-way down its first card with the top
     /// out of reach: a lazy grid inside an eager page is sized from an estimate.
     @MainActor

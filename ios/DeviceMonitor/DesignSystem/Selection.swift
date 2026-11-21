@@ -19,6 +19,10 @@ nonisolated struct DMSegment<Value: Hashable & Sendable>: Identifiable, Sendable
 /// The dashboard's segmented control (`.seg`): a hairline-bordered row of quiet labels with the
 /// selected one on surface-2.
 ///
+/// Where the labels do not fit side by side, even a little smaller, the segments go one under the
+/// other, the chosen one with a check mark, rather than a label being cut short. The control and
+/// its segments keep their names for VoiceOver and UI tests in either form.
+///
 ///     DMSegmentedControl("Time range", selection: $range, segments: [
 ///         DMSegment(.day, "24 h"), DMSegment(.week, "7 days"), DMSegment(.month, "30 days"),
 ///     ])
@@ -30,6 +34,12 @@ struct DMSegmentedControl<Value: Hashable & Sendable>: View {
     private let identifier: String?
 
     @ScaledMetric(relativeTo: .callout) private var minHeight: CGFloat = 32
+    @ScaledMetric(relativeTo: .callout) private var checkSize: CGFloat = DMTextStyle.callout.size * 0.7
+
+    /// Clear space on either side of a label.
+    private static var labelPadding: CGFloat { 11 }
+    /// How small a label may get to keep the segments side by side.
+    private static var minimumScale: CGFloat { 0.85 }
 
     /// - Parameters:
     ///   - title: What the control chooses; read by VoiceOver.
@@ -45,35 +55,147 @@ struct DMSegmentedControl<Value: Hashable & Sendable>: View {
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            ForEach(segments) { segment in
-                let isOn = segment.value == selection
-                Button {
-                    selection = segment.value
-                } label: {
-                    Text(segment.label)
-                        .dmFont(.callout)
-                        .lineLimit(1)
-                        .foregroundStyle(isOn ? Theme.textPrimary : Theme.textMuted)
-                        .padding(.horizontal, 11)
-                        .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: minHeight)
-                        .background(isOn ? Theme.surface2 : .clear)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(isOn ? .isSelected : [])
-                .accessibilityIdentifier(identifier.map { "\($0)-\(segment.identifier ?? segment.label)" } ?? "")
-            }
-        }
-        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous)
-                .strokeBorder(Theme.border, lineWidth: Theme.Layout.hairline)
+        // At the largest text sizes "Time of use" was cut to "Time of…". The labels at their
+        // size if they fit, else a little smaller, else a row each.
+        ViewThatFits(in: .horizontal) {
+            row(minimumScale: 1)
+            row(minimumScale: Self.minimumScale)
+            column
         }
         .animation(.easeOut(duration: 0.15), value: selection)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(title)
         .accessibilityIdentifier(identifier ?? "")
+    }
+
+    /// The segments side by side; the labels shrink to `minimumScale` at most.
+    private func row(minimumScale: CGFloat) -> some View {
+        // The plate is 32 points tall at the standard text size, the touch target 44. It is
+        // widened on each segment: a larger shape around the whole row does not reach its buttons.
+        let reach = max(0, (44 - minHeight) / 2)
+        return DMSegmentRow(fillsWidth: fillsWidth, minimumScale: minimumScale, padding: 2 * Self.labelPadding) {
+            ForEach(segments) { segment in
+                button(for: segment) { isOn in
+                    Text(segment.label)
+                        .dmFont(.callout)
+                        .lineLimit(1)
+                        .minimumScaleFactor(minimumScale)
+                        .foregroundStyle(isOn ? Theme.textPrimary : Theme.textMuted)
+                        .padding(.horizontal, Self.labelPadding)
+                        // As wide as the row makes it.
+                        .frame(maxWidth: .infinity, minHeight: minHeight)
+                        .background(isOn ? Theme.surface2 : .clear)
+                        .padding(.vertical, reach)
+                        .contentShape(Rectangle())
+                        .padding(.vertical, -reach)
+                }
+            }
+        }
+        .modifier(DMSegmentFrame())
+    }
+
+    /// The same control on its side: a row for each segment, the chosen one on its plate.
+    private var column: some View {
+        VStack(spacing: 0) {
+            ForEach(segments) { segment in
+                button(for: segment) { isOn in
+                    HStack(spacing: Theme.Spacing.s) {
+                        Text(segment.label)
+                            .dmFont(.callout)
+                            .foregroundStyle(isOn ? Theme.textPrimary : Theme.textMuted)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 0)
+                        // Without the plates side by side, the plate alone is a weak cue.
+                        Image(systemName: "checkmark")
+                            .font(.system(size: checkSize, weight: .semibold))
+                            .foregroundStyle(Theme.textPrimary)
+                            .opacity(isOn ? 1 : 0)
+                            .accessibilityHidden(true)
+                    }
+                    .padding(.horizontal, Self.labelPadding)
+                    .padding(.vertical, Theme.Spacing.s)
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .background(isOn ? Theme.surface2 : .clear)
+                    .contentShape(Rectangle())
+                }
+            }
+        }
+        .modifier(DMSegmentFrame())
+    }
+
+    private func button<Label: View>(for segment: DMSegment<Value>, @ViewBuilder label: (Bool) -> Label) -> some View {
+        let isOn = segment.value == selection
+        let content = label(isOn)
+        return Button {
+            selection = segment.value
+        } label: {
+            content
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isOn ? .isSelected : [])
+        .accessibilityIdentifier(identifier.map { "\($0)-\(segment.identifier ?? segment.label)" } ?? "")
+    }
+}
+
+/// The outline of a `DMSegmentedControl`, which also rounds the plates of the end segments.
+private struct DMSegmentFrame: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous)
+                    .strokeBorder(Theme.border, lineWidth: Theme.Layout.hairline)
+            }
+    }
+}
+
+/// The segments of a `DMSegmentedControl` side by side: each as wide as its label, or with
+/// `fillsWidth` all as wide as the widest, so none is cut short while another has room to spare.
+/// Given less, the labels narrow alike, down to `minimumScale`.
+///
+/// Its ideal width is what the labels need at about the smallest scale it allows, so a
+/// `ViewThatFits` takes it only where they fit whole.
+private struct DMSegmentRow: Layout {
+    let fillsWidth: Bool
+    let minimumScale: CGFloat
+    /// The part of each segment's width that does not shrink with its label.
+    let padding: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let widths = widths(in: proposal.width, subviews: subviews)
+        let height = zip(subviews, widths).map { subview, width in
+            subview.sizeThatFits(ProposedViewSize(width: width, height: nil)).height
+        }.max() ?? 0
+        return CGSize(width: widths.reduce(0, +), height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = bounds.minX
+        for (subview, width) in zip(subviews, widths(in: bounds.width, subviews: subviews)) {
+            subview.place(at: CGPoint(x: x, y: bounds.midY), anchor: .leading, proposal: ProposedViewSize(width: width, height: bounds.height))
+            x += width
+        }
+    }
+
+    /// Each segment's share of `available`, or of the row's ideal width when that is `nil`.
+    private func widths(in available: CGFloat?, subviews: Subviews) -> [CGFloat] {
+        let ideal = subviews.map { $0.sizeThatFits(.unspecified).width }
+        let wanted = fillsWidth ? Array(repeating: ideal.max() ?? 0, count: ideal.count) : ideal
+        let fixed = padding * CGFloat(wanted.count)
+        let full = wanted.reduce(0, +)
+        guard full > fixed else { return wanted }
+        let width: CGFloat
+        if let available {
+            width = fillsWidth ? available : min(available, full)
+        } else if minimumScale < 1 {
+            // Claimed with a little to spare: text does not narrow exactly in proportion to its
+            // size (tracking, and the system font's optical sizes), and must not be cut short.
+            width = fixed + (full - fixed) * min(1, minimumScale + 0.05)
+        } else {
+            width = full
+        }
+        let scale = max(0, (width - fixed) / (full - fixed))
+        return wanted.map { padding + max(0, $0 - padding) * scale }
     }
 }
 

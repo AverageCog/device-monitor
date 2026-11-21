@@ -15,6 +15,7 @@ struct ComponentGallery: View {
     @State private var now = Date.now.timeIntervalSince1970 * 1000
     @State private var historyRange = "24h"
     @State private var advancedRange = "7d"
+    @State private var priceMode = "tou"
     @State private var unit = "C"
     @State private var selectedDevice = "DGX Spark"
     @State private var notifications = true
@@ -240,12 +241,19 @@ struct ComponentGallery: View {
         section("Segmented control and chips", id: "selection") {
             VStack(alignment: .leading, spacing: Theme.Spacing.m) {
                 DMSegmentedControl("Time range", selection: $historyRange, segments: [
-                    DMSegment("1h", "1 h"), DMSegment("6h", "6 h"), DMSegment("24h", "24 h"),
-                    DMSegment("7d", "7 days"), DMSegment("30d", "30 days"),
+                    DMSegment("1h", "1 h", identifier: "1h"), DMSegment("6h", "6 h", identifier: "6h"),
+                    DMSegment("24h", "24 h", identifier: "24h"), DMSegment("7d", "7 days", identifier: "7d"),
+                    DMSegment("30d", "30 days", identifier: "30d"),
                 ], identifier: "gallery-range")
                 DMSegmentedControl("Time range", selection: $advancedRange, segments: [
                     DMSegment("24h", "24 h"), DMSegment("7d", "7 days"), DMSegment("30d", "30 days"),
                 ], fillsWidth: true)
+                // Too narrow for its labels side by side, as the price editor is at the largest
+                // text sizes on a phone.
+                DMSegmentedControl("Electricity price", selection: $priceMode, segments: [
+                    DMSegment("flat", "One rate", identifier: "flat"), DMSegment("tou", "Time of use", identifier: "tou"),
+                ], identifier: "gallery-narrow")
+                .frame(width: 150)
                 FlowLayout {
                     ForEach(["Gaming PC", "DGX Spark", "MacBook Pro", "Home Server"], id: \.self) { name in
                         DeviceChip(name, isOnline: name != "Home Server", isSelected: name == selectedDevice) {
