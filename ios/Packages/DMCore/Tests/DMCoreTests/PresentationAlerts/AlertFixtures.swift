@@ -6,8 +6,10 @@ import Foundation
 enum AlertFixtures {
     static let enUS = Locale(identifier: "en_US")
 
+    /// The hub's answers are read the way the app reads them: half a surrogate pair, which the
+    /// hub leaves where it cuts a text and JSON.stringify writes as an escape, arrives as U+FFFD.
     static func load<T: Decodable>(_ type: T.Type = T.self, _ name: String) throws -> T {
-        try JSONDecoder().decode(T.self, from: try Fixture.data("presentation/alerts/" + name))
+        try JSONDecoder().decode(T.self, from: HubClient.wellFormedJSON(try Fixture.data("presentation/alerts/" + name)))
     }
 
     // MARK: types.json

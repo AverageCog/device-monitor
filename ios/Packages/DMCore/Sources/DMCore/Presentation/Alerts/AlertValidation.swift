@@ -72,13 +72,13 @@ public enum AlertValidation {
         }
 
         let ntfy = settings.channels.ntfy
-        let topic = cleaned(ntfy.topic, max: maxTopicLength)
+        let topic = kept(ntfy.topic, max: maxTopicLength)
         if !topic.isEmpty && !isTopic(topic) {
             out.append(AlertIssue(field: .ntfyTopic, severity: .error, message: "A topic is letters, digits, hyphens and underscores only."))
         } else if topic.isEmpty && ntfy.enabled {
             out.append(AlertIssue(field: .ntfyTopic, severity: .warning, message: "Enter a topic, or ntfy stays off."))
         }
-        let email = cleaned(ntfy.email, max: maxEmailLength)
+        let email = kept(ntfy.email, max: maxEmailLength)
         if !email.isEmpty && !isEmail(email) {
             out.append(AlertIssue(field: .ntfyEmail, severity: .error, message: "That does not look like an email address."))
         }
@@ -138,7 +138,8 @@ public enum AlertValidation {
     /// `settings()`), or nil when it refuses them.
     ///
     /// The answer never contains the webhook URL: `keepUrl` says whether the hub has one. A rule
-    /// whose id is not twelve lowercase hex digits gets a new one from `newID`.
+    /// whose id is not twelve lowercase hex digits gets a new one from `newID`. An email address
+    /// the hub cut through a character ends in U+FFFD, as the answer does once the app has read it.
     ///
     /// - Parameter hasStoredWebhook: whether the hub already holds a webhook URL.
     public static func hubStored(_ settings: AlertSettings, hasStoredWebhook: Bool, newID: () -> String = AlertRule.newID) -> AlertSettings? {
@@ -151,7 +152,7 @@ public enum AlertValidation {
             ))
         }
         let ntfy = settings.channels.ntfy, hook = settings.channels.webhook
-        let topic = cleaned(ntfy.topic, max: maxTopicLength), email = cleaned(ntfy.email, max: maxEmailLength)
+        let topic = kept(ntfy.topic, max: maxTopicLength), email = kept(ntfy.email, max: maxEmailLength)
         guard topic.isEmpty || isTopic(topic), email.isEmpty || isEmail(email) else { return nil }
         // const server = ntfy.server ? httpUrl(ntfy.server) : 'https://ntfy.sh';
         guard let server = ntfy.server.isEmpty ? AlertChannels.Ntfy.defaultServer : AlertDestination.normalized(ntfy.server) else { return nil }
@@ -174,15 +175,29 @@ public enum AlertValidation {
         )
     }
 
-    // const clean = (s, max) => s.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, max)
-    /// A text field as the hub reads it: control characters removed, trimmed, cut to `max`
-    /// UTF-16 units.
+    /// A text field as the hub reads it, for showing: control characters removed, trimmed, cut
+    /// to `max` UTF-16 units, and without the half character a cut through a surrogate pair
+    /// leaves behind. The hub keeps that half, and the checks here judge the text with it.
     public static func cleaned(_ text: String, max: Int) -> String {
-        let visible = String(String.UnicodeScalarView(text.unicodeScalars.filter { $0.value > 0x1f && $0.value != 0x7f }))
-        var units = Array(JS.trim(visible).utf16.prefix(max))
-        // A cut through a surrogate pair would leave half a character behind.
+        var units = keptUnits(text, max: max)
         if let last = units.last, UTF16.isLeadSurrogate(last) { units.removeLast() }
         return String(decoding: units, as: UTF16.self)
+    }
+
+    /// A text field as the hub judges and stores it (`clean` in alerts.js).
+    ///
+    /// Its cut can go through a surrogate pair. The half that is left counts as a character like
+    /// any other: it spoils a topic, and stays at the end of an email address. Here it stands as
+    /// U+FFFD, which the hub's checks treat the same way and which is what the app reads when
+    /// the hub sends the text back (`HubClient.wellFormedJSON`).
+    static func kept(_ text: String, max: Int) -> String {
+        String(decoding: keptUnits(text, max: max), as: UTF16.self)
+    }
+
+    // const clean = (s, max) => s.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, max)
+    private static func keptUnits(_ text: String, max: Int) -> [UInt16] {
+        let visible = String(String.UnicodeScalarView(text.unicodeScalars.filter { $0.value > 0x1f && $0.value != 0x7f }))
+        return Array(JS.trim(visible).utf16.prefix(max))
     }
 
     // /^[A-Za-z0-9_-]{1,64}$/

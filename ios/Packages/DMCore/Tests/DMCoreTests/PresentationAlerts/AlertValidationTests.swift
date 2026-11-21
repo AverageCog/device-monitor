@@ -170,6 +170,54 @@ import Testing
         #expect(refused > 40 && switchedOff > 8, "\(refused) refused, \(switchedOff) switched off")
     }
 
+    @Test func aCutThroughACharacterIsJudgedWithTheHalfItLeaves() throws {
+        // The hub cuts a topic at 64 and an email at 120 UTF-16 units, through a surrogate pair
+        // if that is where the cut falls, and judges what is left. `channels()` holds every such
+        // row of validation.json to the hub's answer; this makes sure they are there and shows
+        // what a form makes of them.
+        let fixture = try Self.loaded.get()
+        func form(_ change: (inout AlertSettingsEditor) -> Void) -> AlertSettingsEditor {
+            var editor = AlertSettingsEditor(settings: fixture.base)
+            editor.setNtfyEnabled(true)
+            editor.setNtfyTopic("my-topic")
+            change(&editor)
+            return editor
+        }
+
+        // Topics the hub refuses for the half character alone: without it they would do.
+        let spoiled = fixture.channelRows.filter {
+            $0.stored == nil && $0.field == "topic" && AlertValidation.isTopic(AlertValidation.cleaned($0.channels.ntfy.topic, max: AlertValidation.maxTopicLength))
+        }
+        #expect(spoiled.count >= 3)
+        #expect(spoiled.contains { $0.channels.ntfy.topic == String(repeating: "a", count: 63) + "😀" })
+        for row in spoiled {
+            let editor = form { $0.setNtfyTopic(row.channels.ntfy.topic) }
+            #expect(editor.issues().map(\.field) == [.ntfyTopic] && editor.issues().first?.severity == .error)
+            #expect(editor.body == nil && !editor.canSave)
+        }
+        // One unit further on the cut takes the whole character, and the topic is fine.
+        let whole = try #require(fixture.channelRows.first { $0.channels.ntfy.topic == String(repeating: "a", count: 64) + "😀" })
+        #expect(whole.stored?.channels.ntfy.topic == String(repeating: "a", count: 64))
+        #expect(form { $0.setNtfyTopic(whole.channels.ntfy.topic) }.body != nil)
+
+        // Emails the hub stores with the half at their end. The app reads it back as U+FFFD.
+        let halved = fixture.channelRows.filter { $0.stored?.channels.ntfy.email.hasSuffix("\u{FFFD}") == true && !$0.channels.ntfy.email.hasSuffix("\u{FFFD}") }
+        #expect(halved.count >= 4)
+        // In some of them the half is what makes an address of the text.
+        #expect(halved.contains { !AlertValidation.isEmail(AlertValidation.cleaned($0.channels.ntfy.email, max: AlertValidation.maxEmailLength)) })
+        for row in halved {
+            let editor = form { $0.setNtfyEmail(row.channels.ntfy.email) }
+            #expect(editor.issues().isEmpty)
+            let body = try #require(editor.body)
+            let stored = try #require(AlertValidation.hubStored(body, hasStoredWebhook: false))
+            #expect(stored.channels.ntfy.email == row.stored?.channels.ntfy.email)
+            #expect(stored.channels.ntfy.email.utf16.count == AlertValidation.maxEmailLength)
+            // What came back can be sent again and stays as it is (a row of its own in the fixture).
+            #expect(AlertValidation.hubStored(stored, hasStoredWebhook: false) == stored)
+        }
+        #expect(fixture.channelRows.contains { $0.channels.ntfy.email.hasSuffix("\u{FFFD}") && $0.stored?.channels.ntfy.email == $0.channels.ntfy.email })
+    }
+
     @Test func wholeRuleLists() throws {
         let fixture = try Self.loaded.get()
         #expect(fixture.rows.count >= 6)
@@ -205,9 +253,15 @@ import Testing
         #expect(AlertValidation.cleaned("a\u{0}b\u{7F}c\td", max: 64) == "abcd")
         #expect(AlertValidation.cleaned(String(repeating: "x", count: 70), max: 64).count == 64)
         #expect(AlertValidation.cleaned("\u{FEFF} x \u{A0}", max: 64) == "x")
-        // A cut never leaves half a character.
+        // For showing, a cut never leaves half a character.
         #expect(AlertValidation.cleaned("ab😀", max: 3) == "ab")
         #expect(AlertValidation.cleaned("ab😀", max: 4) == "ab😀")
+        // The hub keeps the half and judges the text with it; here it stands as U+FFFD.
+        #expect(AlertValidation.kept("ab😀", max: 3) == "ab\u{FFFD}")
+        #expect(AlertValidation.kept("ab😀", max: 4) == "ab😀")
+        #expect(AlertValidation.kept(" \u{1}ab😀 ", max: 3) == "ab\u{FFFD}")
+        #expect(AlertValidation.kept("  my-topic \n", max: 64) == "my-topic")
+        #expect(!AlertValidation.isTopic(AlertValidation.kept(String(repeating: "a", count: 63) + "😀", max: 64)))
         #expect(AlertValidation.isTopic("A_b-9") && !AlertValidation.isTopic("") && !AlertValidation.isTopic("a b"))
         #expect(AlertValidation.isEmail("me@example.com") && !AlertValidation.isEmail("me@example") && !AlertValidation.isEmail("me@@example.com"))
         #expect(AlertValidation.isDeviceID("a3f1c9d2-7b64-4e0a-9c1d-2f5e8b7a6c40") && !AlertValidation.isDeviceID("*") && !AlertValidation.isDeviceID(""))

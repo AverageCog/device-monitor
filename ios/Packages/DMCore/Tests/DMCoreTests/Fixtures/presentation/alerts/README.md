@@ -21,6 +21,10 @@ Things the fixtures show about the hub that the Swift port follows on purpose:
   IPv4 address (`::ffff:7f00:1` is 127.0.0.1, and `::ffff:fe80:1` is the harmless 254.128.0.1);
   anything else gets the test above without the prefix, so `::ffff:fe80:1:2` and `::ffff:fe80`
   are refused while `::ffff:1:2:3` is not.
+- It cuts a topic at 64 and an email address at 120 UTF-16 units, through a surrogate pair if that
+  is where the cut falls, and judges and stores what is left: 63 letters and an emoji are no
+  topic, and an address can end in half an emoji. `JSON.stringify` writes that half as an escape
+  (`\ud83d`), which the tests read as the app does, as U+FFFD (`HubClient.wellFormedJSON`).
 - A rule type it does not know makes it refuse the whole PUT. The app's validation leaves such a
   rule alone instead (a newer hub may have sent it); `ruleRows` with `field: "type"` pin that
   difference down.
