@@ -21,8 +21,6 @@ struct DashboardGrid: View {
     /// A column is never narrower than this (`minmax(290px, 1fr)`); it grows with the text.
     @ScaledMetric(relativeTo: .body) private var minimumCardWidth = Theme.Layout.cardMinWidth
     @State private var reorder = DashboardReorderModel()
-    /// Scrolled down, the bars are away and so is the pinned header.
-    @State private var barsHidden = false
 
     private enum Content: Equatable {
         /// Nothing has arrived from the hub yet.
@@ -33,10 +31,13 @@ struct DashboardGrid: View {
 
     var body: some View {
         let padding = Theme.Layout.screenPadding(for: horizontalSizeClass)
-        let pinsHeader = DashboardScreen.headerPlacement(horizontal: horizontalSizeClass, vertical: verticalSizeClass) == .page
+        let placement = DashboardScreen.headerPlacement(horizontal: horizontalSizeClass, vertical: verticalSizeClass)
         ScrollViewReader { scroll in
             ScrollView {
                 VStack(alignment: .leading, spacing: Theme.Layout.gridSpacing) {
+                    if placement == .page {
+                        DashboardPageHeader(showsOfflineList: $showsOfflineList)
+                    }
                     if session.isDemo {
                         BannerView(DashboardStrings.demoBanner, kind: .info)
                             .accessibilityIdentifier(DashboardID.demoBanner)
@@ -56,16 +57,14 @@ struct DashboardGrid: View {
                 .padding(padding)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            // Not while a card is in the air: the drag scrolls the page near the screen's edges,
-            // and those must stay put.
-            .dmHidesBarsOnScroll($barsHidden, isPaused: reorder.liftedID != nil)
+            // The tab bar stays as it is while a card is in the air: the drag scrolls the page near
+            // the screen's edges, and those must stay put.
+            .dmTitledPage(isPaused: reorder.liftedID != nil)
             .accessibilityIdentifier(DashboardID.screen)
-            // header { position: sticky; top: 0 }: the cards scroll away under it. It goes with the
-            // bars, the tab bar above it among them.
+            // Before iOS 26, header { position: sticky; top: 0 }: the cards scroll away under it.
             .safeAreaInset(edge: .top, spacing: 0) {
-                if pinsHeader, !barsHidden {
+                if placement == .pinned {
                     DashboardPinnedHeader(showsOfflineList: $showsOfflineList, padding: padding)
-                        .transition(.move(edge: .top).combined(with: .opacity))
                 }
             }
             // A device that leaves the grid comes back as a fresh card. Asked here and not where

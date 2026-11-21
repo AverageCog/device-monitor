@@ -26,13 +26,14 @@ Five tabs:
   dashboard link to share with a browser, the electricity price and its editor (under Advanced
   settings), **Disconnect…**, version and license.
 
-On iOS 26 and later the pages make room for themselves as they scroll. History, Advanced, Alerts
-and Settings have no navigation bar: their title is the first line of the page and scrolls away
-with it (Alerts' settings button sits at the end of that line). On Devices the top bar goes while
-the page is scrolled down. On every tab the tab bar does the same, and both come back as soon as
-the page is scrolled up a little or reaches its top. A page that scrolls only a little keeps its
-bars, and so does every page while VoiceOver or Switch Control is on. Earlier iOS versions keep the
-navigation bars, with their large titles, and the tab bar in place.
+On iOS 26 and later the pages make room for themselves as they scroll. No tab has a navigation
+bar: the Devices header (logo, name, summary and **+**) and the other tabs' titles are the first
+line of the page and scroll away with it (Alerts' settings button sits at the end of its title).
+The tab bar goes while the page is scrolled down and comes back as soon as it is scrolled up a
+little or reaches its top. A page that scrolls only a little keeps it, and so does every page while
+VoiceOver or Switch Control is on. Earlier iOS versions keep the navigation bars, with the Devices
+header in the bar (or pinned above the cards on an iPad) and the others' large titles, and the tab
+bar in place.
 
 "Add a device" shares a single-use browser link (as text and as a QR code) and says how to add
 computers and other phones on the hub.
@@ -468,7 +469,7 @@ saves them.
 | `DemoFlowUITests` | the app end to end without a hub: demo mode with readings that keep changing, every phase's screen, the way out of the failure screens, a hub that goes away and comes back, a demo hub that refuses the app, the shared sheets |
 | `RegressionUITests` | things that broke once: state kept by a phase screen, out-of-range readings, VoiceOver grouping of the gauges, the gallery at the largest text size |
 | `OnboardingUITests` | pairing (the invitation's hub, refused invitations, the keyboard, every scanner state without a camera), connecting, unreachable, revoked |
-| `DashboardUITests` | the Devices tab: cards, the menu, rename, remove, a card's range, Details, the chart into History, reordering by drag and by Move up, the offline list and Wake, the pinned header, no devices, all offline, large text |
+| `DashboardUITests` | the Devices tab: cards, the menu, rename, remove, a card's range, Details, the chart into History, reordering by drag and by Move up, the offline list and Wake, the header and the tab bar while the page scrolls, no devices, all offline, large text |
 | `HistoryUITests` | the History tab: device and range, zoom and Reset zoom, inspecting without zooming, empty, failed, loading and no-device states, no requests while another tab shows, large text |
 | `AdvancedUITests` | the Advanced tab: totals, the range and keeping it, the price editor, a bar's figures, a device's power breakdown, loading, failed and empty states, the largest text size |
 | `AlertsUITests` | the Alerts tab: what is firing, the log, links to History and to the rule, a live alert, clearing the log, editing, adding and validating rules, channels, the test alert, a failed save, notification permission, the demo's notifications, a draft kept through an outage, large text |
@@ -586,7 +587,7 @@ It is read instead of the stored value; what the app saves during that launch is
 | `-dm-dashboard-error <text>` | show the failure alert with this explanation (`_` stands for a space) |
 | `-dm-dashboard-scrub <0…1>` | every chart starts scrubbed at that fraction of its width, with its tooltip |
 | `-dm-dashboard-card-width <points>` | the narrowest a grid column may be (290), to see several columns on a phone |
-| `-dm-dashboard-header <page\|bar>` | the logo, name and summary in a row pinned above the page (as on an iPad) or in the navigation bar, whatever the window's size |
+| `-dm-dashboard-header <pinned\|bar>` | before iOS 26: the logo, name and summary in a row pinned above the page (as on an iPad) or in the navigation bar, whatever the window's size. From iOS 26 they are the first line of the page |
 | `-dm-dashboard-state loading` | the state before the first snapshot |
 | `-dm-dashboard-state empty` | remove every device (demo hub only) |
 | `-dm-dashboard-state all-offline` | stop every device reporting (demo hub only; the hub calls them offline 30 s later) |

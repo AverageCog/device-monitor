@@ -224,20 +224,19 @@ final class DemoFlowUITests: XCTestCase {
     func testSharedSheetsOpenFromAnyTab() {
         let app = XCUIApplication()
         // The Devices tab starts with the last card, the Studio PC's, at the top of the screen
-        // (see DashboardDebugOptions): the end of this test taps that card's chart.
+        // (see DashboardDebugOptions): the test starts with that card's chart.
         app.launchArguments = ["-dm-demo", "-dm-dashboard-scroll", "studio:top"]
         app.launch()
 
-        let add = app.buttons[ID.addDeviceButton]
-        XCTAssertTrue(add.waitForExistence(timeout: 20))
-        add.tap()
-        let sheet = app.element(withIdentifier: "screen-add-device")
-        XCTAssertTrue(sheet.waitForExistence(timeout: 5), "The + button presents the shared sheet")
-        // The browser link it shows comes from the hub of the tabs' environment.
-        let link = app.element(withIdentifier: "add-device-link")
-        XCTAssertTrue(link.waitForExistence(timeout: 10), "The sheet asks the tabs' hub for a link")
-        XCTAssertTrue(link.label.hasPrefix("https://hub.demo.example/unlock#join="), "The sheet reads the tabs' environment: \(link.label)")
-        app.buttons["add-device-done-button"].tap()
+        // The chart of a device's card routes to History for that device. Not the first device's:
+        // History opened without one shows the first. Its card is where the launch left it; a
+        // swipe from the top of the page could carry a chart several screens down past the bars.
+        let chart = app.element(withIdentifier: "device-chart-studio")
+        XCTAssertTrue(wait(upTo: 20) { chart.exists && chart.isHittable }, "The Studio PC's chart is on screen")
+        chart.tap()
+        let history = app.element(withIdentifier: "screen-history")
+        XCTAssertTrue(history.waitForExistence(timeout: 5))
+        XCTAssertTrue(history.label.contains("Studio PC"), "got: \(history.label)")
 
         app.tab("Advanced").tap()
         app.buttons["advanced-price-button"].tap()
@@ -249,15 +248,19 @@ final class DemoFlowUITests: XCTestCase {
         XCTAssertTrue(app.element(withIdentifier: "screen-electricity-price").waitForExistence(timeout: 5), "So can Settings")
         app.buttons["electricity-price-done-button"].tap()
 
-        // The chart of a device's card routes to History for that device. Not the first device's:
-        // History opened without one shows the first. Its card is where the launch left it; a
-        // swipe from the top of the page could carry a chart several screens down past the bars.
+        // "+" ends the header, the first line of the Devices page, which is still down at the
+        // Studio PC's card: back up to the top.
         app.tab("Devices").tap()
-        let chart = app.element(withIdentifier: "device-chart-studio")
-        XCTAssertTrue(wait(upTo: 10) { chart.exists && chart.isHittable }, "The Studio PC's chart is on screen")
-        chart.tap()
-        let history = app.element(withIdentifier: "screen-history")
-        XCTAssertTrue(history.waitForExistence(timeout: 5))
-        XCTAssertTrue(history.label.contains("Studio PC"), "got: \(history.label)")
+        let add = app.buttons[ID.addDeviceButton]
+        let page = app.element(withIdentifier: "screen-devices")
+        for _ in 0..<8 where !(add.exists && add.isHittable) { page.swipeDown() }
+        add.tap()
+        let sheet = app.element(withIdentifier: "screen-add-device")
+        XCTAssertTrue(sheet.waitForExistence(timeout: 5), "The + button presents the shared sheet")
+        // The browser link it shows comes from the hub of the tabs' environment.
+        let link = app.element(withIdentifier: "add-device-link")
+        XCTAssertTrue(link.waitForExistence(timeout: 10), "The sheet asks the tabs' hub for a link")
+        XCTAssertTrue(link.label.hasPrefix("https://hub.demo.example/unlock#join="), "The sheet reads the tabs' environment: \(link.label)")
+        app.buttons["add-device-done-button"].tap()
     }
 }

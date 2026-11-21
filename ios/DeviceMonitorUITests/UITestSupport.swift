@@ -108,7 +108,8 @@ extension XCUIApplication {
 
     /// Whether the screen titled `title` is showing, within `timeout`. History, Advanced, Alerts and
     /// Settings carry their title at the top of the page and have no navigation bar (`DMPageTitle`
-    /// in the app, from iOS 26); every other screen has it in its navigation bar.
+    /// in the app, from iOS 26); a screen pushed on top has it in its navigation bar. (The Devices
+    /// tab has no title: its header names the product.)
     @MainActor
     func showsTitle(_ title: String, timeout: TimeInterval = 5) -> Bool {
         let bar = navigationBars[title]

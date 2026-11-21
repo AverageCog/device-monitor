@@ -2,51 +2,32 @@ import DMCore
 import SwiftUI
 
 extension View {
-    /// Puts the navigation bar and the tab bar away while the page is scrolled down, and brings them
-    /// back when it is scrolled up or reaches its top (`BarsOnScroll`). Apply to a tab's own scroll
-    /// view, inside its navigation stack. From iOS 26, whose scroll edge effect keeps the status bar
-    /// legible over the page once the bars are gone; before that the bars stay.
+    /// For a tab whose page carries its own title (`DMPageTitle`, or the Devices tab's header): it
+    /// has no navigation bar at all, so the title scrolls away with the page rather than shrinking
+    /// into a bar, and the tab bar goes while the page is scrolled down and comes back when it is
+    /// scrolled up or reaches its top (`BarsOnScroll`). Apply to the tab's own scroll view, inside
+    /// its navigation stack. From iOS 26, like the titles; before that the tab keeps its
+    /// navigation bar, and its bars stay.
     ///
-    /// A screen pushed on top has bars of its own, and the bars are back when the page is left.
-    /// With VoiceOver or Switch Control on they never go: what is in them has to stay where it is.
+    /// A screen pushed on top has bars of its own, and the tab bar is back when the page is left.
+    /// With VoiceOver or Switch Control on it never goes: what is in it has to stay where it is.
     ///
-    /// - Parameters:
-    ///   - isHidden: When the bars are away, for a page that puts away something of its own with them.
-    ///   - isPaused: Something else has the page for now and the bars stay as they are, such as a
-    ///     card being dragged to a new place, which scrolls the page near the screen's edges.
-    func dmHidesBarsOnScroll(_ isHidden: Binding<Bool>, isPaused: Bool = false) -> some View {
-        modifier(HidesBarsOnScroll(isHidden: isHidden, isPaused: isPaused, isTitledPage: false))
-    }
-
-    /// For a tab whose page carries its own title (`DMPageTitle`): it has no navigation bar at all,
-    /// so the title scrolls away with the page rather than shrinking into a bar, and the tab bar
-    /// comes and goes as with `dmHidesBarsOnScroll`. Apply to the tab's own scroll view. From
-    /// iOS 26, like the title; before that the tab keeps its navigation bar and its large title.
-    func dmTitledPage() -> some View {
-        modifier(TitledPage())
+    /// - Parameter isPaused: Something else has the page for now and the tab bar stays as it is,
+    ///   such as a card being dragged to a new place, which scrolls the page near the screen's edges.
+    func dmTitledPage(isPaused: Bool = false) -> some View {
+        modifier(TitledPage(isPaused: isPaused))
     }
 }
 
-/// For a page that has no use for the bars' state itself.
 private struct TitledPage: ViewModifier {
-    @State private var isHidden = false
-
-    func body(content: Content) -> some View {
-        content.modifier(HidesBarsOnScroll(isHidden: $isHidden, isPaused: false, isTitledPage: true))
-    }
-}
-
-private struct HidesBarsOnScroll: ViewModifier {
-    @Binding var isHidden: Bool
     let isPaused: Bool
-    /// The page has no navigation bar, only the tab bar comes and goes.
-    let isTitledPage: Bool
 
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
     @Environment(\.accessibilitySwitchControlEnabled) private var switchControl
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Changes with every scroll event, so it is kept where a change redraws nothing.
     @State private var tracker = Tracker()
+    @State private var isHidden = false
 
     /// Not observed: only the decision it comes to is.
     private final class Tracker {
@@ -73,22 +54,21 @@ private struct HidesBarsOnScroll: ViewModifier {
                     }
                     apply(animated: true)
                 }
-                .toolbarVisibility(isTitledPage || isHidden ? .hidden : .automatic, for: .navigationBar)
+                .toolbarVisibility(.hidden, for: .navigationBar)
                 .toolbarVisibility(isHidden ? .hidden : .automatic, for: .tabBar)
-                // Left to itself, the edge effect keeps the navigation bar's height once the bar is
-                // gone: a frosted band with nothing in it. The soft one lets the page run up under
-                // the status bar, with a light fade under the clock.
-                .scrollEdgeEffectStyle(isTitledPage || isHidden ? .soft : nil, for: .top)
+                // The page runs up under the status bar, with a light fade under the clock.
+                .scrollEdgeEffectStyle(.soft, for: .top)
                 .onChange(of: keepsBars) { _, keeps in
                     if keeps { show(animated: true) }
                 }
-                // A tab left for another, or a screen pushed on top: back on it, the bars are there.
+                // A tab left for another, or a screen pushed on top: back on it, the tab bar is there.
                 .onDisappear { show(animated: false) }
         } else {
             content
         }
     }
 
+    /// The tab bar stays where it is.
     private var keepsBars: Bool { voiceOver || switchControl }
 
     private func show(animated: Bool) {

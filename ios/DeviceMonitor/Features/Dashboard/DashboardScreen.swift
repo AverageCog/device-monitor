@@ -2,15 +2,16 @@ import DMCore
 import SwiftUI
 
 /// The Devices tab: the dashboard's main page (public/index.html). Its header (logo, product name,
-/// "3 of 4 devices online", "+") is the navigation bar; below it the grid of cards for the devices
-/// that are online. The offline ones are a list behind the summary.
+/// "3 of 4 devices online", "+") comes first, then the grid of cards for the devices that are
+/// online. The offline ones are a list behind the summary.
 ///
-/// In a window the size of an iPad's the logo, name and summary are a row of their own, pinned
-/// above the cards like the dashboard's sticky header: there the tab bar floats where a bar's
-/// title would go, and the summary is the only way to the offline list.
+/// From iOS 26 the header is the first line of the page and scrolls away with the cards; the tab
+/// has no navigation bar, like the other tabs (`dmTitledPage()`). Before that it is the navigation
+/// bar, except in a window the size of an iPad's, where the logo, name and summary are a row of
+/// their own pinned above the cards like the dashboard's sticky header: there the tab bar floats
+/// where a bar's title would go, and the summary is the only way to the offline list.
 struct DashboardScreen: View {
     @Environment(HubStore.self) private var store
-    @Environment(AppRouter.self) private var router
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
@@ -18,14 +19,15 @@ struct DashboardScreen: View {
     /// The rename and remove questions of the cards' menus. The offline list has its own.
     @State private var actions = DashboardDeviceActionModel()
 
-    /// Where the logo, name and summary go. A row of their own takes height from the cards for
-    /// good, so a phone on its side keeps them in the bar: its width may be regular too, but its
-    /// tab bar is at the bottom and the bar is free.
+    /// Where the logo, name and summary go. Before iOS 26 a row of their own takes height from the
+    /// cards for good, so a phone on its side keeps them in the bar: its width may be regular too,
+    /// but its tab bar is at the bottom and the bar is free.
     static func headerPlacement(horizontal: UserInterfaceSizeClass?, vertical: UserInterfaceSizeClass?) -> DashboardTitleBar.Placement {
+        if #available(iOS 26, *) { return .page }
         #if DEBUG
-        if let forced = DashboardDebugOptions.current.header { return forced == "page" ? .page : .navigationBar }
+        if let forced = DashboardDebugOptions.current.header { return forced == "pinned" ? .pinned : .navigationBar }
         #endif
-        return horizontal == .regular && vertical == .regular ? .page : .navigationBar
+        return horizontal == .regular && vertical == .regular ? .pinned : .navigationBar
     }
 
     var body: some View {
@@ -41,19 +43,11 @@ struct DashboardScreen: View {
                         DashboardTitleBar(showsOfflineList: $showsOfflineList, placement: .navigationBar)
                     }
                 }
+                // Before iOS 26: from iOS 26 the page has no navigation bar, and "+" ends its header.
                 ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        router.showAddDevice()
-                    } label: {
-                        Image(systemName: "plus")
-                            .fontWeight(.semibold)
-                            .foregroundStyle(Theme.onAccent)
-                    }
-                    // The dashboard's one accent-filled button (`.btn.primary`).
-                    .buttonStyle(.borderedProminent)
-                    .tint(Theme.accent)
-                    .accessibilityLabel(DashboardStrings.addDevice)
-                    .accessibilityIdentifier(DashboardID.addButton)
+                    DashboardAddButton()
+                        .buttonStyle(.borderedProminent)
+                        .tint(Theme.accent)
                 }
             }
             .dashboardDeviceActions(actions)
@@ -69,17 +63,21 @@ struct DashboardScreen: View {
 /// name goes, as in a narrow browser window.
 struct DashboardTitleBar: View {
     nonisolated enum Placement: Sendable {
-        /// In the navigation bar; the offline list is a sheet.
-        case navigationBar
-        /// In a row pinned above the page (`DashboardPinnedHeader`), in a window that is regular
-        /// both ways; the offline list is a popover.
+        /// The first line of the page, which scrolls away with the cards (`DashboardPageHeader`),
+        /// from iOS 26; the offline list is a popover, a sheet in a compact width.
         case page
+        /// In the navigation bar, before iOS 26; the offline list is a sheet.
+        case navigationBar
+        /// In a row pinned above the page (`DashboardPinnedHeader`), before iOS 26, in a window
+        /// that is regular both ways; the offline list is a popover.
+        case pinned
     }
 
     @Binding var showsOfflineList: Bool
     let placement: Placement
 
     @Environment(HubStore.self) private var store
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     /// The height of the summary's plate, which is the tallest thing in the row.
     static let summaryHeight: CGFloat = 28
@@ -95,13 +93,21 @@ struct DashboardTitleBar: View {
             row(summary, text: summary.compactText, showsName: false)
         }
         .popover(isPresented: $showsOfflineList) {
-            // A sheet needs a way out of its own.
-            DashboardOfflineList(showsDone: placement == .navigationBar)
+            DashboardOfflineList(showsDone: isListASheet)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        // A bar does not grow with the text, and the pinned row only so far: what it takes, the
+        // A bar does not grow with the text, and a row only so far: what the pinned one takes, the
         // cards lose. Past this size the system's large-content viewer takes over.
         .dynamicTypeSize(...(placement == .navigationBar ? DynamicTypeSize.xLarge : .accessibility1))
+    }
+
+    /// A sheet needs a way out of its own; a popover is left with a tap beside it.
+    private var isListASheet: Bool {
+        switch placement {
+        case .navigationBar: true
+        case .page: horizontalSizeClass == .compact
+        case .pinned: false
+        }
     }
 
     private func row(_ summary: DashboardSummaryModel, text: String, showsName: Bool) -> some View {
@@ -131,15 +137,48 @@ struct DashboardTitleBar: View {
     }
 }
 
-/// The header as a row of its own that stays put while the cards scroll away under it
-/// (`header { position: sticky; top: 0 }` in public/index.html).
+/// The header as the first line of the page, from iOS 26: the logo, name and summary, and "+" at
+/// the end of the line. It scrolls away with the cards, as the other tabs' titles do (`DMPageTitle`).
+struct DashboardPageHeader: View {
+    @Binding var showsOfflineList: Bool
+
+    var body: some View {
+        HStack(spacing: Theme.Spacing.m) {
+            DashboardTitleBar(showsOfflineList: $showsOfflineList, placement: .page)
+                // As tall before the first device as with a summary, so the cards never shift for it.
+                .frame(minHeight: DashboardTitleBar.summaryHeight)
+            DashboardAddButton()
+                .buttonStyle(.dmIcon(.primary))
+        }
+    }
+}
+
+/// "Add a device": the dashboard's one accent-filled button (`.btn.primary`).
+private struct DashboardAddButton: View {
+    @Environment(AppRouter.self) private var router
+
+    var body: some View {
+        Button {
+            router.showAddDevice()
+        } label: {
+            Image(systemName: "plus")
+                .fontWeight(.semibold)
+                .foregroundStyle(Theme.onAccent)
+        }
+        .accessibilityLabel(DashboardStrings.addDevice)
+        .accessibilityIdentifier(DashboardID.addButton)
+    }
+}
+
+/// Before iOS 26, the header as a row of its own that stays put while the cards scroll away under
+/// it (`header { position: sticky; top: 0 }` in public/index.html).
 struct DashboardPinnedHeader: View {
     @Binding var showsOfflineList: Bool
     /// The page's side padding: the row lines up with the cards.
     let padding: CGFloat
 
     var body: some View {
-        DashboardTitleBar(showsOfflineList: $showsOfflineList, placement: .page)
+        DashboardTitleBar(showsOfflineList: $showsOfflineList, placement: .pinned)
             // As tall before the first device as with a summary, so the cards never shift for it.
             .frame(minHeight: DashboardTitleBar.summaryHeight)
             .padding(.horizontal, padding)

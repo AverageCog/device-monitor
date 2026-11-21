@@ -33,7 +33,9 @@ final class SmokeUITests: XCTestCase {
             let tab = app.tabBars.buttons[title]
             XCTAssertTrue(tab.exists, "Missing tab: \(title)")
             tab.tap()
-            XCTAssertTrue(app.showsTitle(title), "\(title) tab shows its title")
+            XCTAssertTrue(app.element(withIdentifier: "screen-\(title.lowercased())").waitForExistence(timeout: 5), "\(title) tab shows its page")
+            // The Devices tab's header names the product instead.
+            if title != "Devices" { XCTAssertTrue(app.showsTitle(title), "\(title) tab shows its title") }
         }
     }
 

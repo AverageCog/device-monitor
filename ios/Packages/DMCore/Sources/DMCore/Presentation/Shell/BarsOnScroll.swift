@@ -1,9 +1,9 @@
 import Foundation
 
-/// When a tab's top bar and the tab bar get out of the way of its page: they go while the page is
-/// scrolled down, and come back as soon as it is scrolled up a little, or when it is back at its
-/// top. Like Safari's bars they follow the direction of the scroll, not the position, so a page
-/// left halfway down keeps them away until it is moved up again.
+/// When a tab's bars (in the app, its tab bar) get out of the way of its page: they go while the
+/// page is scrolled down, and come back as soon as it is scrolled up a little, or when it is back
+/// at its top. Like Safari's bars they follow the direction of the scroll, not the position, so a
+/// page left halfway down keeps them away until it is moved up again.
 ///
 /// It is fed every change of the scroll view's geometry. Only a scroll the user makes (a drag, or
 /// the fling after it) puts the bars away; a scroll the app makes, to an anchor or to the top,
@@ -54,9 +54,9 @@ public struct BarsOnScroll: Sendable, Equatable {
     public static let hideDistance = 24.0
     /// Scrolled back up this far, they come back.
     public static let showDistance = 16.0
-    /// They only go once the page is this far down: past a large title collapsing into the bar,
-    /// and far enough that the page's top rising by the bars' height on their going (if the
-    /// offset stays put) cannot leave it at its top.
+    /// They only go once the page is this far down: past the page's title, and far enough that a
+    /// bar at the top going with them, its height taken from the page's top (if the offset stays
+    /// put), cannot leave the page at its top.
     public static let hideStart = 120.0
 
     /// Whether the bars are away.

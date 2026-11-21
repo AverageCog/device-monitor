@@ -26,9 +26,11 @@ import Foundation
 ///                                              its width, with its tooltip
 ///     -dm-dashboard-card-width <points>        the narrowest a column of the grid may be (290),
 ///                                              to see several columns on a phone
-///     -dm-dashboard-header <page|bar>          where the logo, name and summary go, whatever the
-///                                              window's size: in a row pinned above the page (as
-///                                              on an iPad) or in the navigation bar
+///     -dm-dashboard-header <pinned|bar>        before iOS 26, where the logo, name and summary
+///                                              go, whatever the window's size: in a row pinned
+///                                              above the page (as on an iPad) or in the
+///                                              navigation bar. From iOS 26 they are the first
+///                                              line of the page, always
 ///     -dm-dashboard-state <loading|empty|all-offline|offline-and-back>
 ///                                              loading: draw the state before the first snapshot;
 ///                                              empty: remove every device (demo hub only);

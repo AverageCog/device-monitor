@@ -427,29 +427,38 @@ final class DashboardUITests: XCTestCase {
         XCTAssertTrue(wait(upTo: 5) { app.element(withIdentifier: DashboardID.grip("spark")).value as? String == "1 of 5" })
     }
 
-    // MARK: The bars
+    // MARK: The header and the tab bar
 
-    /// Scrolled down, the page has the screen to itself; scrolled back up a little, the bars are back.
+    /// The header is the first line of the page and scrolls away with the cards; it is back only at
+    /// the top. The tab bar goes while the page is scrolled down and is back when it is scrolled up
+    /// a little.
     @MainActor
-    func testScrollingDownPutsTheBarsAwayAndScrollingUpBringsThemBack() {
+    func testTheHeaderScrollsAwayAndTheTabBarMakesRoom() {
         let app = launchDemo()
         let page = app.element(withIdentifier: DashboardID.screen)
         let tabBar = app.tabBars.firstMatch
         let add = app.buttons[ID.addDeviceButton]
+        let summary = app.element(withIdentifier: DashboardID.summary)
         XCTAssertTrue(tabBar.waitForExistence(timeout: 10))
-        XCTAssertTrue(add.isHittable, "At the top the bars are there")
+        XCTAssertTrue(add.isHittable && summary.isHittable, "At the top the header is there")
+        XCTAssertFalse(app.navigationBars.firstMatch.exists, "There is no navigation bar above it")
 
         // In the page's margin, where no card takes the touch, and slowly, so that it does not fling.
         let low = page.coordinate(withNormalizedOffset: CGVector(dx: 1, dy: 0.7)).withOffset(CGVector(dx: -6, dy: 0))
         low.press(forDuration: 0.05, thenDragTo: low.withOffset(CGVector(dx: 0, dy: -320)), withVelocity: .slow, thenHoldForDuration: 0.2)
+        XCTAssertFalse(add.isHittable || summary.isHittable, "The header has scrolled away with the cards")
         XCTAssertTrue(wait(upTo: 3) { !(tabBar.exists && tabBar.isHittable) }, "Scrolled down, the tab bar goes")
-        XCTAssertFalse(add.exists && add.isHittable, "…and so does the top bar with its + button")
-        attachScreenshot(of: app, named: "dashboard-bars-away")
+        attachScreenshot(of: app, named: "dashboard-scrolled")
 
         let high = page.coordinate(withNormalizedOffset: CGVector(dx: 1, dy: 0.4)).withOffset(CGVector(dx: -6, dy: 0))
         high.press(forDuration: 0.05, thenDragTo: high.withOffset(CGVector(dx: 0, dy: 80)), withVelocity: .slow, thenHoldForDuration: 0.2)
         XCTAssertTrue(wait(upTo: 3) { tabBar.exists && tabBar.isHittable }, "Scrolled back up a little, the tab bar is back")
-        XCTAssertTrue(add.isHittable, "…and the top bar")
+        XCTAssertFalse(add.isHittable, "The header is still above the screen")
+
+        for _ in 0..<4 where !add.isHittable { page.swipeDown() }
+        XCTAssertTrue(wait(upTo: 3) { add.isHittable && summary.isHittable }, "Back at the top, so is the header")
+        summary.tap()
+        XCTAssertTrue(app.element(withIdentifier: DashboardID.offlineList).waitForExistence(timeout: 5), "Its summary opens the offline list")
     }
 
     // MARK: Offline devices
@@ -517,29 +526,6 @@ final class DashboardUITests: XCTestCase {
         alert.buttons["Rename"].tap()
 
         XCTAssertTrue(wait(upTo: 10) { app.deviceRow(Self.offline).label == "Den PC" }, "The row shows the new name: \(app.deviceRow(Self.offline).label)")
-    }
-
-    /// In a window the size of an iPad's the logo, name and summary are a row of their own above
-    /// the cards (`-dm-dashboard-header page` gives a phone that row). It stays where it is while
-    /// the cards scroll: the summary is the only way to the offline list.
-    @MainActor
-    func testThePinnedHeaderStaysWhileTheCardsScroll() {
-        let app = launchDemo(["-dm-dashboard-header", "page"])
-
-        let summary = app.element(withIdentifier: DashboardID.summary)
-        XCTAssertTrue(summary.waitForExistence(timeout: 10))
-        XCTAssertEqual(summary.label, "5 of 6 devices online")
-        let top = summary.frame.minY
-
-        // To the end of the last card, several screens down.
-        reveal(app.element(withIdentifier: DashboardID.detailsToggle("studio")), in: app)
-        XCTAssertTrue(summary.exists && summary.isHittable, "The summary is still on screen")
-        XCTAssertEqual(summary.frame.minY, top, accuracy: 1, "The header has not moved with the page")
-        attachScreenshot(of: app, named: "dashboard-pinned-header")
-
-        summary.tap()
-        XCTAssertTrue(app.element(withIdentifier: DashboardID.offlineList).waitForExistence(timeout: 5), "From there it still opens the offline list")
-        XCTAssertTrue(app.deviceRow(Self.offline).waitForExistence(timeout: 5))
     }
 
     /// At the largest text size a row of the offline list puts Wake and the menu under the name,
