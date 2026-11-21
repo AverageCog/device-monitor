@@ -1211,13 +1211,17 @@ import Testing
             }
         }
         h.store.start()
+        // Also when the test fails: a refresh waiting on the start-up request ends only with the store.
+        defer { h.store.stop() }
         try await h.connection(0).send(.snapshot([]))
         try await eventually("the store is live") { h.store.connection == .live && early.arrivals == 1 }
         // The store asked as it started, before the stream opened: an alert logged in between is
-        // in neither that answer nor the stream.
-        try await h.store.refreshAlerts()
+        // in neither that answer nor the stream. Awaited only once it has asked: a refresh that
+        // waited for that held-back answer instead would wait past the time limit.
+        let refresh = Task { try await h.store.refreshAlerts() }
+        try await eventually("the refresh asks for itself") { asked.count == 2 }
+        try await refresh.value
         #expect(asked.count == 2 && h.store.alerts == AlertsState(missed))
-        h.store.stop()
     }
 
     // MARK: Stopping, suspending, going away
