@@ -273,7 +273,10 @@ public final class HubStore {
         let before = state
         let effects = state.apply(event, now: now) { preferences.cardRange(for: $0) }
         switch event {
-        case .snapshot: hasSnapshot = true
+        case .snapshot:
+            hasSnapshot = true
+            // Every chart starts over from the snapshot: an answer still on its way is older.
+            seriesRequests = seriesRequests.mapValues { $0 + 1 }
         case .status: lastStatusAt = now
         case .energySettings:
             energyRevision += 1

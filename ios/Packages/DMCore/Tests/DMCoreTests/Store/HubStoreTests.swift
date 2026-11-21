@@ -456,6 +456,23 @@ import Testing
         h.store.stop()
     }
 
+    @Test func anAnswerFromBeforeASnapshotIsDropped() async throws {
+        let h = StoreHarness()
+        let connection = try await h.goLive()
+        let answer = Gate<HistoryResponse>()
+        h.hub.on { $0.history = { _, _ in try await answer.wait() } }
+        h.store.setRange(.tenMinutes, for: "a")                     // asks the hub for the raw samples
+        try await eventually("the series was asked for") { answer.arrivals == 1 }
+        // The stream starts over meanwhile (the hub restarted, say) and brings newer samples itself.
+        let fresh = [F.point(F.now - 2000), F.point(F.now)]
+        connection.send(.snapshot([F.device("a", order: 0, history: fresh), F.device("b", order: 1)]))
+        try await eventually("the snapshot is applied") { h.store.series(for: "a").points == fresh }
+        answer.open(Self.history([F.point(F.now - 60_000)], resolution: 2000))
+        try await h.idle()
+        #expect(h.store.series(for: "a").points == fresh && h.hub.calls("history").count == 1)
+        h.store.stop()
+    }
+
     @Test func anAnswerForARemovedDeviceIsDropped() async throws {
         let h = StoreHarness()
         let connection = try await h.goLive()
