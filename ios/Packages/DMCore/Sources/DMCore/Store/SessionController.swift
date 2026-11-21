@@ -68,7 +68,8 @@ public struct HubLink: Sendable {
 /// ```
 ///
 /// `store` is non-nil in every phase but `.onboarding` (and before `launch()`), and is the same
-/// object from pairing to disconnecting, through any outage.
+/// object from pairing to disconnecting, through any outage. Only "Try again" after a revocation
+/// replaces it, with an empty one: what the old one held is from before the hub refused this phone.
 @MainActor
 @Observable
 public final class SessionController {
@@ -344,10 +345,12 @@ public final class SessionController {
         let link = connecting(enrollment, credentials)
         self.link = link
         hub = PairedHub(enrollment)
-        run(HubStore(api: link.api, preferences: preferences, clock: clock, alertNotifier: alertNotifier))
+        run(on: link.api)
     }
 
-    private func run(_ store: HubStore) {
+    /// Starts a store that knows nothing yet on `api`, and follows it.
+    private func run(on api: any HubAPI) {
+        let store = HubStore(api: api, preferences: preferences, clock: clock, alertNotifier: alertNotifier)
         self.store = store
         store.start()
         beginConnecting()
@@ -373,13 +376,19 @@ public final class SessionController {
     }
 
     /// "Try again": connects now instead of at the next automatic attempt. After a revocation it
-    /// asks the hub once more, in case the hub was put right; the phase is `.connecting` until
-    /// the hub has answered.
+    /// asks the hub once more, in case the hub was put right: the phase is `.connecting` until
+    /// the hub has answered, and `.unreachable` if it cannot be reached. That attempt starts
+    /// over with a new `store`.
     public func retryNow() {
         guard let store, !isDisconnecting else { return }
         if store.connection == .unauthorized {
-            store.start()
-            beginConnecting()
+            // What that store holds is from before the hub refused this phone. Restarted, it
+            // would count as the last known state, and a hub that cannot be reached would bring
+            // the tabs back with it.
+            guard let api = link?.api ?? demoHub else { return }
+            heldPhase = nil
+            overdue = nil
+            run(on: api)
             return
         }
         store.retryNow()
@@ -434,7 +443,7 @@ public final class SessionController {
         pairingError = nil
         let hub = demoFactory(clock)
         demoHub = hub
-        run(HubStore(api: hub, preferences: preferences, clock: clock, alertNotifier: alertNotifier))
+        run(on: hub)
     }
 
     /// Leaves demo mode for onboarding.

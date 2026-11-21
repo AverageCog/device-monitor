@@ -654,14 +654,62 @@ struct SessionControllerTests {
         try await eventually("revoked") { h.session.phase == .revoked }
 
         h.session.retryNow()
-        #expect(h.session.phase == .connecting && store.isRunning)
+        // With a store of its own: nothing from before the refusal is carried over.
+        let second = try h.store
+        #expect(h.session.phase == .connecting && second !== store && second.isRunning && second.devices.isEmpty)
+        #expect(!store.isRunning)
         try await h.connection(1).fail(SessionFixtures.refusal)
         try await eventually("revoked again") { h.session.phase == .revoked }
+        #expect(h.session.store === second)
 
         h.session.retryNow()
-        try await h.connection(2).send(.snapshot(SessionFixtures.devices))
+        try await h.connection(2).send(.snapshot([StoreFixtures.device("z")]))
         try await eventually("live") { h.session.phase == .live }
-        #expect(h.session.store === store && h.credentials.calls == ["load"])
+        #expect(try h.store.devices.map(\.id) == ["z"] && h.session.hub == PairedHub(enrollment))
+        // The same enrollment over the same connection to the hub.
+        #expect(h.credentials.calls == ["load"] && h.log.opened == [enrollment.id] && h.log.closed == 0)
+    }
+
+    @Test func tryAgainAfterARevocationShowsNothingFromBeforeWhileTheHubIsAway() async throws {
+        let h = SessionHarness(stored: enrollment)
+        let first = try await h.goLive()
+        let refused = WeakReference(h.session.store)
+        first.fail(SessionFixtures.refusal)
+        try await eventually("revoked") { h.session.phase == .revoked }
+
+        h.session.retryNow()
+        #expect(h.session.phase == .connecting)
+        try await h.connection(1).fail(SessionFixtures.noConnection)
+        try await eventually("the attempt has failed") { h.session.store?.failedAttempts == 1 }
+        // Not the tabs, with what the hub said before it refused this phone.
+        #expect(h.session.phase == .unreachable(message: SessionFixtures.unreachableMessage))
+        #expect(h.session.unreachableReason == "Could not connect to the hub.")
+        #expect(try h.store.devices.isEmpty && !h.store.hasSnapshot)
+        try await eventually("what the refused store held is gone") { refused.object == nil }
+
+        // The store keeps asking, and the hub's answer decides.
+        try await h.sleepers(3)
+        h.clock.advance(by: 3_000)
+        try await h.connection(2).fail(SessionFixtures.refusal)
+        try await eventually("revoked again") { h.session.phase == .revoked }
+        #expect(h.credentials.enrollment == enrollment && h.credentials.calls == ["load"])
+    }
+
+    @Test func returningToTheAppWhileARefusingHubIsAskedAgainShowsNothingFromBeforeEither() async throws {
+        let h = SessionHarness(stored: enrollment)
+        let first = try await h.goLive()
+        first.fail(SessionFixtures.refusal)
+        try await eventually("revoked") { h.session.phase == .revoked }
+
+        h.session.retryNow()
+        let second = try await h.connection(1)
+        h.session.enterBackground()
+        #expect(h.session.phase == .connecting)
+        try await eventually("the stream is closed") { second.isClosed }
+        h.session.enterForeground()
+        #expect(h.session.phase == .connecting)
+        try await h.connection(2).fail(SessionFixtures.noConnection)
+        try await eventually("unreachable") { h.session.phase == .unreachable(message: SessionFixtures.unreachableMessage) }
     }
 
     // MARK: Disconnect
