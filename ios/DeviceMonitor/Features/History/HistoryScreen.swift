@@ -90,12 +90,22 @@ private struct HistoryDeviceTracker: View {
             .accessibilityHidden(true)
     }
 
-    /// `hv.id && devices.has(hv.id) ? hv.id : first ? first.id : ''`
     private var selected: String? {
         #if DEBUG
         if controller.debug.scenario == .noDevices { return nil }
         #endif
-        return HistoryDeviceChipModel.defaultDevice(among: store.devices, last: router.historyDeviceID)
+        return router.historyDevice(among: store.devices)
+    }
+}
+
+extension AppRouter {
+    /// The device History shows: the one it was opened for while the hub knows it, else the first
+    /// in the dashboard's order (`hv.id && devices.has(hv.id) ? hv.id : first ? first.id : ''`).
+    ///
+    /// The heading and the chips read this directly, so they name the device in the same frame in
+    /// which the router changes; the page's state follows a moment later and loads its history.
+    func historyDevice(among devices: [Device]) -> String? {
+        HistoryDeviceChipModel.defaultDevice(among: devices, last: historyDeviceID)
     }
 }
 

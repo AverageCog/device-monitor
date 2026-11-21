@@ -41,7 +41,8 @@ struct HistoryPage: View {
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 0) {
                         if controller.deviceID == nil {
-                            HistoryNoDevices()
+                            // Empty for the one frame before the device list has been looked at.
+                            if controller.hasChosenDevice { HistoryNoDevices() }
                         } else {
                             HistoryControls(controller: controller)
                                 .padding(.bottom, 12)
@@ -119,7 +120,8 @@ private struct HistoryDeviceBar: View {
     @Environment(AppRouter.self) private var router
 
     var body: some View {
-        let chips = HistoryDeviceChipModel.chips(for: store.devices, selected: controller.deviceID)
+        let selected = router.historyDevice(among: store.devices)
+        let chips = HistoryDeviceChipModel.chips(for: store.devices, selected: selected)
         ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
@@ -134,7 +136,7 @@ private struct HistoryDeviceBar: View {
                 }
             }
             .scrollClipDisabled(bleedsToEdges)
-            .onChange(of: controller.deviceID, initial: true) { _, id in
+            .onChange(of: selected, initial: true) { _, id in
                 if let id { proxy.scrollTo(id, anchor: .center) }
             }
         }
@@ -210,11 +212,12 @@ private struct HistoryHeader: View {
     let controller: HistoryController
 
     @Environment(HubStore.self) private var store
+    @Environment(AppRouter.self) private var router
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        let header = HistoryHeaderModel(devices: store.devices, selected: controller.deviceID)
+        let header = HistoryHeaderModel(devices: store.devices, selected: router.historyDevice(among: store.devices))
         let showsReset = controller.window.showsReset
         let showsProgress = controller.isReplacingCharts
         HStack(alignment: .center, spacing: Theme.Spacing.m) {

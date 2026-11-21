@@ -50,6 +50,9 @@ final class HistoryController {
     // MARK: What the page is asked to show
 
     private(set) var deviceID: String?
+    /// False until the device list has been looked at once: no device then means "not yet", not
+    /// "the hub has none".
+    private(set) var hasChosenDevice = false
     private(set) var window: HistoryWindow
     private(set) var unit: TemperatureUnit
 
@@ -143,6 +146,7 @@ final class HistoryController {
 
     /// `openHistory(id)`: another device starts with the whole range again.
     func select(device id: String?) {
+        if !hasChosenDevice { hasChosenDevice = true }
         guard id != deviceID else { return }
         deviceID = id
         cancelInteraction()
