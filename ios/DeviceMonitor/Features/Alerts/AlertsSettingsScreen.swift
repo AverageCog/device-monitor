@@ -430,18 +430,28 @@ private struct AlertsTestSection: View {
 private struct AlertsTestLine: View {
     let line: AlertsTestReport.Line
 
+    @Environment(\.dynamicTypeSize) private var typeSize
+
     var body: some View {
         AlertsRow {
             HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.s) {
                 Image(systemName: symbol)
                     .foregroundStyle(tint)
                     .accessibilityHidden(true)
-                Text(line.channel)
-                    .foregroundStyle(Theme.textPrimary)
-                Spacer(minLength: Theme.Spacing.s)
-                Text(line.text)
-                    .foregroundStyle(tint)
-                    .multilineTextAlignment(.trailing)
+                if typeSize.isAccessibilitySize {
+                    // Side by side, the channel and its result break mid-word at these sizes
+                    // ("Webhoo" / "k"): the result goes under the channel, as a log entry's time does.
+                    VStack(alignment: .leading, spacing: 2) {
+                        channel
+                        result
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    channel
+                    Spacer(minLength: Theme.Spacing.s)
+                    result
+                        .multilineTextAlignment(.trailing)
+                }
             }
             .dmFont(.callout)
         }
@@ -449,6 +459,16 @@ private struct AlertsTestLine: View {
         .accessibilityLabel(line.channel)
         .accessibilityValue(line.text)
         .accessibilityIdentifier("alerts-test-result-\(line.id)")
+    }
+
+    private var channel: some View {
+        Text(line.channel)
+            .foregroundStyle(Theme.textPrimary)
+    }
+
+    private var result: some View {
+        Text(line.text)
+            .foregroundStyle(tint)
     }
 
     private var symbol: String {
