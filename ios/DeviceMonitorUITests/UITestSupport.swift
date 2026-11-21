@@ -106,6 +106,21 @@ extension XCUIApplication {
         return isClear()
     }
 
+    /// Whether the screen titled `title` is showing, within `timeout`. History, Advanced, Alerts and
+    /// Settings carry their title at the top of the page and have no navigation bar (`DMPageTitle`
+    /// in the app, from iOS 26); every other screen has it in its navigation bar.
+    @MainActor
+    func showsTitle(_ title: String, timeout: TimeInterval = 5) -> Bool {
+        let bar = navigationBars[title]
+        let page = descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier == %@ AND label == %@", "page-title", title)).firstMatch
+        let deadline = Date().addingTimeInterval(timeout)
+        while !(bar.exists || page.exists), Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        }
+        return bar.exists || page.exists
+    }
+
     /// The tab bar's button for `title`. A tab scrolled down puts its bars away (`BarsOnScroll` in
     /// the app); a swipe down the screen scrolls the page back up, which brings them back.
     @MainActor

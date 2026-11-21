@@ -37,6 +37,11 @@ private struct AlertsListScreen: View {
             ScrollView {
                 // Lazy, and directly in the scroll view: the log can hold 150 entries.
                 LazyVStack(alignment: .leading, spacing: 0) {
+                    DMPageTitle("Alerts") {
+                        AlertsSettingsButton { model.isOpen = true }
+                            .labelStyle(.iconOnly)
+                            .buttonStyle(.dmIcon)
+                    }
                     AlertsDeviceBanner()
                     if alerts.isLoaded {
                         AlertsActiveSection(alerts: alerts, directory: directory, editRule: model.open(rule:)) { model.isOpen = true }
@@ -62,7 +67,7 @@ private struct AlertsListScreen: View {
                 // An alert that fires or clears moves the list; it does not jump.
                 .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: alerts.active.map(\.id) + [alerts.events.first?.id ?? ""])
             }
-            .dmHidesBarsOnScroll()
+            .dmTitledPage()
             .refreshable { _ = try? await store.refreshAlerts() }
             .accessibilityIdentifier("screen-alerts")
             .task {
@@ -73,17 +78,10 @@ private struct AlertsListScreen: View {
             }
         }
         .navigationTitle("Alerts")
+        // Before iOS 26: from iOS 26 the page has no navigation bar, and the button is in its title.
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button {
-                    model.isOpen = true
-                } label: {
-                    Label("Alert settings", systemImage: "slider.horizontal.3")
-                }
-                // Nothing to edit before the hub has said what its rules are. (Asked of the store,
-                // not the draft: this screen is not to be redrawn for every keystroke in the editor.)
-                .disabled(store.alerts.settings == nil)
-                .accessibilityIdentifier("alerts-settings-button")
+                AlertsSettingsButton { model.isOpen = true }
             }
         }
         .navigationDestination(isPresented: $model.isOpen) {
@@ -505,6 +503,23 @@ private struct AlertsEventRow: View {
         case .test: Theme.accent
         case .other: Theme.textMuted
         }
+    }
+}
+
+/// Leads to the rules and channels (`AlertsSettingsScreen`).
+private struct AlertsSettingsButton: View {
+    let open: () -> Void
+
+    @Environment(HubStore.self) private var store
+
+    var body: some View {
+        Button(action: open) {
+            Label("Alert settings", systemImage: "slider.horizontal.3")
+        }
+        // Nothing to edit before the hub has said what its rules are. (Asked of the store, not the
+        // draft: this screen is not to be redrawn for every keystroke in the editor.)
+        .disabled(store.alerts.settings == nil)
+        .accessibilityIdentifier("alerts-settings-button")
     }
 }
 

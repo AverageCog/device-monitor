@@ -147,7 +147,7 @@ final class DemoFlowUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-dm-demo", "-dm-tab", "advanced"]
         app.launch()
-        XCTAssertTrue(app.navigationBars["Advanced"].waitForExistence(timeout: 20))
+        XCTAssertTrue(app.showsTitle("Advanced", timeout: 20))
         waitForSession(of: app, "the demo is live") { $0.phase == "live" && $0.devices == 6 }
 
         directDemoHub(of: app, "Unreachable for 20 s")
@@ -163,7 +163,7 @@ final class DemoFlowUITests: XCTestCase {
 
         let back = try XCTUnwrap(waitForSession(of: app, "the hub is back", timeout: 25) { $0.phase == "live" && $0.connection == "live" })
         XCTAssertEqual(back.devices, 6)
-        XCTAssertTrue(app.navigationBars["Advanced"].waitForExistence(timeout: 5), "The user is on the tab they were on")
+        XCTAssertTrue(app.showsTitle("Advanced"), "The user is on the tab they were on")
         XCTAssertFalse(app.element(withIdentifier: ID.unreachable).exists)
     }
 

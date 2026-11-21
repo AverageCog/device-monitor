@@ -18,16 +18,9 @@ struct SettingsScreen: View {
         let overview = overview
         ScrollViewReader { proxy in
             ScrollView {
-                VStack(spacing: Theme.Spacing.xl) {
-                    SettingsDisplaySection()
-                    SettingsDeviceSection(overview: overview)
-                        .id(SettingsAnchor.device)
-                    SettingsHubSection(overview: overview)
-                        .id(SettingsAnchor.hub)
-                    SettingsAdvancedSection()
-                        .id(SettingsAnchor.advanced)
-                    SettingsAboutSection(overview: overview, showsLicense: $showsLicense)
-                        .id(SettingsAnchor.about)
+                VStack(alignment: .leading, spacing: 0) {
+                    DMPageTitle(SettingsOverview.Labels.title)
+                    sections(overview)
                 }
                 .frame(maxWidth: 560)
                 .padding(Theme.Layout.screenPadding(for: sizeClass))
@@ -35,7 +28,7 @@ struct SettingsScreen: View {
                 .frame(maxWidth: .infinity)
             }
             .scrollDismissesKeyboard(.interactively)
-            .dmHidesBarsOnScroll()
+            .dmTitledPage()
             .accessibilityIdentifier("screen-settings")
             .task {
                 // DEBUG launch argument only: open at a section further down.
@@ -52,6 +45,20 @@ struct SettingsScreen: View {
             if store.info == nil { _ = try? await store.refreshInfo() }
         }
         .onChange(of: store.connection) { pin = session.hubPin }
+    }
+
+    private func sections(_ overview: SettingsOverview) -> some View {
+        VStack(spacing: Theme.Spacing.xl) {
+            SettingsDisplaySection()
+            SettingsDeviceSection(overview: overview)
+                .id(SettingsAnchor.device)
+            SettingsHubSection(overview: overview)
+                .id(SettingsAnchor.hub)
+            SettingsAdvancedSection()
+                .id(SettingsAnchor.advanced)
+            SettingsAboutSection(overview: overview, showsLicense: $showsLicense)
+                .id(SettingsAnchor.about)
+        }
     }
 
     private var overview: SettingsOverview {

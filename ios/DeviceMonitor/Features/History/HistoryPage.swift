@@ -34,12 +34,13 @@ struct HistoryPage: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(spacing: 0) {
-                    // The very top, above the padding: scrolling here leaves the large title as it is.
+                    // The very top, above the padding and the title.
                     Color.clear
                         .frame(height: 0)
                         .id(HistoryAnchor.top)
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 0) {
+                        DMPageTitle(AppTab.history.title)
                         if controller.deviceID == nil {
                             // Empty for the one frame before the device list has been looked at.
                             if controller.hasChosenDevice { HistoryNoDevices() }
@@ -63,7 +64,7 @@ struct HistoryPage: View {
                     .frame(maxWidth: .infinity)
                 }
             }
-            .dmHidesBarsOnScroll()
+            .dmTitledPage()
             .refreshable { await controller.refresh() }
             // window.scrollTo(0, 0) in openHistory
             .onChange(of: controller.deviceID) {

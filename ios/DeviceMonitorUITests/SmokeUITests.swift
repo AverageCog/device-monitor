@@ -33,7 +33,7 @@ final class SmokeUITests: XCTestCase {
             let tab = app.tabBars.buttons[title]
             XCTAssertTrue(tab.exists, "Missing tab: \(title)")
             tab.tap()
-            XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: 5), "\(title) tab shows its navigation title")
+            XCTAssertTrue(app.showsTitle(title), "\(title) tab shows its title")
         }
     }
 
@@ -50,7 +50,7 @@ final class SmokeUITests: XCTestCase {
         XCTAssertTrue(app.scrollUp(app.element(withIdentifier: "screen-devices"), until: open, swipes: 12), "The debug tools can be scrolled to")
         open.tap()
 
-        XCTAssertTrue(app.navigationBars["History"].waitForExistence(timeout: 5), "openHistory(deviceID:) switches to the History tab")
+        XCTAssertTrue(app.showsTitle("History"), "openHistory(deviceID:) switches to the History tab")
         let history = app.element(withIdentifier: "screen-history")
         XCTAssertTrue(history.waitForExistence(timeout: 5))
         XCTAssertTrue(history.label.contains("Gaming PC"), "History received the device id, got: \(history.label)")

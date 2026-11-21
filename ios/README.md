@@ -26,10 +26,13 @@ Five tabs:
   dashboard link to share with a browser, the electricity price and its editor (under Advanced
   settings), **Disconnect…**, version and license.
 
-On every tab the top bar and the tab bar get out of the way while the page is scrolled down, and
-come back as soon as it is scrolled up a little or reaches its top (iOS 26 and later; earlier
-versions keep them in place). A page that scrolls only a little keeps them, and so does everything
-while VoiceOver or Switch Control is on.
+On iOS 26 and later the pages make room for themselves as they scroll. History, Advanced, Alerts
+and Settings have no navigation bar: their title is the first line of the page and scrolls away
+with it (Alerts' settings button sits at the end of that line). On Devices the top bar goes while
+the page is scrolled down. On every tab the tab bar does the same, and both come back as soon as
+the page is scrolled up a little or reaches its top. A page that scrolls only a little keeps its
+bars, and so does every page while VoiceOver or Switch Control is on. Earlier iOS versions keep the
+navigation bars, with their large titles, and the tab bar in place.
 
 "Add a device" shares a single-use browser link (as text and as a QR code) and says how to add
 computers and other phones on the hub.

@@ -37,7 +37,7 @@ struct AdvancedScreen: View {
             ScrollView(options.width == nil ? .vertical : [.horizontal, .vertical]) {
                 page
             }
-            .dmHidesBarsOnScroll()
+            .dmTitledPage()
             .accessibilityIdentifier("screen-advanced")
             #if DEBUG
             .task { await showRequestedState(with: scroller) }
@@ -85,6 +85,7 @@ struct AdvancedScreen: View {
                 .frame(height: 0)
                 .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
                 .id(AdvancedSection.top)
+            DMPageTitle(AdvancedModel.title)
             if width > 0 {
                 AdvancedPage(controller: controller, width: width, options: options)
             }

@@ -75,7 +75,7 @@ final class HistoryUITests: XCTestCase {
         let app = launch()
         waitForHistory(of: "Gaming PC", in: app)
 
-        XCTAssertTrue(app.navigationBars["History"].exists)
+        XCTAssertTrue(app.showsTitle("History", timeout: 0))
         XCTAssertTrue(isSelected(app.element(withIdentifier: HistoryID.device("gaming"))), "The first device's chip is the selected one")
         XCTAssertTrue(isSelected(app.element(withIdentifier: HistoryID.range("6h"))), "Six hours is the range a fresh install starts with")
         for name in ["1h", "6h", "24h", "7d", "30d"] {

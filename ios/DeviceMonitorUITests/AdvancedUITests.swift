@@ -105,7 +105,7 @@ final class AdvancedUITests: XCTestCase {
     @MainActor
     func testTheDemoShowsElectricityAndUsageTotals() {
         let app = launch()
-        XCTAssertTrue(app.navigationBars["Advanced"].exists)
+        XCTAssertTrue(app.showsTitle("Advanced", timeout: 0))
         waitForTotals(in: app)
 
         for kind in Self.tiles {
@@ -301,7 +301,7 @@ final class AdvancedUITests: XCTestCase {
         XCTAssertFalse(wait(upTo: 2) { !tooltip.exists }, "A click on the bar under the pointer keeps it")
 
         // What a click chose stays when the pointer leaves the chart.
-        app.navigationBars.firstMatch.hover()
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.05, dy: 0.05)).hover()
         XCTAssertFalse(wait(upTo: 2) { !tooltip.exists }, "The bar a click chose stays when the pointer moves away")
     }
 

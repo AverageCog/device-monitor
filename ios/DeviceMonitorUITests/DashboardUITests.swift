@@ -159,7 +159,7 @@ final class DashboardUITests: XCTestCase {
 
         let history = app.element(withIdentifier: "screen-history")
         XCTAssertTrue(history.waitForExistence(timeout: 10), "Tapping the chart opens History")
-        XCTAssertTrue(app.navigationBars["History"].exists)
+        XCTAssertTrue(app.showsTitle("History", timeout: 0))
     }
 
     @MainActor

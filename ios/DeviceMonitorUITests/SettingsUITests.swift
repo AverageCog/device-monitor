@@ -102,7 +102,7 @@ final class SettingsUITests: XCTestCase {
     func testTheDemoSaysWhatItIsAndNamesItsHub() {
         let app = launch(["-dm-demo", "-dm-tab", "settings"])
         XCTAssertTrue(app.element(withIdentifier: SID.screen).waitForExistence(timeout: 20))
-        XCTAssertTrue(app.navigationBars["Settings"].exists)
+        XCTAssertTrue(app.showsTitle("Settings", timeout: 0))
 
         let leave = app.buttons[ID.disconnectButton]
         XCTAssertTrue(leave.waitForExistence(timeout: 5))
