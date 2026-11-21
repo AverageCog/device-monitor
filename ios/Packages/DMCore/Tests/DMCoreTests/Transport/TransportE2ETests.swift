@@ -158,12 +158,20 @@ final class TransportE2ETests: Sendable {
         let capture = PinnedSession(policy: .capture, testingTrustAnchors: [hub.anchor])
         let probed = try await capture.data(for: request, timeout: 10, maxResponseBytes: 65536)
         #expect(probed.peerPin == pinA && probed.response.statusCode == 200)
+
+        // A capture session has checked that key against nothing, so it will not carry a
+        // credential to it: the request is refused here and never reaches the server.
+        var mark = try hub.calls().total
+        var secret = request
+        secret.setValue("Bearer " + String(repeating: "s", count: 43), forHTTPHeaderField: "Authorization")
+        #expect(await hubError { _ = try await capture.data(for: secret, timeout: 10, maxResponseBytes: 65536) } == .invalidRequest)
+        let carried = await Self.read(capture.bytes(for: secret, idleTimeout: 10).events.compactMapToData(), until: { _ in false })
+        #expect(carried.failure == .invalidRequest)
+        #expect(try hub.calls(since: mark).calls.isEmpty)
         capture.invalidate()
 
         // A pinned session refuses the wrong key before the request, and so the bearer, is written.
-        let mark = try hub.calls().total
-        var secret = request
-        secret.setValue("Bearer " + String(repeating: "s", count: 43), forHTTPHeaderField: "Authorization")
+        mark = try hub.calls().total
         let wrong = PinnedSession(policy: .require(pin: pinB), testingTrustAnchors: [hub.anchor])
         #expect(await hubError { _ = try await wrong.data(for: secret, timeout: 10, maxResponseBytes: 65536) } == .pinMismatch(peerPin: pinA))
         let refused = await Self.read(wrong.bytes(for: secret, idleTimeout: 10).events.compactMapToData(), until: { _ in false })

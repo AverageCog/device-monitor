@@ -30,7 +30,9 @@ protocol PinnedTransport: Sendable {
 public final class PinnedSession: Sendable {
     public enum Policy: Sendable, Hashable {
         /// Accept any key that passes standard validation and report its pin with the response.
-        /// Only for the unauthenticated probe that starts pairing.
+        /// Only for the unauthenticated probe that starts pairing, and held to that: the key has
+        /// been checked against nothing, so such a session sends a bare GET and refuses anything
+        /// that could carry a credential (header fields, a body, a password in the address).
         case capture
         /// Refuse the handshake unless the leaf certificate's key has this pin.
         case require(pin: String)
@@ -92,9 +94,11 @@ public final class PinnedSession: Sendable {
 
     /// Performs one request. `timeout` bounds the whole exchange, not just the gaps between
     /// packets; the body is refused beyond `maxResponseBytes`. Any HTTP status is returned except
-    /// a redirect, which throws `HubError.redirectRefused`.
+    /// a redirect, which throws `HubError.redirectRefused`. A request this session will not send
+    /// (not HTTPS, or more than a bare GET under `.capture`) throws `HubError.invalidRequest`
+    /// before any network use.
     public func data(for request: URLRequest, timeout: TimeInterval, maxResponseBytes: Int) async throws -> Response {
-        guard let request = Self.prepared(request, idleTimeout: timeout) else { throw HubError.invalidRequest }
+        guard let request = Self.prepared(request, idleTimeout: timeout, policy: policy) else { throw HubError.invalidRequest }
         let canceller = Canceller()
         return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { continuation in
@@ -111,7 +115,7 @@ public final class PinnedSession: Sendable {
     func bytes(for request: URLRequest, idleTimeout: TimeInterval) -> ByteStream {
         let canceller = Canceller()
         let events = AsyncThrowingStream<StreamEvent, any Error>(bufferingPolicy: .unbounded) { continuation in
-            guard let request = Self.prepared(request, idleTimeout: idleTimeout) else {
+            guard let request = Self.prepared(request, idleTimeout: idleTimeout, policy: policy) else {
                 continuation.finish(throwing: HubError.invalidRequest)
                 return
             }
@@ -150,8 +154,17 @@ public final class PinnedSession: Sendable {
         return configuration
     }
 
-    private static func prepared(_ request: URLRequest, idleTimeout: TimeInterval) -> URLRequest? {
-        guard request.url?.scheme == "https" else { return nil }
+    /// The request as this session sends it, or nil for one it refuses.
+    static func prepared(_ request: URLRequest, idleTimeout: TimeInterval, policy: Policy) -> URLRequest? {
+        guard let url = request.url, url.scheme == "https" else { return nil }
+        if case .capture = policy {
+            // Whoever answers has only shown a certificate for the name, so nothing that could be
+            // a credential is sent: not a header field of any name, a body, or a password in the
+            // address. Enforced here rather than left to each caller to remember.
+            guard request.httpMethod == "GET", request.httpBody == nil, request.httpBodyStream == nil,
+                  request.allHTTPHeaderFields?.isEmpty ?? true,
+                  url.user(percentEncoded: false) == nil, url.password(percentEncoded: false) == nil else { return nil }
+        }
         var request = request
         request.timeoutInterval = idleTimeout
         request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
