@@ -140,9 +140,33 @@ public enum DashboardOrder {
         device.order.map(Double.init) ?? 1e9
     }
 
-    /// `(a || '').localeCompare(b || '')` in the given locale.
+    /// How the dashboard orders two names, `(a || '').localeCompare(b || '')`, as nearly as
+    /// Foundation's collation for `locale` follows a browser's.
+    ///
+    /// Left alone, Foundation calls names equal that differ only in width ("nas", "ｎａｓ"), kana
+    /// type ("サーバー", "さーばー") or a compatibility form ("2", "²"). A browser orders them, so
+    /// they are ordered here too; only one set to Japanese calls width and kana variants equal,
+    /// and there all of these stay equal. Two spellings of one text ("é" as one character or as
+    /// two) are equal everywhere.
+    ///
+    /// NameCollationTests holds this against `localeCompare` in Node (V8 and ICU, as in Chrome)
+    /// for some thirty locales. Where it is known to differ, each case pinned by `limits` in
+    /// collation.json:
+    /// - Thai: a browser ignores punctuation and spaces, this does not.
+    /// - Chinese: a browser puts a vowel with a tone mark before the plain one ("á", then "a").
+    /// - Japanese: a browser orders compatibility forms ("a", then "ⓐ"); here they are equal.
+    /// - Names that differ in case or kana size and also in width, kana type or a compatibility
+    ///   form ("ａb", "aB") can come out the other way round, because Foundation settles case
+    ///   first. Where upper case sorts first (Danish, Maltese) so can some that differ in width
+    ///   or kana type alone.
+    /// - Single letters in Faroese, Igbo and Turkmen, and "aå" against "ä" in Swedish and
+    ///   Finnish, where Foundation's answer also depends on which of the two is given first.
     public static func compareNames(_ a: String?, _ b: String?, locale: Locale = .current) -> ComparisonResult {
-        (a ?? "").compare(b ?? "", options: [], range: nil, locale: locale)
+        // Composed first: forced ordering would tell two spellings of one text apart, localeCompare does not.
+        let a = (a ?? "").precomposedStringWithCanonicalMapping, b = (b ?? "").precomposedStringWithCanonicalMapping
+        // In Japanese ICU compares kana type and width on a fourth level, which localeCompare does not reach.
+        let options: String.CompareOptions = locale.language.languageCode == .japanese ? [] : [.forcedOrdering]
+        return a.compare(b, options: options, range: nil, locale: locale)
     }
 }
 

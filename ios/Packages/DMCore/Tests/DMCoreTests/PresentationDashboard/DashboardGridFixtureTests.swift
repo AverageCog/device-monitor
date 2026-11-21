@@ -169,6 +169,12 @@ import Testing
             if sorted != c.expected { failures.append("\(c.label): \(names(sorted, c.devices)), dashboard \(names(c.expected, c.devices))") }
         }
         DashFixture.report(failures, of: grid.accented.count)
+
+        // Two of the sets are the same names, apart only in width or kana type, arriving in two
+        // orders: a comparison that calls such names equal would leave them as they arrived.
+        let twice = grid.accented.filter { c in grid.accented.contains { $0.label != c.label && Set($0.devices.map(\.name)) == Set(c.devices.map(\.name)) } }
+        #expect(twice.count == 2 && Set(twice.map { $0.devices.map(\.name) }).count == 2, "The fixture no longer holds one set of names in two orders")
+        #expect(Set(twice.map { c in DashboardOrder.sorted(c.devices, locale: enUS).map(\.name) }).count == 1)
     }
 
     private func names(_ ids: [String], _ devices: [Device]) -> String {
