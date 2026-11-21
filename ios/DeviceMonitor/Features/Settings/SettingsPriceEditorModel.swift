@@ -25,7 +25,8 @@ final class SettingsPriceEditorModel {
     /// Moves whenever the editor may have refilled its fields, so the view can refill its own.
     private(set) var revision = 0
     private(set) var isSaving = false
-    /// Why the last save did not reach the hub; nil once one has.
+    /// Why the last save did not reach the hub; nil once one has, or once the hub is found to
+    /// hold that price after all.
     private(set) var saveFailure: String?
     /// Counts failed saves, for the haptic.
     private(set) var failures = 0
@@ -117,6 +118,7 @@ final class SettingsPriceEditorModel {
             enqueue { [self] in
                 guard store.energySettings != editor.saved else { return }
                 editor.hubSaved(store.energySettings, focus: focus)
+                forgetFailureIfSaved()
                 revision += 1
             }
         case .loading, .failed:
@@ -172,6 +174,7 @@ final class SettingsPriceEditorModel {
         // field is tidied, the hub is not asked. A browser fires no change event for it either.
         if let saved = editor.saved, EnergyPricing.hubStored(body) == saved {
             editor.hubSaved(saved, focus: focus)
+            forgetFailureIfSaved()
             revision += 1
             return
         }
@@ -184,17 +187,47 @@ final class SettingsPriceEditorModel {
             // What the hub has now: this save, or a later one from elsewhere that overtook it.
             editor.hubSaved(store.energySettings, focus: focus)
         } catch {
-            failedBody = body
-            saveFailure = PriceEditorNotes.saveFailed(HubError(error))
-            failures += 1
-            editor.saveFailed(focus: focus)
+            if let held = store.energySettings, EnergyPricing.hubStored(body) == held {
+                // Only the answer was lost: the hub's own news of this very price got here
+                // while it was awaited. A request that timed out may still have been carried out.
+                failedBody = nil
+                saveFailure = nil
+                editor.hubSaved(held, focus: focus)
+            } else {
+                failedBody = body
+                saveFailure = PriceEditorNotes.saveFailed(HubError(error))
+                failures += 1
+                editor.saveFailed(focus: focus)
+            }
         }
         revision += 1
     }
 
+    /// The editor was just told what the hub holds. If that is the price whose save failed,
+    /// nothing is left to report or to send again: the hub carried the change out although its
+    /// answer never came, or the same change was made on another screen.
+    private func forgetFailureIfSaved() {
+        guard let failedBody, let saved = editor.saved, EnergyPricing.hubStored(failedBody) == saved else { return }
+        self.failedBody = nil
+        saveFailure = nil
+    }
+
     private func save(_ body: EnergySettings, to store: HubStore) async throws(HubError) {
         switch script?.saveAnswer {
-        case .failure(let error): throw error
+        case .failure(let error):
+            // DEBUG launch argument only: the hub does as asked, and all the editor is told is
+            // that it could not be reached.
+            if let delay = script?.newsOfFailedSave {
+                if delay == .zero {
+                    try await store.saveEnergySettings(body)
+                } else {
+                    Task {
+                        try? await Task.sleep(for: delay)
+                        _ = try? await store.saveEnergySettings(body)
+                    }
+                }
+            }
+            throw error
         case .silence:
             while !Task.isCancelled { try? await Task.sleep(for: .seconds(1)) }
             throw HubError.cancelled

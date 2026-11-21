@@ -29,6 +29,9 @@ import UIKit
 //         loading      the hub has not answered yet
 //         load-error   the hub could not be asked for the price
 //         save-error   a change the hub could not be told about
+//         save-lost    a change the hub made although the app was told it could not be
+//                      reached: the hub's own news of the new price arrives first
+//         save-late    the same, with the hub's news a second after the failure
 //         regions      the "Where you live" list is open
 //     -dm-settings-width <points> lay the Settings tab, the price sheet and the add-device sheet
 //                                 out at that width and shrink the picture to fit the screen, to
@@ -48,6 +51,8 @@ nonisolated struct SettingsDebugOptions: Sendable {
         case tou, invalid, full, loading, regions
         case loadError = "load-error"
         case saveError = "save-error"
+        case saveLost = "save-lost"
+        case saveLate = "save-late"
     }
 
     var scroll: String?
@@ -134,6 +139,9 @@ nonisolated enum SettingsLaunch {
     struct PriceScript: Sendable {
         var loadAnswer: Answer?
         var saveAnswer: Answer?
+        /// With a failing `saveAnswer`: the hub carries the change out all the same, and its own
+        /// news of the price reaches the store this long after the failure; at zero, before it.
+        var newsOfFailedSave: Duration?
         /// Changes made once the editor has loaded, as taps and typing would make them.
         var steps: [@Sendable (inout PriceEditor) -> EnergySettings?] = []
         var showsRegions = false
@@ -220,6 +228,7 @@ nonisolated enum SettingsLaunch {
 
     private static func script(for price: SettingsDebugOptions.Price) -> PriceScript {
         let timeOfUse: @Sendable (inout PriceEditor) -> EnergySettings? = { $0.setMode(.timeOfUse) }
+        let otherMode: @Sendable (inout PriceEditor) -> EnergySettings? = { $0.setMode($0.mode == .flat ? .timeOfUse : .flat) }
         switch price {
         case .tou:
             return PriceScript(steps: [timeOfUse])
@@ -233,7 +242,11 @@ nonisolated enum SettingsLaunch {
         case .loadError:
             return PriceScript(loadAnswer: .failure(unreachable))
         case .saveError:
-            return PriceScript(saveAnswer: .failure(unreachable), steps: [{ $0.setMode($0.mode == .flat ? .timeOfUse : .flat) }])
+            return PriceScript(saveAnswer: .failure(unreachable), steps: [otherMode])
+        case .saveLost:
+            return PriceScript(saveAnswer: .failure(unreachable), newsOfFailedSave: .zero, steps: [otherMode])
+        case .saveLate:
+            return PriceScript(saveAnswer: .failure(unreachable), newsOfFailedSave: .seconds(1), steps: [otherMode])
         case .regions:
             return PriceScript(showsRegions: true)
         }

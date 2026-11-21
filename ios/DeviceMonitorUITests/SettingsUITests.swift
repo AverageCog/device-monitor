@@ -369,6 +369,23 @@ final class SettingsUITests: XCTestCase {
         XCTAssertEqual(app.element(withIdentifier: SID.periodRateField("price", 0)).value as? String, "abc")
     }
 
+    /// The app is told a change did not reach the hub, and the hub made it all the same (a
+    /// request that timed out may have been carried out). Once the hub's own news of that price
+    /// is in, nothing is left to report or to send again, whichever of the two came first.
+    @MainActor
+    func testAChangeTheHubMadeAfterAllIsNotLeftMarkedAsFailed() {
+        for state in ["save-lost", "save-late"] {
+            let app = launch(["-dm-demo", "-dm-sheet", "electricityPrice", "-dm-settings-price", state])
+            let timeOfUse = app.buttons[SID.mode("price", "time-of-use")]
+            XCTAssertTrue(timeOfUse.waitForExistence(timeout: 20))
+            XCTAssertTrue(wait(upTo: 10) { timeOfUse.isSelected }, "\(state): the editor shows the price the hub now has")
+            XCTAssertTrue(app.element(withIdentifier: SID.periodRateField("price", 0)).waitForExistence(timeout: 5))
+            XCTAssertTrue(wait(upTo: 10) { !app.element(withIdentifier: "price-save-error").exists }, "\(state): a change that was made is not said to have failed")
+            attachScreenshot(of: app, named: "price-\(state)")
+            app.terminate()
+        }
+    }
+
     // MARK: - Add a device
 
     @MainActor
