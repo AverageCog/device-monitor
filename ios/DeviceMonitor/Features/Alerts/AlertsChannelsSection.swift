@@ -13,8 +13,10 @@ struct AlertsChannelsSection: View {
     var body: some View {
         let channels = editor.settings.channels
         SettingsSection("Send alerts to") {
+            // The hub's field is `channels.desktop`, but no desktop app or dashboard does anything
+            // with these alerts: this app is the only one that shows them.
             SettingsToggleRow(
-                AlertsChannel.apps, description: "This app and the desktop apps, over the hub's live connection.",
+                AlertsChannel.apps, description: "Notifications from this app on every iPhone and iPad paired with the hub, over its live connection.",
                 isOn: Binding(get: { channels.desktop }, set: { on in model.edit { $0.setAppNotifications(on) } })
             )
             .accessibilityIdentifier("alerts-channel-apps-toggle")

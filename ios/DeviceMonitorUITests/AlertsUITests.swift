@@ -399,6 +399,17 @@ final class AlertsUITests: XCTestCase {
     }
 
     @MainActor
+    func testTheAppsChannelSaysWhereItsAlertsShow() {
+        // The hub's field is `channels.desktop`, but no desktop app or dashboard does anything
+        // with these alerts: the switch must not promise them there.
+        let app = launch("-dm-alerts-open", "settings", "-dm-alerts-scroll", "channels")
+        let apps = app.element(withIdentifier: "alerts-channel-apps-toggle")
+        XCTAssertTrue(apps.waitForExistence(timeout: 20))
+        XCTAssertTrue(apps.label.contains("iPhone and iPad"), apps.label)
+        XCTAssertFalse(apps.label.localizedCaseInsensitiveContains("desktop"), apps.label)
+    }
+
+    @MainActor
     func testSwitchingAChannelOffTakesBackWhatTheHubWouldRefuse() {
         // A topic and a webhook address the hub would refuse, typed and then given up by
         // switching the channels off again. Their fields are gone with the switches, so nothing
