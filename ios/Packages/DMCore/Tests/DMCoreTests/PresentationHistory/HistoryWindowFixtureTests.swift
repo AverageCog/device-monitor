@@ -99,18 +99,18 @@ import Testing
     @Test func rangesAndTheStoredChoice() {
         #expect(windows.stored.count == 10)
         for row in windows.stored {
-            let range = HistoryRange.resolve(stored: row.stored)
+            let range = HistoryPageRange.resolve(stored: row.stored)
             let window = HistoryWindow(range: range, now: start)
             #expect(same(window, row.window), "stored \(row.stored ?? "nothing") opens \(describe(window))")
             #expect(row.requests == [url(window.request(forWidth: 900))])
-            #expect(HistoryRange.allCases.map(\.id) == row.header.ranges.map(\.id))
-            #expect(HistoryRange.allCases.map(\.label) == row.header.ranges.map(\.label))
-            #expect(HistoryRange.allCases.map { $0 == window.selectedRange } == row.header.ranges.map(\.on))
-            #expect(HistoryRange.allCases.map(\.duration) == row.ranges.map(\.ms) && HistoryRange.allCases.map(\.id) == row.ranges.map(\.id))
+            #expect(HistoryPageRange.allCases.map(\.id) == row.header.ranges.map(\.id))
+            #expect(HistoryPageRange.allCases.map(\.label) == row.header.ranges.map(\.label))
+            #expect(HistoryPageRange.allCases.map { $0 == window.selectedRange } == row.header.ranges.map(\.on))
+            #expect(HistoryPageRange.allCases.map(\.duration) == row.ranges.map(\.ms) && HistoryPageRange.allCases.map(\.id) == row.ranges.map(\.id))
             #expect(window.showsReset != row.header.resetHidden && HistoryWindow.resetTitle == row.header.resetLabel)
             #expect(window.span == range.duration)
         }
-        #expect(HistoryRange.default == .sixHours && HistoryWindow(now: start).range == .sixHours)
+        #expect(HistoryPageRange.default == .sixHours && HistoryWindow(now: start).range == .sixHours)
     }
 
     @Test func aSessionOfZoomingAndResetting() throws {
@@ -145,7 +145,7 @@ import Testing
                 window.reset(now: step.now)
                 reloads = true
             case "range":
-                window.select(try #require(HistoryRange(rawValue: step.range ?? "")), now: step.now)
+                window.select(try #require(HistoryPageRange(rawValue: step.range ?? "")), now: step.now)
                 reloads = true
             default:
                 failures.append("\(name): unknown action")
@@ -184,7 +184,7 @@ import Testing
         // Every drag that started from a whole range, on that range's own window.
         for step in windows.steps where step.action == "drag" && !step.before.zoomed {
             guard let x1 = step.x1, let x2 = step.x2, let a = step.a, let b = step.b else { continue }
-            window = HistoryWindow(range: HistoryRange(rawValue: step.before.range) ?? .oneHour, now: step.before.to)
+            window = HistoryWindow(range: HistoryPageRange(rawValue: step.before.range) ?? .oneHour, now: step.before.to)
             // The same stretch given as times, in either order, is the same zoom.
             let byTimes = window.zoomed(to: a, b)
             #expect(byTimes == window.zoomed(to: b, a))

@@ -1,14 +1,17 @@
 import Foundation
 
-/// The ranges of the history page (HV_RANGES in public/index.html).
-public enum HistoryRange: String, Sendable, Hashable, CaseIterable, Codable {
+/// The ranges of the history page (HV_RANGES in public/index.html), in the order of its buttons.
+///
+/// Raw values are the names the hub (RANGES in server.js) and the dashboard's preferences use for
+/// these ranges, so a range held elsewhere under its name converts with `init(rawValue:)`.
+public enum HistoryPageRange: String, Sendable, Hashable, CaseIterable, Codable {
     case oneHour = "1h"
     case sixHours = "6h"
     case day = "24h"
     case week = "7d"
     case month = "30d"
 
-    public static let `default` = HistoryRange.sixHours
+    public static let `default` = HistoryPageRange.sixHours
 
     /// The name stored in preferences (`hvRange`).
     public var id: String { rawValue }
@@ -37,8 +40,8 @@ public enum HistoryRange: String, Sendable, Hashable, CaseIterable, Codable {
 
     /// The range to open with, given the stored one: `store.get('hvRange') || '6h'`, and six hours
     /// for anything that is not a range.
-    public static func resolve(stored: String?) -> HistoryRange {
-        stored.flatMap(HistoryRange.init(rawValue:)) ?? .default
+    public static func resolve(stored: String?) -> HistoryPageRange {
+        stored.flatMap(HistoryPageRange.init(rawValue:)) ?? .default
     }
 }
 
@@ -68,14 +71,14 @@ public struct HistoryWindow: Sendable, Equatable {
     public static let minimumDrag: Double = 8
     public static let resetTitle = "Reset zoom"
 
-    public private(set) var range: HistoryRange
+    public private(set) var range: HistoryPageRange
     /// Left and right edge, in milliseconds since 1970. After a zoom they are rarely whole.
     public private(set) var from: Double
     public private(set) var to: Double
     public private(set) var isZoomed: Bool
 
     /// The window of a range, ending at `now` (setHvWindow).
-    public init(range: HistoryRange = .default, now: Double = Date().hubTime) {
+    public init(range: HistoryPageRange = .default, now: Double = Date().hubTime) {
         self.range = range
         to = now
         from = now - range.duration
@@ -87,13 +90,13 @@ public struct HistoryWindow: Sendable, Equatable {
     public var toDate: Date { Date(hubTime: to) }
 
     /// The range whose button is lit: none while zoomed.
-    public var selectedRange: HistoryRange? { isZoomed ? nil : range }
+    public var selectedRange: HistoryPageRange? { isZoomed ? nil : range }
 
     /// Whether to offer "Reset zoom".
     public var showsReset: Bool { isZoomed }
 
     /// Choosing a range: leaves any zoom and ends the window at `now`.
-    public mutating func select(_ range: HistoryRange, now: Double = Date().hubTime) {
+    public mutating func select(_ range: HistoryPageRange, now: Double = Date().hubTime) {
         self = HistoryWindow(range: range, now: now)
     }
 
