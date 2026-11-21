@@ -9,7 +9,8 @@
 # It starts the fixture hub (build/test/mobile-hub.js: the real server.js behind TLS on
 # localhost), trusts the fixture's CA in the simulator, builds the app and the UI tests, asks the
 # hub for a fresh invitation and runs HubFlowUITests with it: pair, go live, relaunch, survive two
-# TLS key rotations, be revoked, pair again, disconnect. The hub is always shut down at the end.
+# TLS key rotations, be revoked, pair again, disconnect. The hub and a running xcodebuild are
+# stopped when the script ends, also when it is interrupted or terminated.
 #
 #   --sim           the simulator to use (default: the first booted one)
 #   --port          the hub's HTTPS port; its origin is https://localhost:<port>
@@ -20,14 +21,14 @@
 #   --result        passed to xcodebuild as -resultBundlePath (must not exist yet)
 #   --skip-build    run the tests that were built last time
 #
-# Exit status: xcodebuild's, or 1 when the hub could not be started.
+# Exit status: xcodebuild's, 1 when the hub could not be started, 130 when interrupted.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SIM="" PORT=8543 CONTROL="" HUB_DIR="$ROOT/ios/.build/e2e-hub" DERIVED="" RESULT="" SKIP_BUILD=0
 EXTRA=()
 
-usage() { sed -n '2,23p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,24p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; }
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -56,13 +57,26 @@ if [ -z "$SIM" ]; then
 fi
 
 LOGS="$(mktemp -d "${TMPDIR:-/tmp}/dm-e2e.XXXXXX")"
-HUB_PID=""
+HUB_PID="" JOB_PID=""
+
+# stop <pid>: asks the process to end, and ends it if it has not after ten seconds.
+stop() {
+  local pid="$1"
+  [ -n "$pid" ] && kill -0 "$pid" 2> /dev/null || return 0
+  kill -TERM "$pid" 2> /dev/null || true
+  for _ in $(seq 1 50); do
+    kill -0 "$pid" 2> /dev/null || break
+    sleep 0.2
+  done
+  kill -KILL "$pid" 2> /dev/null || true
+  wait "$pid" 2> /dev/null || true
+}
+
 cleanup() {
   status=$?
-  if [ -n "$HUB_PID" ] && kill -0 "$HUB_PID" 2> /dev/null; then
-    kill -TERM "$HUB_PID" 2> /dev/null || true
-    wait "$HUB_PID" 2> /dev/null || true
-  fi
+  trap - EXIT INT TERM
+  stop "$JOB_PID"
+  stop "$HUB_PID"
   if [ "$status" -ne 0 ] && [ -s "$LOGS/hub.err" ]; then
     echo "e2e.sh: the hub's error output:" >&2
     tail -n 20 "$LOGS/hub.err" >&2
@@ -72,6 +86,18 @@ cleanup() {
 }
 trap cleanup EXIT
 trap 'exit 130' INT TERM
+
+# run <command...>: runs it so that the script can be interrupted meanwhile. Bash acts on a
+# signal only once the command in the foreground has returned, and an xcodebuild that cannot
+# start its test session does not return for a long time.
+run() {
+  "$@" &
+  JOB_PID=$!
+  local status=0
+  wait "$JOB_PID" || status=$?
+  JOB_PID=""
+  return "$status"
+}
 
 # The hub prints one line, with an invitation in it, when it is ready. That line is not shown:
 # the invitation the test uses is asked for just before the test starts.
@@ -96,13 +122,15 @@ XCODE=(xcodebuild -project "$ROOT/ios/DeviceMonitor.xcodeproj" -scheme DeviceMon
 [ -z "$DERIVED" ] || XCODE+=(-derivedDataPath "$DERIVED")
 
 if [ "$SKIP_BUILD" = 0 ]; then
-  "${XCODE[@]}" ${EXTRA[@]+"${EXTRA[@]}"} build-for-testing
+  run "${XCODE[@]}" ${EXTRA[@]+"${EXTRA[@]}"} build-for-testing
 fi
 
 # Single use and good for ten minutes, so it is fetched after the build. xcodebuild hands
-# TEST_RUNNER_<NAME> to the test runner as <NAME>.
-INVITATION="$(curl -fsS "$CONTROL_URL/invite")"
+# TEST_RUNNER_<NAME> to the test runner as <NAME>. Exported rather than put on a command line,
+# where other users of this Mac could read it.
+TEST_RUNNER_DM_E2E_INVITATION="$(curl -fsS "$CONTROL_URL/invite")"
+TEST_RUNNER_DM_E2E_CONTROL="$CONTROL_URL"
+export TEST_RUNNER_DM_E2E_INVITATION TEST_RUNNER_DM_E2E_CONTROL
 TEST=("${XCODE[@]}" -parallel-testing-enabled NO -only-testing:DeviceMonitorUITests/HubFlowUITests)
 [ -z "$RESULT" ] || TEST+=(-resultBundlePath "$RESULT")
-TEST_RUNNER_DM_E2E_INVITATION="$INVITATION" TEST_RUNNER_DM_E2E_CONTROL="$CONTROL_URL" \
-  "${TEST[@]}" ${EXTRA[@]+"${EXTRA[@]}"} test-without-building
+run "${TEST[@]}" ${EXTRA[@]+"${EXTRA[@]}"} test-without-building

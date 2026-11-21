@@ -301,8 +301,9 @@ ios/Tools/e2e.sh --sim <udid> --port 8571 --control 8572 --result /tmp/e2e.xcres
 The script starts the fixture hub, trusts its CA in the simulator
 (`xcrun simctl keychain <udid> add-root-cert`), builds the app and the tests, asks the hub's control
 port for a fresh invitation and runs `HubFlowUITests`, handing it the invitation and the control
-port's address (`TEST_RUNNER_DM_E2E_INVITATION`, `TEST_RUNNER_DM_E2E_CONTROL`). The hub is shut down
-when the script ends, however it ends. The test:
+port's address (`TEST_RUNNER_DM_E2E_INVITATION`, `TEST_RUNNER_DM_E2E_CONTROL`). The hub, and an
+`xcodebuild` that is still running, are stopped when the script ends, also when it is interrupted or
+terminated. The test:
 
 1. starts from a reset app, types the invitation and connects;
 2. sees the fixture's seven devices, with readings that keep changing, and the phone in the hub's list;
