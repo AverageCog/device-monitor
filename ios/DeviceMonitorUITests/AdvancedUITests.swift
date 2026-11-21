@@ -36,6 +36,10 @@ final class AdvancedUITests: XCTestCase {
     private static let tiles = ["drawing-now", "energy-used", "cost", "per-month"]
     /// Stands in for a figure that is still loading.
     private static let loading = "\u{2026}"
+    /// The demo hub's devices.
+    private static let devices = ["gaming", "spark", "mbp", "server", "studio", "htpc"]
+    /// The largest of the system's text sizes.
+    private static let largestText = ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
 
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -355,5 +359,55 @@ final class AdvancedUITests: XCTestCase {
         XCTAssertEqual(usage.label, "No data for this time range yet.")
         XCTAssertFalse(app.element(withIdentifier: AdvancedID.powerRow("gaming")).exists)
         attachScreenshot(of: app, named: "advanced-empty")
+    }
+
+    // MARK: Large text
+
+    @MainActor
+    func testTheRangeCanBeReadAndChosenAtTheLargestTextSize() {
+        let app = launch(["-dm-advanced-range", "7d"] + Self.largestText)
+        waitForTotals(in: app)
+        let day = app.element(withIdentifier: AdvancedID.range("24h"))
+        let week = app.element(withIdentifier: AdvancedID.range("7d"))
+        let month = app.element(withIdentifier: AdvancedID.range("30d"))
+        for range in [day, week, month] {
+            XCTAssertTrue(range.waitForExistence(timeout: 10), "\(range) is missing")
+        }
+        XCTAssertTrue(week.isSelected)
+        // A third of an upright phone's width cuts "30 days" short at this size, so there the
+        // three stand one under the other. A wider screen has room for them side by side.
+        if app.frame.width < 500 {
+            XCTAssertLessThanOrEqual(day.frame.maxY, week.frame.minY + 1, "24 h \(day.frame) is not above 7 days \(week.frame)")
+            XCTAssertLessThanOrEqual(week.frame.maxY, month.frame.minY + 1, "7 days \(week.frame) is not above 30 days \(month.frame)")
+        }
+        attachScreenshot(of: app, named: "advanced-largest-text")
+
+        let title = app.element(withIdentifier: AdvancedID.chartTitle)
+        day.tap()
+        XCTAssertTrue(wait(upTo: 10) { title.label == "Energy per hour" }, "24 h is charted by the hour: \(title.label)")
+        XCTAssertTrue(day.isSelected)
+
+        // Leave the dashboard's default behind for whoever runs next.
+        week.tap()
+        XCTAssertTrue(wait(upTo: 10) { week.isSelected })
+    }
+
+    @MainActor
+    func testUsageCardsStayOnThePageAtTheLargestTextSize() {
+        let app = launch(["-dm-advanced-range", "7d"] + Self.largestText)
+        waitForTotals(in: app)
+        let screen = app.element(withIdentifier: AdvancedID.screen)
+        XCTAssertTrue(app.element(withIdentifier: AdvancedID.usageRow("gaming")).waitForExistence(timeout: 10))
+        // The page is one eager stack, so a card has its frame wherever the page is scrolled to.
+        // A card whose time online does not fit on a line must not grow past the page for it.
+        var cards = 0
+        for device in Self.devices {
+            let card = app.element(withIdentifier: AdvancedID.usageRow(device))
+            guard card.exists else { continue }
+            cards += 1
+            XCTAssertGreaterThanOrEqual(card.frame.minX, screen.frame.minX, "\(device)'s card starts off the page: \(card.frame)")
+            XCTAssertLessThanOrEqual(card.frame.maxX, screen.frame.maxX, "\(device)'s card runs off the page: \(card.frame)")
+        }
+        XCTAssertGreaterThan(cards, 1, "The demo has several devices with usage")
     }
 }
