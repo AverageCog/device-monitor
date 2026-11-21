@@ -43,15 +43,21 @@ struct EmptyStateView<Actions: View>: View {
                 Text(title)
                     .dmFont(.emptyTitle)
                     .foregroundStyle(Theme.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
                     .padding(.bottom, 6)
                     .accessibilityAddTraits(.isHeader)
             }
+            // Each text keeps its full height: inside a container that offers less than the content
+            // needs (a centred phase screen), an unfixed Text gives up its last line instead of growing.
             Text(message)
                 .dmFont(isCompact ? .statValue : .body)
                 .foregroundStyle(Theme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
             if Actions.self != EmptyView.self {
-                HStack(spacing: Theme.Spacing.s) {
-                    actions
+                // Side by side while the labels fit; stacked at large text sizes instead of truncating.
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: Theme.Spacing.s) { actions }
+                    VStack(spacing: Theme.Spacing.s) { actions }
                 }
                 .padding(.top, 18)
             }
@@ -59,6 +65,7 @@ struct EmptyStateView<Actions: View>: View {
                 Text(hint)
                     .dmFont(.caption)
                     .foregroundStyle(Theme.textMuted)
+                    .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 14)
             }
         }
