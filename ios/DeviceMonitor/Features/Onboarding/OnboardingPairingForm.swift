@@ -165,14 +165,15 @@ struct OnboardingPairingForm: View {
 
             // Which hub the invitation is for is no secret, and worth seeing before connecting.
             if let origin = invitedOrigin {
-                HStack(spacing: Theme.Spacing.xs + 2) {
+                HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.xs + 2) {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(Theme.good)
+                    // Shown whole, on as many lines as it takes: a name cut short could be
+                    // mistaken for another.
                     Text(origin)
                         .monospaced()
                         .foregroundStyle(Theme.textSecondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .dmFont(.caption)
                 .accessibilityElement(children: .ignore)

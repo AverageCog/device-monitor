@@ -24,6 +24,8 @@ import SwiftUI
 ///     -dm-onboarding-confirm           Unreachable: the "Change setup" confirmation open
 ///     -dm-onboarding-retrying          Unreachable: as while "Try again" is under way
 ///     -dm-onboarding-as-demo           Unreachable and Revoked: the wording of a demo session
+///     -dm-onboarding-metrics           print what the layout measured in a corner: the screen
+///                                      without the keyboard, and the height on show with it
 ///     -dm-onboarding-canvas <W>x<H>    lay the screen out in a canvas of that many points, scaled
 ///                                      to fit and turned a quarter when it is wider than tall
 ///                                      (874x402 is this phone in landscape, 1194x834 an iPad)
@@ -40,6 +42,7 @@ nonisolated struct OnboardingDebugOptions: Sendable {
     var confirmsChange = false
     var showsRetrying = false
     var actsAsDemo = false
+    var showsMetrics = false
     var canvas: CGSize?
 
     static let current = OnboardingDebugOptions(arguments: ProcessInfo.processInfo.arguments)
@@ -59,6 +62,7 @@ nonisolated struct OnboardingDebugOptions: Sendable {
         confirmsChange = arguments.contains("-dm-onboarding-confirm")
         showsRetrying = arguments.contains("-dm-onboarding-retrying")
         actsAsDemo = arguments.contains("-dm-onboarding-as-demo")
+        showsMetrics = arguments.contains("-dm-onboarding-metrics")
         if let size = value(after: "-dm-onboarding-canvas")?.split(separator: "x").compactMap({ Double($0) }), size.count == 2, size[0] >= 200, size[1] >= 200 {
             canvas = CGSize(width: size[0], height: size[1])
         }

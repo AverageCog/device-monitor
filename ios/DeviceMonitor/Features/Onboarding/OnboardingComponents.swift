@@ -61,6 +61,18 @@ struct OnboardingPhaseLayout<Content: View>: View {
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
             }
+            #if DEBUG
+            .overlay(alignment: .topTrailing) {
+                if OnboardingDebugOptions.current.showsMetrics {
+                    Text("screen \(Int(size.width))×\(Int(size.height)), on show \(Int(visibleHeight))")
+                        .font(.caption2.monospaced())
+                        .foregroundStyle(Theme.warning)
+                        .padding(4)
+                        .background(Theme.inset)
+                        .accessibilityIdentifier("onboarding-metrics")
+                }
+            }
+            #endif
         }
     }
 }
@@ -183,6 +195,10 @@ struct OnboardingOriginText: View {
             .dmFont(.mono)
             .foregroundStyle(Theme.textMuted)
             .multilineTextAlignment(.center)
+            // An address has no good place to break: at the largest text sizes it gives up some
+            // of its size before it is cut into more lines than two.
+            .lineLimit(2)
+            .minimumScaleFactor(0.7)
             .fixedSize(horizontal: false, vertical: true)
             .accessibilityLabel("Hub \(origin)")
     }
