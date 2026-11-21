@@ -178,7 +178,8 @@ struct AdvancedUsageSection: View {
 
     private func card(_ row: AdvancedModel.UsageRow, metricColumns: Int) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            // Time online heads the card beside the name while both fit on a line.
+            // Time online heads the card beside the name while both fit on a line, and goes under
+            // the name when they do not.
             ViewThatFits(in: .horizontal) {
                 HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.m) {
                     AdvancedDeviceName(name: row.name, color: row.color, style: .rowTitle)
@@ -188,7 +189,11 @@ struct AdvancedUsageSection: View {
                 }
                 VStack(alignment: .leading, spacing: 6) {
                     AdvancedDeviceName(name: row.name, color: row.color, style: .rowTitle)
-                    onlineLine(row)
+                    // At the largest text sizes not even its own line holds it.
+                    ViewThatFits(in: .horizontal) {
+                        onlineLine(row)
+                        onlineStack(row)
+                    }
                 }
             }
             EqualColumnsLayout(columns: metricColumns, columnSpacing: Metrics.metricSpacing, rowSpacing: 9) {
@@ -221,5 +226,21 @@ struct AdvancedUsageSection: View {
         }
         .lineLimit(1)
         .fixedSize()
+    }
+
+    /// "ONLINE" over "144 h 100%", the way the figures below it stand; never wider than the card.
+    private func onlineStack(_ row: AdvancedModel.UsageRow) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(Self.header(1))
+                .dmFont(.statKey)
+                .foregroundStyle(Theme.textMuted)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+            figure(row, 1)
+                .dmFont(.callout)
+                .foregroundStyle(Theme.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
     }
 }
