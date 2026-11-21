@@ -405,7 +405,7 @@ struct SessionControllerTests {
         (.notDeviceMonitorHub, "The address is not a verified Device Monitor hub."),
         (.invalidEnrollmentResponse, "Invalid enrollment response."),
         (.unreachable("Could not connect to the hub."), "Could not connect to the hub."),
-        (.untrustedCertificate("It is not trusted."), "The hub's certificate could not be verified. It is not trusted."),
+        (.untrustedCertificate(HubError.Reason.Certificate.wrongName), "The hub's certificate could not be verified. It is not valid for this hub's address."),
         (.http(status: 400, message: "Too many enrolled devices"), "Too many enrolled devices"),
     ]
 

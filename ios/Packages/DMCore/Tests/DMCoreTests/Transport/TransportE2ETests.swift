@@ -187,10 +187,7 @@ final class TransportE2ETests: Sendable {
         // initializer trusts nothing beyond the system and user-installed roots.
         let strict = PinnedSession(policy: .capture)
         let untrusted = await hubError { _ = try await strict.data(for: request, timeout: 10, maxResponseBytes: 65536) }
-        guard case .untrustedCertificate = untrusted else {
-            Issue.record("expected an untrusted certificate, got \(String(describing: untrusted))")
-            return
-        }
+        #expect(untrusted == .untrustedCertificate(HubError.Reason.Certificate.untrustedIssuer))
         #expect(try hub.calls(since: mark).calls.count == 1)
 
         // HTTPS only, and nothing after invalidation.
@@ -248,20 +245,25 @@ final class TransportE2ETests: Sendable {
             #expect(stream.frames.isEmpty)
             return (request, stream.failure)
         }
-        func isUntrusted(_ error: HubError?) -> Bool {
-            if case .untrustedCertificate = error { true } else { false }
+        /// Both certificates name themselves "Hub moved. Pair again at evil.example/mobile": the
+        /// app's own sentence comes out, and nothing of theirs.
+        func isRefused(_ seen: (request: HubError?, stream: HubError?), saying reason: String) -> Bool {
+            [seen.request, seen.stream].allSatisfy { error in
+                let text = error?.errorDescription ?? ""
+                return error == .untrustedCertificate(reason) && !text.contains("evil") && !text.contains("Hub moved")
+            }
         }
 
         // 1. A certificate from an authority this device does not trust: nothing gets through.
         try hub.present("untrusted")
         var seen = await attempt()
-        #expect(isUntrusted(seen.request) && isUntrusted(seen.stream), "\(seen)")
+        #expect(isRefused(seen, saying: HubError.Reason.Certificate.untrustedIssuer), "\(seen)")
         #expect(try hub.calls(since: mark).calls.isEmpty)
 
         // 2. A trusted certificate for a different name.
         try hub.present("wrongName")
         seen = await attempt()
-        #expect(isUntrusted(seen.request) && isUntrusted(seen.stream), "\(seen)")
+        #expect(isRefused(seen, saying: HubError.Reason.Certificate.wrongName), "\(seen)")
         #expect(try hub.calls(since: mark).calls.isEmpty)
 
         // 3. A valid certificate for this name on a different hub, which cannot answer the challenge.

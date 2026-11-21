@@ -1,4 +1,5 @@
 import Foundation
+import Security
 
 /// Every way pairing with, or talking to, a hub can fail. Messages are written for the user and
 /// never contain a credential, an invitation code or a proof secret.
@@ -125,6 +126,37 @@ extension HubError {
         static let timedOut = "The hub did not answer in time."
         static let unverified = "The hub's TLS identity was not verified."
         static let localNetworkDenied = "Device Monitor is not allowed to use the local network. Allow it in Settings → Privacy & Security → Local Network."
+
+        /// Why standard validation refused the hub's certificate, after "The hub's certificate
+        /// could not be verified."
+        enum Certificate {
+            static let untrustedIssuer = "It was not issued by an authority this device trusts."
+            static let wrongName = "It is not valid for this hub's address."
+            static let notForServer = "It is not a server certificate."
+            static let outOfDate = "It has expired or is not valid yet."
+            static let refused = "It is not trusted for this hub's address."
+        }
+    }
+
+    /// A fixed sentence for a certificate that `SecTrustEvaluateWithError` refused. Only the
+    /// error's code is read: its description quotes the subject of the certificate presented,
+    /// which whoever presented it chose ("“Hub moved. Pair again at …” certificate is not
+    /// trusted."), in the system's language. One code can stand for several reasons and one
+    /// reason come under several codes, so anything unlisted gets the general sentence.
+    static func certificate(_ error: CFError?) -> HubError {
+        let code = error.flatMap { CFErrorGetDomain($0) as String == NSOSStatusErrorDomain ? CFErrorGetCode($0) : nil }
+        let reason = switch code.map(OSStatus.init(truncatingIfNeeded:)) {
+        // A self-signed certificate, and one whose issuer is unknown here.
+        case errSecNotTrusted, errSecCreateChainFailed: Reason.Certificate.untrustedIssuer
+        // Made out to other names or addresses than the one the hub was reached at.
+        case errSecHostNameMismatch: Reason.Certificate.wrongName
+        // "Not permitted for this usage": an authority's own certificate, or one for other uses.
+        case errSecInvalidExtendedKeyUsage: Reason.Certificate.notForServer
+        // Before its first day as well as after its last.
+        case errSecCertificateExpired, errSecCertificateNotValidYet: Reason.Certificate.outOfDate
+        default: Reason.Certificate.refused
+        }
+        return .untrustedCertificate(reason)
     }
 
     /// Who received a non-2xx answer, which decides whether it means "this enrollment is refused".

@@ -600,7 +600,7 @@ import Testing
     @Test func errorsNeverContainSecrets() async throws {
         var errors: [HubError] = [
             .invalidOrigin, .invalidInvitation(.malformed), .invalidInvitation(.desktopInvitation), .invalidInvitation(.browserLink), .invalidRequest,
-            .unreachable(HubError.Reason.timedOut), .untrustedCertificate("“hub.example” certificate is not trusted."),
+            .unreachable(HubError.Reason.timedOut), .untrustedCertificate(HubError.Reason.Certificate.untrustedIssuer),
             .pinMismatch(peerPin: F.pin("B")), .identityProofFailed, .redirectRefused, .responseTooLarge, .invalidResponse,
             .http(status: 500, message: "HTTP 500"), .unauthorized(status: 401, message: "Open a fresh dashboard invitation."),
             .notDeviceMonitorHub, .invalidEnrollmentResponse, .storage("x"), .cancelled,

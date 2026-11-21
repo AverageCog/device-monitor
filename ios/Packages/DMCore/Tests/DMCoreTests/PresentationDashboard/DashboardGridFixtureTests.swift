@@ -146,20 +146,50 @@ import Testing
         DashFixture.report(failures, of: grid.cases.count)
     }
 
-    @Test func theWholePageAtOnce() {
+    /// The app shows the store's lists, so they are what is held against the dashboard: the
+    /// devices arrive in a snapshot in the order the hub sent them, and the grid (`onlineDevices`),
+    /// the offline list (`offlineDevices`) and the positions a moved card writes for everything
+    /// else must follow the dashboard's order.
+    @MainActor @Test func theStoreOrdersEverythingLikeTheDashboard() async throws {
+        var failures = [String]()
         for c in grid.cases {
-            let page = DashboardModel(devices: c.devices, unit: .fahrenheit, latestVersions: c.latestVersions, isReconnecting: false, now: c.now, locale: enUS)
-            #expect(page.cards.map(\.id) == c.expected.grid, "\(c.label)")
-            #expect(page.offline == OfflineDeviceListModel(devices: c.devices, latestVersions: c.latestVersions, now: c.now, locale: enUS), "\(c.label)")
-            #expect(page.summary == DashboardSummaryModel(devices: c.devices), "\(c.label)")
-            #expect(page.cards.allSatisfy { $0.isOnline }, "\(c.label)")
-            for card in page.cards {
-                let device = c.devices.first { $0.id == card.id }
-                let alone = device.map { DeviceCardModel(device: $0, unit: .fahrenheit, latestVersions: c.latestVersions, now: c.now) }
-                #expect(alone == card)
+            let h = StoreHarness()
+            try await h.goLive(c.devices)
+            let online = h.store.onlineDevices.map(\.id), offline = h.store.offlineDevices.map(\.id)
+            if online != c.expected.grid { failures.append("\(c.label): grid \(names(online, c.devices)), dashboard \(names(c.expected.grid, c.devices))") }
+            if offline != c.expected.offline.rows.map(\.id) { failures.append("\(c.label): offline \(names(offline, c.devices)), dashboard \(names(c.expected.offline.rows.map(\.id), c.devices))") }
+            // The end of a drag that moved nothing: every device is given the position it shows at.
+            try await h.store.reorder(ids: online)
+            let written = h.store.devices.map(\.id)
+            if written != c.expected.grid + c.expected.offline.rows.map(\.id) || !h.store.devices.allSatisfy({ $0.order == written.firstIndex(of: $0.id) }) {
+                failures.append("\(c.label): a reorder wrote \(names(written, c.devices))")
             }
+            h.store.stop()
         }
-        #expect(DashboardModel(devices: [], unit: .celsius, isReconnecting: true).summary.text == DashboardSummaryModel.reconnectingText)
+        for c in grid.accented {
+            let h = StoreHarness()
+            try await h.goLive(c.devices)
+            let sorted = h.store.devices.map(\.id)
+            if sorted != c.expected { failures.append("\(c.label): \(names(sorted, c.devices)), dashboard \(names(c.expected, c.devices))") }
+            h.store.stop()
+        }
+        DashFixture.report(failures, of: grid.cases.count + grid.accented.count)
+    }
+
+    /// Made as the session makes it, without a locale, a store sorts names in the language the
+    /// user reads, as the offline list does (`DashboardOrder.readingLocale`).
+    @MainActor @Test func aStoreSortsInTheReadingLanguageUnlessToldOtherwise() async throws {
+        for c in grid.accented {
+            let hub = ScriptedHub()
+            let store = HubStore(api: hub, preferences: StoreFixtures.preferences().0, clock: ManualHubClock(now: StoreFixtures.now))
+            store.start()
+            try await eventually("the store connects") { hub.connections.count == 1 }
+            hub.connections[0].send(.snapshot(c.devices))
+            try await eventually("the snapshot is in") { store.hasSnapshot }
+            #expect(store.devices.map(\.id) == DashboardOrder.sorted(c.devices, locale: DashboardOrder.readingLocale).map(\.id), "\(c.label)")
+            store.stop()
+        }
+        #expect(DashboardOrder.readingLocale.identifier == Locale(identifier: Locale.preferredLanguages.first ?? "en").identifier)
     }
 
     @Test func namesWithAccentsSortAsInABrowser() {

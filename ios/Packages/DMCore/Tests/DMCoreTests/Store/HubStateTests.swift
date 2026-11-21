@@ -321,32 +321,37 @@ import Testing
 
     static let english = Locale(identifier: "en_US")
 
+    /// The devices in the order the store lists them, mentioned by the hub in the order given.
+    static func sorted(_ devices: [Device], locale: Locale) -> [Device] {
+        HubState(devices: devices).sortedDevices(locale: locale)
+    }
+
     @Test func devicesSortByPositionThenByName() {
         // Position first; a device without one goes after every device with one.
-        #expect(HubState.sorted([d("c", "Alpha", nil), d("b", "Zulu", 1), d("a", "Mike", 0)], locale: Self.english).map(\.id) == ["a", "b", "c"])
+        #expect(Self.sorted([d("c", "Alpha", nil), d("b", "Zulu", 1), d("a", "Mike", 0)], locale: Self.english).map(\.id) == ["a", "b", "c"])
         // Equal positions: by name, the way people sort (case and accents are not byte order).
         let tied = [d("1", "banana", 2), d("2", "Cherry", 2), d("3", "apple", 2), d("4", "\u{C9}clair", 2), d("5", "Date", 2)]
-        #expect(HubState.sorted(tied, locale: Self.english).map(\.name) == ["apple", "banana", "Cherry", "Date", "\u{C9}clair"])
+        #expect(Self.sorted(tied, locale: Self.english).map(\.name) == ["apple", "banana", "Cherry", "Date", "\u{C9}clair"])
         // Unordered devices sort among themselves by name too.
-        #expect(HubState.sorted([d("x", "b", nil), d("y", "a", nil), d("z", "c", 5)], locale: Self.english).map(\.id) == ["z", "y", "x"])
+        #expect(Self.sorted([d("x", "b", nil), d("y", "a", nil), d("z", "c", 5)], locale: Self.english).map(\.id) == ["z", "y", "x"])
         // Zero is a position, not a missing one.
-        #expect(HubState.sorted([d("x", "a", 1), d("y", "b", 0)], locale: Self.english).map(\.id) == ["y", "x"])
+        #expect(Self.sorted([d("x", "a", 1), d("y", "b", 0)], locale: Self.english).map(\.id) == ["y", "x"])
     }
 
     @Test func tiesOnPositionAndNameKeepTheHubsOrder() {
         let twins = [StoreFixtures.device("second", name: "PC", order: 3), StoreFixtures.device("first", name: "PC", order: 3), StoreFixtures.device("third", name: "PC", order: 3)]
-        #expect(HubState.sorted(twins, locale: Self.english).map(\.id) == ["second", "first", "third"])
+        #expect(Self.sorted(twins, locale: Self.english).map(\.id) == ["second", "first", "third"])
         // A missing name sorts as the empty string: first.
         var nameless = StoreFixtures.device("n", order: 3)
         nameless.name = nil
-        #expect(HubState.sorted(twins + [nameless], locale: Self.english).map(\.id) == ["n", "second", "first", "third"])
+        #expect(Self.sorted(twins + [nameless], locale: Self.english).map(\.id) == ["n", "second", "first", "third"])
     }
 
     @Test func nameOrderFollowsTheLocale() {
         let names = ["Zebra", "\u{C4}rger", "Apfel"].enumerated().map { StoreFixtures.device("\($0)", name: $1, order: 0) }
         // German files Ä with A; Swedish puts it after Z.
-        #expect(HubState.sorted(names, locale: Locale(identifier: "de_DE")).map(\.name) == ["Apfel", "\u{C4}rger", "Zebra"])
-        #expect(HubState.sorted(names, locale: Locale(identifier: "sv_SE")).map(\.name) == ["Apfel", "Zebra", "\u{C4}rger"])
+        #expect(Self.sorted(names, locale: Locale(identifier: "de_DE")).map(\.name) == ["Apfel", "\u{C4}rger", "Zebra"])
+        #expect(Self.sorted(names, locale: Locale(identifier: "sv_SE")).map(\.name) == ["Apfel", "Zebra", "\u{C4}rger"])
     }
 
     @Test func aReorderSendsTheVisibleCardsThenEveryOtherDevice() {

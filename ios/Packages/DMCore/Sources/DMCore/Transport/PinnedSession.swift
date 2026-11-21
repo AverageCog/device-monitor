@@ -171,6 +171,27 @@ public final class PinnedSession: Sendable {
         request.httpShouldHandleCookies = false
         return request
     }
+
+    /// What a handshake presented, judged: standard evaluation first (with `anchors` trusted
+    /// beside the system's roots), then the pin of the leaf it validated.
+    static func evaluate(_ trust: SecTrust, anchors: [Data]) -> Result<String, HubError> {
+        if !anchors.isEmpty {
+            let certificates = anchors.compactMap { SecCertificateCreateWithData(nil, $0 as CFData) }
+            guard certificates.count == anchors.count,
+                  SecTrustSetAnchorCertificates(trust, certificates as CFArray) == errSecSuccess,
+                  // Keep trusting the system and user-installed roots as well.
+                  SecTrustSetAnchorCertificatesOnly(trust, false) == errSecSuccess else {
+                return .failure(.untrustedCertificate("The test trust anchors are unusable."))
+            }
+        }
+        var error: CFError?
+        guard SecTrustEvaluateWithError(trust, &error) else { return .failure(HubError.certificate(error)) }
+        guard let chain = SecTrustCopyCertificateChain(trust) as? [SecCertificate], let leaf = chain.first,
+              let pin = try? SPKIPin.pin(certificateDER: SecCertificateCopyData(leaf) as Data) else {
+            return .failure(.untrustedCertificate("Its public key could not be read."))
+        }
+        return .success(pin)
+    }
 }
 
 extension PinnedSession: PinnedTransport {}
@@ -317,7 +338,7 @@ private final class Core: NSObject, URLSessionDataDelegate {
         let id = task.taskIdentifier
         let trust = challenge.protectionSpace.serverTrust
         let verdict: Result<String, HubError> = if let trust {
-            evaluate(trust).flatMap { pin in
+            PinnedSession.evaluate(trust, anchors: anchors).flatMap { pin in
                 if case .require(let enrolled) = policy, enrolled != pin { .failure(.pinMismatch(peerPin: pin)) } else { .success(pin) }
             }
         } else {
@@ -338,31 +359,6 @@ private final class Core: NSObject, URLSessionDataDelegate {
             // Ends the handshake: the request, and with it the bearer, is never written.
             completionHandler(.cancelAuthenticationChallenge, nil)
         }
-    }
-
-    /// Standard evaluation first, then the pin of the leaf it validated.
-    private func evaluate(_ trust: SecTrust) -> Result<String, HubError> {
-        if !anchors.isEmpty {
-            let certificates = anchors.compactMap { SecCertificateCreateWithData(nil, $0 as CFData) }
-            guard certificates.count == anchors.count,
-                  SecTrustSetAnchorCertificates(trust, certificates as CFArray) == errSecSuccess,
-                  // Keep trusting the system and user-installed roots as well.
-                  SecTrustSetAnchorCertificatesOnly(trust, false) == errSecSuccess else {
-                return .failure(.untrustedCertificate("The test trust anchors are unusable."))
-            }
-        }
-        var error: CFError?
-        guard SecTrustEvaluateWithError(trust, &error) else {
-            let reason = ((error as (any Error)?)?.localizedDescription ?? "").unicodeScalars.filter { $0.value > 0x1F && $0.value != 0x7F }
-            var text = String(String.UnicodeScalarView(reason.prefix(200)))
-            if !text.isEmpty, !text.hasSuffix(".") { text += "." }
-            return .failure(.untrustedCertificate(text))
-        }
-        guard let chain = SecTrustCopyCertificateChain(trust) as? [SecCertificate], let leaf = chain.first,
-              let pin = try? SPKIPin.pin(certificateDER: SecCertificateCopyData(leaf) as Data) else {
-            return .failure(.untrustedCertificate("Its public key could not be read."))
-        }
-        return .success(pin)
     }
 
     // MARK: Responses
