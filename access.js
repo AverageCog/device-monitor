@@ -9,10 +9,13 @@ const secret = () => crypto.randomBytes(32).toString('base64url');
 const validKey = s => typeof s === 'string' && /^[A-Za-z0-9_-]{43}$/.test(s);
 const bearer = req => /^Bearer ([A-Za-z0-9_-]{43})$/.exec(req.headers.authorization || '')?.[1] || '';
 const INVITE_TTL = 10 * 60e3, SESSION_TTL = 8 * 60 * 60e3;
-// A phone or tablet row is { client, proof, mobile:{ name, created } }: a dashboard credential and a
+// A phone or tablet row is { mobile:{ client, proof, name, created } }: a dashboard credential and a
 // second secret that only ever keys the TLS-rotation proof. It has no agent credential and cannot report.
+// Both digests stay inside `mobile` because hubs from before phones read any top-level client as a paired
+// desktop's, and have no way to list or remove a phone: downgraded to one, a phone must find nothing to use.
 const mobileRow = row => !!row && typeof row === 'object' && !!row.mobile && typeof row.mobile === 'object';
-const proofDigest = row => mobileRow(row) ? row.proof : row.agent;
+// The bearer digest, and the digest that stands beside it in the TLS-rotation key (a desktop's agent, a phone's proof).
+const credentials = row => mobileRow(row) ? { client: row.mobile.client, proof: row.mobile.proof } : { client: row.client, proof: row.agent };
 // The label comes from the phone and goes back to it and to dashboards: no control characters, and
 // well-formed text even when sixty UTF-16 units end inside an emoji, so every JSON decoder accepts it.
 const mobileName = v => (cleanText(typeof v === 'string' ? v : null, 60) || '').replace(/[\uD800-\uDBFF]$/, '').toWellFormed().trim() || 'iPhone';
@@ -96,20 +99,21 @@ class Access {
     }
   }
   indexRow(id, row) {
-    const mobile = mobileRow(row);
+    const mobile = mobileRow(row), { client, proof } = credentials(row);
     // A phone's proof digest is deliberately never a bearer, and a phone row never yields an agent.
     if (row.agent && !mobile) this.index.set(row.agent, { role: 'agent', id });
-    if (row.client) {
-      this.index.set(row.client, mobile ? { role: 'client', id, mobile: true } : { role: 'client', id });
-      const key = desktopKey(proofDigest(row), row.client);
+    if (client) {
+      this.index.set(client, mobile ? { role: 'client', id, mobile: true } : { role: 'client', id });
+      const key = desktopKey(proof, client);
       if (key) this.desktopKeys.set(mac(key, 'lookup'), key);
     }
   }
   unindexRow(row) {
+    const { client, proof } = credentials(row);
     if (!mobileRow(row)) this.index.delete(row.agent);
-    if (row.client) {
-      this.index.delete(row.client);
-      const key = desktopKey(proofDigest(row), row.client);
+    if (client) {
+      this.index.delete(client);
+      const key = desktopKey(proof, client);
       if (key) this.desktopKeys.delete(mac(key, 'lookup'));
     }
   }
@@ -176,7 +180,7 @@ class Access {
     let row, member;
     if (kind === 'mobile') {
       const client = secret(), proof = secret(), label = mobileName(name);
-      row = { client: digest(client), proof: digest(proof), mobile: { name: label, created: Date.now() } };
+      row = { mobile: { client: digest(client), proof: digest(proof), name: label, created: Date.now() } };
       member = { id, client, proof, name: label };
     } else {
       const agent = secret(), client = kind === 'desktop' ? secret() : null;
