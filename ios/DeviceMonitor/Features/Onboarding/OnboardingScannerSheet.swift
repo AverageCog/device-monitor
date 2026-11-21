@@ -14,8 +14,11 @@ struct OnboardingScannerSheet: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var model: OnboardingScannerModel
-    @State private var instructionHeight: CGFloat = 0
-    @State private var controlsHeight: CGFloat = 0
+    /// The room the layout leaves the window, between the instruction and the controls, in the
+    /// viewfinder's coordinates.
+    @State private var windowBand: CGRect = .zero
+
+    private static let viewfinderSpace = "onboarding-scanner-viewfinder"
 
     /// - Parameter onInvitation: called once with the scanned invitation; the caller dismisses the sheet.
     init(onInvitation: @escaping (String) -> Void) {
@@ -136,7 +139,8 @@ struct OnboardingScannerSheet: View {
 
     private var viewfinder: some View {
         GeometryReader { proxy in
-            let side = windowSide(in: proxy.size)
+            let space = Self.viewfinderSpace
+            let window = Self.window(in: windowBand, of: proxy.size)
             ZStack {
                 if let session = model.camera?.session {
                     OnboardingScannerPreview(session: session, isRunning: model.status == .scanning)
@@ -150,26 +154,39 @@ struct OnboardingScannerSheet: View {
                         .accessibilityHidden(true)
                     #endif
                 }
-                OnboardingScannerShade(side: side)
+                OnboardingScannerShade(window: window)
                 windowContent
-                    .frame(width: side - 24, height: side - 24)
-                VStack(spacing: Theme.Spacing.m) {
-                    Text(OnboardingCopy.scannerInstruction)
-                        .dmFont(.bodyStrong)
-                        .foregroundStyle(Theme.textPrimary)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .shadow(color: .black.opacity(0.6), radius: 3)
-                        .accessibilityIdentifier("scanner-instruction")
-                        .onGeometryChange(for: CGFloat.self, of: { $0.size.height }, action: { instructionHeight = $0 })
-                    Spacer(minLength: 0)
+                    .frame(width: max(0, window.width - 24), height: max(0, window.height - 24))
+                    .position(x: window.midX, y: window.midY)
+                // The window has the room between the instruction and the controls, and never
+                // less than its smallest size. What is said about a wrong code comes first:
+                // it is given all the rest, and the instruction shows while there is still
+                // room for it. So no text, at any size, lies over the window.
+                VStack(spacing: 0) {
+                    ViewThatFits(in: .vertical) {
+                        Text(OnboardingCopy.scannerInstruction)
+                            .dmFont(.bodyStrong)
+                            .foregroundStyle(Theme.textPrimary)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .shadow(color: .black.opacity(0.6), radius: 3)
+                            .accessibilityIdentifier("scanner-instruction")
+                            .padding(.bottom, Theme.Spacing.m)
+                        Color.clear.frame(height: 0)
+                    }
+                    Color.clear
+                        .frame(maxWidth: .infinity, minHeight: verticalSizeClass == .compact ? 120 : 160, maxHeight: .infinity)
+                        .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .named(space)) }, action: { windowBand = $0 })
+                        .layoutPriority(-1)
                     controls
-                        .onGeometryChange(for: CGFloat.self, of: { $0.size.height }, action: { controlsHeight = $0 })
+                        .padding(.top, Theme.Spacing.m)
+                        .layoutPriority(1)
                 }
                 .padding(Theme.Spacing.l)
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
-            .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: side)
+            .coordinateSpace(.named(space))
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: window)
         }
     }
 
@@ -182,8 +199,7 @@ struct OnboardingScannerSheet: View {
             : AnyLayout(VStackLayout(spacing: Theme.Spacing.m))
         layout {
             if let rejection = model.rejection {
-                BannerView(rejection, kind: .warning)
-                    .background(Theme.surface1, in: RoundedRectangle(cornerRadius: Theme.Radius.banner, style: .continuous))
+                OnboardingScannerMessage(text: rejection)
                     .frame(maxWidth: 460)
                     .accessibilityIdentifier("scanner-message")
                     .transition(.opacity)
@@ -241,18 +257,63 @@ struct OnboardingScannerSheet: View {
         }
     }
 
-    /// The side of the square window: as large as leaves room for the instruction above it and
-    /// the controls below, on any screen, either way up and at any text size. The window is
-    /// centred, so the taller of the two decides.
-    private func windowSide(in size: CGSize) -> CGFloat {
-        let margin = max(instructionHeight, controlsHeight) + 2 * Theme.Spacing.l
-        return max(120, min(320, size.width - 64, size.height - 2 * margin))
+    /// The square window: as large as the room between the instruction and the controls allows,
+    /// on any screen, either way up and at any text size. It sits in the middle of the picture
+    /// while it has room there, and as near to the middle as that room lets it otherwise.
+    private static func window(in band: CGRect, of size: CGSize) -> CGRect {
+        // Before the first layout has been measured.
+        let band = band.isEmpty ? CGRect(origin: .zero, size: size) : band
+        let side = max(0, min(320, size.width - 64, band.height))
+        let middle = min(max(size.height / 2, band.minY + side / 2), band.maxY - side / 2)
+        return CGRect(x: (size.width - side) / 2, y: middle - side / 2, width: side, height: side)
+    }
+}
+
+/// Why the code in view is not accepted, in the look of a warning `BannerView`. Unlike a banner
+/// it can be given less height than its text takes, which then scrolls inside it: at the largest
+/// text sizes the explanation and the window do not both fit, and the window is what is aimed with.
+private struct OnboardingScannerMessage: View {
+    let text: String
+
+    var body: some View {
+        HStack(spacing: Theme.Spacing.m) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 17, weight: .medium))
+                .foregroundStyle(Theme.warning)
+                .frame(width: 22)
+            ViewThatFits(in: .vertical) {
+                message
+                ScrollView {
+                    message
+                }
+                .scrollBounceBehavior(.basedOnSize)
+                .scrollIndicatorsFlash(onAppear: true)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .dmSurface(Theme.warning.opacity(0.08), radius: Theme.Radius.banner, border: Theme.warning.opacity(0.35))
+        // Opaque under the tint: the picture is behind it.
+        .background(Theme.surface1, in: RoundedRectangle(cornerRadius: Theme.Radius.banner, style: .continuous))
+        // One element that says all of it, however much of it is on show.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(text)
+        .accessibilityAddTraits(.isStaticText)
+    }
+
+    private var message: some View {
+        Text(text)
+            .dmFont(.callout)
+            .foregroundStyle(Theme.textPrimary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 
 /// Everything around the window, darkened, and the window's corner marks.
 private struct OnboardingScannerShade: View {
-    let side: CGFloat
+    /// Where the window is, in this view's own coordinates.
+    let window: CGRect
 
     private static let radius: CGFloat = 26
 
@@ -265,14 +326,16 @@ private struct OnboardingScannerShade: View {
                         .ignoresSafeArea(edges: .bottom)
                         .overlay {
                             RoundedRectangle(cornerRadius: Self.radius, style: .continuous)
-                                .frame(width: side, height: side)
+                                .frame(width: window.width, height: window.height)
+                                .position(x: window.midX, y: window.midY)
                                 .blendMode(.destinationOut)
                         }
                         .compositingGroup()
                 }
-            OnboardingScannerCorners(radius: Self.radius, arm: side * 0.16)
+            OnboardingScannerCorners(radius: Self.radius, arm: window.width * 0.16)
                 .stroke(Theme.textPrimary, style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
-                .frame(width: side, height: side)
+                .frame(width: window.width, height: window.height)
+                .position(x: window.midX, y: window.midY)
         }
         .allowsHitTesting(false)
         .accessibilityHidden(true)
