@@ -37,6 +37,7 @@ struct AdvancedScreen: View {
             ScrollView(options.width == nil ? .vertical : [.horizontal, .vertical]) {
                 page
             }
+            .dmHidesBarsOnScroll()
             .accessibilityIdentifier("screen-advanced")
             #if DEBUG
             .task { await showRequestedState(with: scroller) }

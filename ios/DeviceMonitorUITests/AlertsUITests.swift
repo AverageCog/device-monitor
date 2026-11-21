@@ -134,7 +134,7 @@ final class AlertsUITests: XCTestCase {
         XCTAssertTrue(app.element(labelled: "Yesterday").exists || app.element(labelled: "Today").exists, "The log is grouped by day")
         attachScreenshot(of: app, named: "alerts")
 
-        let tab = app.tabBars.buttons["Alerts"]
+        let tab = app.tab("Alerts")
         XCTAssertTrue(wait(upTo: 10) { (tab.value as? String)?.contains("2") == true }, "Alerts badge: \(String(describing: tab.value))")
     }
 
@@ -153,7 +153,7 @@ final class AlertsUITests: XCTestCase {
         attachScreenshot(of: app, named: "alert-menu")
         history.tap()
         XCTAssertTrue(app.element(withIdentifier: "screen-history").waitForExistence(timeout: 10), "Show history goes to the History tab")
-        XCTAssertTrue(app.tabBars.buttons["History"].isSelected)
+        XCTAssertTrue(app.tab("History").isSelected)
     }
 
     @MainActor
@@ -184,7 +184,7 @@ final class AlertsUITests: XCTestCase {
         let fired = active.matching(NSPredicate(format: "label CONTAINS %@", "Gaming PC: disk D:")).firstMatch
         XCTAssertTrue(fired.exists)
         XCTAssertTrue(app.element(labelled: "Today").exists, "It is in today's log too")
-        let tab = app.tabBars.buttons["Alerts"]
+        let tab = app.tab("Alerts")
         XCTAssertTrue(wait(upTo: 10) { (tab.value as? String)?.contains("3") == true }, "Alerts badge: \(String(describing: tab.value))")
         attachScreenshot(of: app, named: "alerts-fired")
 

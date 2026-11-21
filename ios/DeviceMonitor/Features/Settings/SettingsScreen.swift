@@ -35,6 +35,7 @@ struct SettingsScreen: View {
                 .frame(maxWidth: .infinity)
             }
             .scrollDismissesKeyboard(.interactively)
+            .dmHidesBarsOnScroll()
             .accessibilityIdentifier("screen-settings")
             .task {
                 // DEBUG launch argument only: open at a section further down.

@@ -80,7 +80,8 @@ final class AdvancedUITests: XCTestCase {
         for _ in 0..<40 {
             let navigationBar = app.navigationBars.firstMatch
             let tabBar = app.tabBars.firstMatch
-            let top = (navigationBar.exists ? navigationBar.frame.maxY : app.frame.minY) + 12
+            // Scrolled down, the bars are away; the status bar stays, and a tap there scrolls up.
+            let top = (navigationBar.exists ? navigationBar.frame.maxY : app.frame.minY + 62) + 12
             let bottom = (tabBar.exists ? tabBar.frame.minY : app.frame.maxY) - 12
             let frame = element.frame
             // How far the element's top is below the band's top, and its bottom below the band's bottom.

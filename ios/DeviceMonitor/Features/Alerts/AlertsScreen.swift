@@ -62,6 +62,7 @@ private struct AlertsListScreen: View {
                 // An alert that fires or clears moves the list; it does not jump.
                 .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: alerts.active.map(\.id) + [alerts.events.first?.id ?? ""])
             }
+            .dmHidesBarsOnScroll()
             .refreshable { _ = try? await store.refreshAlerts() }
             .accessibilityIdentifier("screen-alerts")
             .task {

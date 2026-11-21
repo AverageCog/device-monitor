@@ -63,6 +63,7 @@ struct HistoryPage: View {
                     .frame(maxWidth: .infinity)
                 }
             }
+            .dmHidesBarsOnScroll()
             .refreshable { await controller.refresh() }
             // window.scrollTo(0, 0) in openHistory
             .onChange(of: controller.deviceID) {

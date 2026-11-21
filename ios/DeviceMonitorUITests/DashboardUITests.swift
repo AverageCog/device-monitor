@@ -179,8 +179,8 @@ final class DashboardUITests: XCTestCase {
         attachScreenshot(of: app, named: "dashboard-details")
 
         // Still open after leaving the tab and coming back.
-        app.tabBars.buttons["Settings"].tap()
-        app.tabBars.buttons["Devices"].tap()
+        app.tab("Settings").tap()
+        app.tab("Devices").tap()
         XCTAssertTrue(details.waitForExistence(timeout: 5), "Details is still open")
 
         toggle.tap()
@@ -232,8 +232,8 @@ final class DashboardUITests: XCTestCase {
         attachScreenshot(of: app, named: "dashboard-range")
 
         // The choice is the store's to keep: it is still there after the tab was left.
-        app.tabBars.buttons["Settings"].tap()
-        app.tabBars.buttons["Devices"].tap()
+        app.tab("Settings").tap()
+        app.tab("Devices").tap()
         XCTAssertTrue(range.waitForExistence(timeout: 10))
         XCTAssertEqual(range.value as? String, "last 60 min")
 
@@ -400,8 +400,8 @@ final class DashboardUITests: XCTestCase {
         attachScreenshot(of: app, named: "dashboard-reordered")
 
         // The order is the hub's now: it survives leaving the tab.
-        app.tabBars.buttons["Settings"].tap()
-        app.tabBars.buttons["Devices"].tap()
+        app.tab("Settings").tap()
+        app.tab("Devices").tap()
         XCTAssertTrue(app.deviceRow("gaming").waitForExistence(timeout: 10))
         XCTAssertTrue(card("spark", isBefore: "gaming", in: app))
     }
@@ -425,6 +425,31 @@ final class DashboardUITests: XCTestCase {
 
         XCTAssertTrue(wait(upTo: 15) { card("spark", isBefore: "gaming", in: app) }, "DGX Spark moved up")
         XCTAssertTrue(wait(upTo: 5) { app.element(withIdentifier: DashboardID.grip("spark")).value as? String == "1 of 5" })
+    }
+
+    // MARK: The bars
+
+    /// Scrolled down, the page has the screen to itself; scrolled back up a little, the bars are back.
+    @MainActor
+    func testScrollingDownPutsTheBarsAwayAndScrollingUpBringsThemBack() {
+        let app = launchDemo()
+        let page = app.element(withIdentifier: DashboardID.screen)
+        let tabBar = app.tabBars.firstMatch
+        let add = app.buttons[ID.addDeviceButton]
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 10))
+        XCTAssertTrue(add.isHittable, "At the top the bars are there")
+
+        // In the page's margin, where no card takes the touch, and slowly, so that it does not fling.
+        let low = page.coordinate(withNormalizedOffset: CGVector(dx: 1, dy: 0.7)).withOffset(CGVector(dx: -6, dy: 0))
+        low.press(forDuration: 0.05, thenDragTo: low.withOffset(CGVector(dx: 0, dy: -320)), withVelocity: .slow, thenHoldForDuration: 0.2)
+        XCTAssertTrue(wait(upTo: 3) { !(tabBar.exists && tabBar.isHittable) }, "Scrolled down, the tab bar goes")
+        XCTAssertFalse(add.exists && add.isHittable, "…and so does the top bar with its + button")
+        attachScreenshot(of: app, named: "dashboard-bars-away")
+
+        let high = page.coordinate(withNormalizedOffset: CGVector(dx: 1, dy: 0.4)).withOffset(CGVector(dx: -6, dy: 0))
+        high.press(forDuration: 0.05, thenDragTo: high.withOffset(CGVector(dx: 0, dy: 80)), withVelocity: .slow, thenHoldForDuration: 0.2)
+        XCTAssertTrue(wait(upTo: 3) { tabBar.exists && tabBar.isHittable }, "Scrolled back up a little, the tab bar is back")
+        XCTAssertTrue(add.isHittable, "…and the top bar")
     }
 
     // MARK: Offline devices

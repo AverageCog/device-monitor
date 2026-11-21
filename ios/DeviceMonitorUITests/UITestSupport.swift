@@ -105,6 +105,17 @@ extension XCUIApplication {
         }
         return isClear()
     }
+
+    /// The tab bar's button for `title`. A tab scrolled down puts its bars away (`BarsOnScroll` in
+    /// the app); a swipe down the screen scrolls the page back up, which brings them back.
+    @MainActor
+    func tab(_ title: String) -> XCUIElement {
+        let button = tabBars.buttons[title]
+        for _ in 0..<3 where !(button.exists && button.isHittable) {
+            swipeDown(velocity: .slow)
+        }
+        return button
+    }
 }
 
 extension XCTestCase {

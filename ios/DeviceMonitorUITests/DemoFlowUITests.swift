@@ -50,7 +50,7 @@ final class DemoFlowUITests: XCTestCase {
         attachScreenshot(of: app, named: "demo-devices-later")
 
         // The Alerts tab counts what is firing: the server's disk and the living-room PC.
-        let alerts = app.tabBars.buttons["Alerts"]
+        let alerts = app.tab("Alerts")
         XCTAssertTrue(wait(upTo: 10) { (alerts.value as? String)?.contains("2") == true }, "Alerts badge: \(String(describing: alerts.value))")
     }
 
@@ -151,7 +151,7 @@ final class DemoFlowUITests: XCTestCase {
         waitForSession(of: app, "the demo is live") { $0.phase == "live" && $0.devices == 6 }
 
         directDemoHub(of: app, "Unreachable for 20 s")
-        app.tabBars.buttons["Advanced"].tap()
+        app.tab("Advanced").tap()
 
         XCTAssertTrue(app.element(withIdentifier: ID.reconnectingBanner).waitForExistence(timeout: 8), "The banner says the stream is down")
         XCTAssertEqual(app.sessionState?.phase, "live", "For ten seconds the last known state stays on show")
@@ -207,7 +207,7 @@ final class DemoFlowUITests: XCTestCase {
     /// Picks an item of the menu that directs the demo hub (DebugTools, at the end of the Devices tab).
     @MainActor
     private func directDemoHub(of app: XCUIApplication, _ item: String, file: StaticString = #filePath, line: UInt = #line) {
-        app.tabBars.buttons["Devices"].tap()
+        app.tab("Devices").tap()
         // A SwiftUI Menu is a pop-up button to the accessibility tree, not a button, so it is
         // looked up by its identifier alone. It is under the cards, several screens down the page.
         let menu = app.element(withIdentifier: ID.debugHubMenu)
@@ -239,12 +239,12 @@ final class DemoFlowUITests: XCTestCase {
         XCTAssertTrue(link.label.hasPrefix("https://hub.demo.example/unlock#join="), "The sheet reads the tabs' environment: \(link.label)")
         app.buttons["add-device-done-button"].tap()
 
-        app.tabBars.buttons["Advanced"].tap()
+        app.tab("Advanced").tap()
         app.buttons["advanced-price-button"].tap()
         XCTAssertTrue(app.element(withIdentifier: "screen-electricity-price").waitForExistence(timeout: 5), "Advanced can open the price editor")
         app.buttons["electricity-price-done-button"].tap()
 
-        app.tabBars.buttons["Settings"].tap()
+        app.tab("Settings").tap()
         app.buttons["settings-price-button"].tap()
         XCTAssertTrue(app.element(withIdentifier: "screen-electricity-price").waitForExistence(timeout: 5), "So can Settings")
         app.buttons["electricity-price-done-button"].tap()
@@ -252,7 +252,7 @@ final class DemoFlowUITests: XCTestCase {
         // The chart of a device's card routes to History for that device. Not the first device's:
         // History opened without one shows the first. Its card is where the launch left it; a
         // swipe from the top of the page could carry a chart several screens down past the bars.
-        app.tabBars.buttons["Devices"].tap()
+        app.tab("Devices").tap()
         let chart = app.element(withIdentifier: "device-chart-studio")
         XCTAssertTrue(wait(upTo: 10) { chart.exists && chart.isHittable }, "The Studio PC's chart is on screen")
         chart.tap()

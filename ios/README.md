@@ -26,6 +26,11 @@ Five tabs:
   dashboard link to share with a browser, the electricity price and its editor (under Advanced
   settings), **Disconnect…**, version and license.
 
+On every tab the top bar and the tab bar get out of the way while the page is scrolled down, and
+come back as soon as it is scrolled up a little or reaches its top (iOS 26 and later; earlier
+versions keep them in place). A page that scrolls only a little keeps them, and so does everything
+while VoiceOver or Switch Control is on.
+
 "Add a device" shares a single-use browser link (as text and as a QR code) and says how to add
 computers and other phones on the hub.
 

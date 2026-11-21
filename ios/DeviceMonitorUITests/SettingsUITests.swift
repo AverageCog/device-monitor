@@ -193,8 +193,8 @@ final class SettingsUITests: XCTestCase {
         XCTAssertTrue(wait(upTo: 10) { link.exists && link.label != first }, "A new link replaces the old one")
 
         // It signs a browser in, so it does not outlive the screen.
-        app.tabBars.buttons["Devices"].tap()
-        app.tabBars.buttons["Settings"].tap()
+        app.tab("Devices").tap()
+        app.tab("Settings").tap()
         XCTAssertTrue(create.waitForExistence(timeout: 5))
         XCTAssertFalse(link.exists, "The link is gone once the tab was left")
         XCTAssertEqual(create.label, "Create link")
