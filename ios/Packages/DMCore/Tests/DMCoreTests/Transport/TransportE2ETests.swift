@@ -192,6 +192,42 @@ final class TransportE2ETests: Sendable {
         #expect(await hubError { _ = try await right.data(for: request, timeout: 10, maxResponseBytes: 65536) } == .cancelled)
     }
 
+    /// What `HubClient` relies on when a rotation replaces a session: the old one finishes what
+    /// it had started, starts nothing new and says so, and can still be told to drop the rest.
+    @Test func aRetiredSessionFinishesWhatItStartedAndStartsNothingNew() async throws {
+        let pinA = try #require(hub.pins["a"])
+        let info = URLRequest(url: try #require(hub.origin.url(path: "/api/info")))
+        // The HTTP/2 stand-in answers this one after 2.5 s; the front never answers its own.
+        let answered = URLRequest(url: try #require(hub.multiplexedOrigin.url(path: "/e2e/slow", query: "ms=2500")))
+        let unanswered = URLRequest(url: try #require(hub.origin.url(path: "/e2e/slow")))
+
+        let finishing = PinnedSession(policy: .require(pin: pinA), testingTrustAnchors: [hub.anchor])
+        async let late = finishing.data(for: answered, timeout: 10, maxResponseBytes: 65536)
+        #expect(try await eventually { try self.hub.calls().calls.contains { $0.path == "/e2e/slow" && $0.http == "2.0" } })
+        finishing.retire()
+        #expect(!finishing.isDrained)
+        let mark = try hub.calls().total
+        await #expect(throws: PinnedSession.Retired.self) {
+            _ = try await finishing.data(for: info, timeout: 10, maxResponseBytes: 65536)
+        }
+        #expect(try hub.calls(since: mark).calls.isEmpty)                  // refused without a connection
+        #expect(try await late.response.statusCode == 200)                 // while the request it had goes through
+        #expect(try await eventually { finishing.isDrained })
+
+        let dropped = PinnedSession(policy: .require(pin: pinA), testingTrustAnchors: [hub.anchor])
+        async let pending = hubError { _ = try await dropped.data(for: unanswered, timeout: 30, maxResponseBytes: 65536) }
+        #expect(try await eventually { try self.hub.calls().calls.contains { $0.path == "/e2e/slow" && $0.http == "1.1" } })
+        dropped.retire()
+        #expect(!dropped.isDrained)
+        let clock = ContinuousClock()
+        let begun = clock.now
+        dropped.invalidate()
+        #expect(await pending == .cancelled)
+        #expect(clock.now - begun < .seconds(3))
+        #expect(try await eventually { dropped.isDrained })
+        #expect(await hubError { _ = try await dropped.data(for: info, timeout: 10, maxResponseBytes: 65536) } == .cancelled)
+    }
+
     @Test func neverSendsTheBearerToAnImpostor() async throws {
         let (enrollment, store, client) = try await pair()
         _ = try await client.request(path: "/api/devices")
@@ -294,6 +330,51 @@ final class TransportE2ETests: Sendable {
         #expect(try hub.calls(since: mark).calls.filter { $0.path == Self.proofPath }.count == 1)
         await restarted.close()
         await client.close()
+    }
+
+    /// A front that renews its certificate in place (tailscale serve, a reloaded nginx or caddy)
+    /// goes on serving the connections it already has. The live stream then stays on a session
+    /// the client has replaced, and closing the client must still end it.
+    @Test func closingEndsAStreamThatOutlivedAKeyRotation() async throws {
+        let (enrollment, store, client) = try await pair()
+        let pinB = try #require(hub.pins["b"])
+        let frames = Counter(), ended = Counter()
+        let live = Task { () -> HubError? in
+            defer { ended.increment() }
+            return await hubError { for try await _ in client.events() { frames.increment() } }
+        }
+        #expect(try await eventually { frames.count >= 1 })
+        #expect(try hub.openStreams() == 1)
+        let mark = try hub.calls().total
+
+        try hub.present("b", proxy: "b", keepConnections: true)
+        // The stream holds the only connection, so these need new ones and meet the new key.
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            for _ in 0..<4 { group.addTask { _ = try await client.request(path: "/api/devices") } }
+            try await group.waitForAll()
+        }
+        #expect(try store.load()?.pin == pinB)
+        let calls = try hub.calls(since: mark).calls
+        #expect(calls.filter { $0.path == Self.proofPath }.count == 1)
+        #expect(calls.filter { $0.path == "/api/devices" }.count == 4)
+        #expect(calls.allSatisfy { $0.served == "b" && $0.path != "/api/stream" })
+
+        // The rotation left the stream where it was, still delivering under the key it verified.
+        let before = frames.count
+        #expect(try await eventually { frames.count > before })
+        #expect(ended.count == 0)
+        #expect(try hub.openStreams() == 1)
+        #expect(try hub.calls().calls.filter { $0.path == "/api/stream" }.map(\.authorization) == ["Bearer " + enrollment.client])
+
+        let clock = ContinuousClock()
+        let begun = clock.now
+        await client.close()
+        #expect(try await eventually { ended.count == 1 })
+        #expect(clock.now - begun < .seconds(3))
+        live.cancel()                                               // only matters if the stream was left open
+        #expect(await live.value == .cancelled)
+        #expect(try await eventually { try self.hub.openStreams() == 0 })
+        #expect(await hubError { _ = try await client.request(path: "/api/devices") } == .cancelled)
     }
 
     // MARK: Live stream
@@ -723,8 +804,10 @@ final class E2EHub: @unchecked Sendable {
     func seed(id: String, hostname: String) throws { _ = try send("seed", ["id": id, "hostname": hostname], as: Empty.self) }
     func revoke(id: String) throws { _ = try send("revoke", ["id": id], as: Empty.self) }
     /// Swaps the certificate the front presents; `proxy` also tells the hub which one is served.
-    func present(_ certificate: String, proxy: String? = nil, keepTickets: Bool = false) throws {
-        var arguments: [String: Any] = ["certificate": certificate, "keepTickets": keepTickets]
+    /// `keepConnections` leaves the connections the front already has open, as a front that
+    /// renews its certificate in place does.
+    func present(_ certificate: String, proxy: String? = nil, keepTickets: Bool = false, keepConnections: Bool = false) throws {
+        var arguments: [String: Any] = ["certificate": certificate, "keepTickets": keepTickets, "keepConnections": keepConnections]
         if let proxy { arguments["proxy"] = proxy }
         _ = try send("present", arguments, as: Empty.self)
     }

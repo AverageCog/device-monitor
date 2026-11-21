@@ -7,10 +7,15 @@ import os
 protocol PinnedTransport: Sendable {
     func data(for request: URLRequest, timeout: TimeInterval, maxResponseBytes: Int) async throws -> PinnedSession.Response
     func bytes(for request: URLRequest, idleTimeout: TimeInterval) -> PinnedSession.ByteStream
-    /// Cancels everything in flight and accepts no more requests.
+    /// Cancels everything in flight, including what a `retire()` left running, and accepts no
+    /// more requests: they fail with `HubError.cancelled`.
     func invalidate()
-    /// Lets requests in flight finish and accepts no more.
+    /// Lets requests in flight finish and starts no more: a later one fails with
+    /// `PinnedSession.Retired`, having sent nothing.
     func retire()
+    /// Whether a retired or invalidated transport has nothing left in flight. Once true it stays
+    /// true, and there is nothing left for `invalidate()` to cancel.
+    var isDrained: Bool { get }
 }
 
 /// A `URLSession` whose every TLS connection passes standard validation (trusted chain, validity,
@@ -50,6 +55,11 @@ public final class PinnedSession: Sendable {
         let events: AsyncThrowingStream<StreamEvent, any Error>
         let cancel: @Sendable () -> Void
     }
+
+    /// A request reached a session that `retire()` had already closed to new ones. Nothing was
+    /// sent, which is what tells it apart from `HubError.cancelled`: the request may go to the
+    /// session that replaced this one. Internal to the transport; `HubClient` never lets it out.
+    struct Retired: Error {}
 
     public let policy: Policy
     private let core: Core
@@ -113,14 +123,16 @@ public final class PinnedSession: Sendable {
     }
 
     public func invalidate() {
-        core.close()
+        core.invalidate()
         session.invalidateAndCancel()
     }
 
     func retire() {
-        core.close()
+        core.retire()
         session.finishTasksAndInvalidate()
     }
+
+    var isDrained: Bool { core.isDrained }
 
     private static func configuration() -> URLSessionConfiguration {
         let configuration = URLSessionConfiguration.ephemeral
@@ -185,6 +197,7 @@ private final class Core: NSObject, URLSessionDataDelegate {
     }
 
     private struct TaskState: Sendable {
+        let task: URLSessionTask
         let sink: Sink
         var body = Data()
         var response: HTTPURLResponse?
@@ -194,9 +207,17 @@ private final class Core: NSObject, URLSessionDataDelegate {
         var failure: HubError?
     }
 
+    private enum Phase: Sendable {
+        case open
+        /// No new requests; those in flight finish.
+        case retired
+        /// No new requests; those in flight were cancelled.
+        case invalidated
+    }
+
     private struct State: Sendable {
         var tasks: [Int: TaskState] = [:]
-        var closed = false
+        var phase = Phase.open
         var verifiedHandshakes = 0
     }
 
@@ -211,15 +232,16 @@ private final class Core: NSObject, URLSessionDataDelegate {
 
     func start(_ request: URLRequest, on session: URLSession, sink: Sink, deadline: TimeInterval?, canceller: Canceller) {
         // Creating a task on an invalidated session raises an Objective-C exception, so creation
-        // and `close()` exclude each other.
-        let task: URLSessionDataTask? = state.withLock { state in
-            guard !state.closed else { return nil }
+        // and closing exclude each other. That also makes "retired" exact: a request either got
+        // its task before `retire()` and runs to its end, or it was never started.
+        let (task, phase): (URLSessionDataTask?, Phase) = state.withLock { state in
+            guard state.phase == .open else { return (nil, state.phase) }
             let task = session.dataTask(with: request)
-            state.tasks[task.taskIdentifier] = TaskState(sink: sink)
-            return task
+            state.tasks[task.taskIdentifier] = TaskState(task: task, sink: sink)
+            return (task, .open)
         }
         guard let task else {
-            Self.finish(sink, .failure(HubError.cancelled))
+            Self.finish(sink, .failure(phase == .retired ? PinnedSession.Retired() : HubError.cancelled))
             return
         }
         task.resume()
@@ -232,8 +254,24 @@ private final class Core: NSObject, URLSessionDataDelegate {
         }
     }
 
-    func close() {
-        state.withLock { $0.closed = true }
+    func retire() {
+        state.withLock { state in
+            if state.phase == .open { state.phase = .retired }
+        }
+    }
+
+    func invalidate() {
+        let running = state.withLock { state in
+            state.phase = .invalidated
+            return state.tasks.values.map(\.task)
+        }
+        // Cancelled one by one rather than left to `invalidateAndCancel()`: a retired session has
+        // already been told to finish its tasks, and what it still runs must end here all the same.
+        for task in running { task.cancel() }
+    }
+
+    var isDrained: Bool {
+        state.withLock { $0.phase != .open && $0.tasks.isEmpty }
     }
 
     /// Records why a task is being stopped, then cancels it. The first reason wins.

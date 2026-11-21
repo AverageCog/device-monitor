@@ -143,7 +143,7 @@ async function main() {
       return;
     }
     const answer = () => { res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ app: 'device-monitor', http: req.httpVersion })); };
-    if (url.pathname === '/e2e/slow') setTimeout(answer, 300); else answer();
+    if (url.pathname === '/e2e/slow') setTimeout(answer, Number(url.searchParams.get('ms')) || 300); else answer();
   });
   h2.on('session', session => { multiplexed.add(session); session.once('close', () => multiplexed.delete(session)); });
   await new Promise(resolve => h2.listen(0, '127.0.0.1', resolve));
@@ -164,14 +164,16 @@ async function main() {
     },
     // `certificate` is what the front presents; `proxy` is the certificate the hub is told is being served.
     // `keepTickets` models a TLS terminator that renews its certificate in place (tailscale serve,
-    // a reloaded nginx): session tickets issued under the old key stay redeemable.
-    present({ certificate, proxy, keepTickets }) {
+    // a reloaded nginx): session tickets issued under the old key stay redeemable. Such a front
+    // can also go on serving the connections it already has (`keepConnections`), so a live stream
+    // stays where it is while every new connection meets the new key.
+    present({ certificate, proxy, keepTickets, keepConnections }) {
       served = certificate;
       const tickets = front.getTicketKeys();
       front.setSecureContext(certs[certificate]);
       if (keepTickets) front.setTicketKeys(tickets);
       if (proxy) fs.writeFileSync(proxyCertFile, certs[proxy].cert);
-      front.closeAllConnections();      // a rotated server does not keep its old connections
+      if (!keepConnections) front.closeAllConnections();      // a restarted server does not keep its old connections
       return {};
     },
     // The same for the HTTP/2 stand-in.

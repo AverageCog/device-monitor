@@ -28,6 +28,10 @@ public actor HubClient {
     private let store: any CredentialStore
     private let connect: @Sendable (PinnedSession.Policy) -> any PinnedTransport
     private var transport: any PinnedTransport
+    /// Transports a key rotation replaced while a request or the live stream was still running on
+    /// them. They take no new requests and stay here so `close()` can end what is left; a later
+    /// rotation drops those that have nothing left.
+    private var retired: [any PinnedTransport] = []
     private let key: SymmetricKey
     private var pendingProof: Task<Void, any Error>?
     private var closed = false
@@ -105,6 +109,9 @@ public actor HubClient {
         closed = true
         pendingProof?.cancel()
         transport.invalidate()
+        // A request or stream that outlived a key rotation on its old connection ends here too.
+        for replaced in retired { replaced.invalidate() }
+        retired = []
     }
 
     /// `encodeURIComponent`, for a device id or other value placed in a path.
@@ -117,18 +124,26 @@ public actor HubClient {
     private func send(_ request: URLRequest, timeout: TimeInterval, limit: Int) async throws -> PinnedSession.Response {
         guard !closed else { throw HubError.cancelled }
         let started = ContinuousClock.now
-        let pin = enrollment.pin
-        do {
-            return try await transport.data(for: request, timeout: timeout, maxResponseBytes: limit)
-        } catch HubError.pinMismatch(let peerPin) {
-            // The handshake was refused before any HTTP bytes were sent, so this is the one
-            // failure after which sending again cannot repeat an operation.
-            try await refresh(previous: pin, candidate: peerPin)
+        var remaining = timeout
+        var proved = false
+        while true {
+            let pin = enrollment.pin
+            do {
+                return try await transport.data(for: request, timeout: remaining, maxResponseBytes: limit)
+            } catch HubError.pinMismatch(let peerPin) where !proved {
+                // The handshake was refused before any HTTP bytes were sent, so this is the one
+                // failure after which sending again cannot repeat an operation. Once per request.
+                proved = true
+                try await refresh(previous: pin, candidate: peerPin)
+            } catch is PinnedSession.Retired {
+                // The call above leaves the actor on its way to the transport, and a rotation
+                // adopted in that gap retired the transport before it got the request. It sent
+                // nothing, so the request goes to the transport that replaced it.
+            }
             guard !closed, !Task.isCancelled else { throw HubError.cancelled }
             let elapsed = (ContinuousClock.now - started).components
-            let remaining = timeout - Double(elapsed.seconds) - Double(elapsed.attoseconds) / 1e18
+            remaining = timeout - Double(elapsed.seconds) - Double(elapsed.attoseconds) / 1e18
             guard remaining > 0 else { throw HubError.unreachable(HubError.Reason.timedOut) }
-            return try await transport.data(for: request, timeout: remaining, maxResponseBytes: limit)
         }
     }
 
@@ -187,8 +202,11 @@ public actor HubClient {
         let previous = transport
         transport = candidateTransport
         adopted = true
-        // Requests still running on connections to the old key are not disturbed.
+        // Requests and a stream still running on connections to the old key are not disturbed,
+        // but they stay within reach of `close()` for as long as they run.
         previous.retire()
+        retired.append(previous)
+        retired.removeAll { $0.isDrained }
     }
 
     private struct ProofRequest: Encodable {
@@ -203,6 +221,8 @@ public actor HubClient {
 
     // MARK: Live stream plumbing (EventStream)
 
+    /// Unlike `send`, this never leaves the actor between choosing the transport and starting the
+    /// request on it, so a rotation cannot retire the transport in between.
     func openStream(idleTimeout: TimeInterval) throws -> (pin: String, stream: PinnedSession.ByteStream) {
         guard !closed else { throw HubError.cancelled }
         let request = try Self.makeRequest(origin: origin, method: "GET", path: EventStream.path, query: [], bearer: enrollment.client, body: nil)

@@ -413,6 +413,133 @@ import Testing
         #expect(hub.invalidated.count == 1)
     }
 
+    /// A front that renews its key in place keeps the connections it already has, so a request
+    /// and the live stream can outlive the rotation on the transport the client has moved on from.
+    @Test func closingReachesWorkLeftOnATransportRetiredByARotation() async throws {
+        let (hub, store, client) = try Self.setUp()
+        let started = Counter()
+        hub.onRequest { call in
+            if call.path == F.proofPath { return F.proofReply(to: call, signing: hub.servedPin) }
+            if call.path == "/api/slow" {
+                started.increment()
+                try await Task.sleep(for: .seconds(8))
+            }
+            return .json(200, "{}")
+        }
+        hub.onStream { _ in
+            EventStreamTests.Events { continuation in
+                continuation.yield(EventStreamTests.head(200))
+                continuation.yield(.data(Data("data: snapshot\n\n".utf8)))      // then the hub goes on forever
+            }
+        }
+        async let slow = hubError { _ = try await client.request(path: "/api/slow") }
+        let frames = Counter(), ended = Counter()
+        let live = Task { () -> HubError? in
+            defer { ended.increment() }
+            return await hubError { for try await _ in client.events() { frames.increment() } }
+        }
+        #expect(await EventStreamTests.eventually { started.count == 1 && frames.count == 1 })
+
+        hub.servedPin = F.pin("B")
+        _ = try await client.request(path: "/api/devices")
+        #expect(try store.load()?.pin == F.pin("B"))
+        #expect(hub.retired == [.require(pin: F.pin("A"))] && hub.invalidated.isEmpty)
+        #expect(ended.count == 0)                                           // the rotation disturbed neither
+
+        let clock = ContinuousClock()
+        let begun = clock.now
+        await client.close()
+        #expect(await slow == .cancelled)
+        #expect(await EventStreamTests.eventually { ended.count == 1 })
+        live.cancel()                                                       // only matters if the stream was left open
+        #expect(await live.value == .cancelled)
+        #expect(clock.now - begun < .seconds(4))
+        #expect(Set(hub.invalidated) == [.require(pin: F.pin("A")), .require(pin: F.pin("B"))])
+        #expect(hub.calls(to: "/api/slow").count == 1 && hub.calls(to: "/api/stream").count == 1)
+    }
+
+    @Test func keepsARetiredTransportOnlyWhileSomethingIsLeftOnIt() async throws {
+        /// One request in flight under key A, then `rotations`; optionally the request is allowed
+        /// to finish before the last of them. Returns how the request ended and what `close()`
+        /// had to invalidate.
+        func invalidatedOnClose(rotations: [Character], finishingBeforeTheLast: Bool) async throws -> (slow: HubError?, invalidated: Set<PinnedSession.Policy>) {
+            let (hub, _, client) = try Self.setUp()
+            let started = Counter(), release = Counter()
+            hub.onRequest { call in
+                if call.path == F.proofPath { return F.proofReply(to: call, signing: hub.servedPin) }
+                if call.path == "/api/slow" {
+                    started.increment()
+                    // Answered when the test says so, or after a while if nothing ever cancels it.
+                    for _ in 0..<2500 where release.count == 0 { try await Task.sleep(for: .milliseconds(2)) }
+                }
+                return .json(200, "{}")
+            }
+            async let slow = hubError { _ = try await client.request(path: "/api/slow") }
+            while started.count < 1 { try await Task.sleep(for: .milliseconds(2)) }
+            for (index, letter) in rotations.enumerated() {
+                if finishingBeforeTheLast, index == rotations.count - 1 {
+                    release.increment()
+                    #expect(await slow == nil)
+                }
+                hub.servedPin = F.pin(letter)
+                _ = try await client.request(path: "/api/devices")
+            }
+            await client.close()
+            let outcome = await slow
+            let replaced: [PinnedSession.Policy] = (["A"] + rotations.dropLast()).map { .require(pin: F.pin($0)) }
+            #expect(hub.retired == replaced)
+            return (outcome, Set(hub.invalidated))
+        }
+
+        // Still busy after two rotations: A is kept, and B, idle when it was replaced, is not.
+        let busy = try await invalidatedOnClose(rotations: ["B", "C"], finishingBeforeTheLast: false)
+        #expect(busy.slow == .cancelled)
+        #expect(busy.invalidated == [.require(pin: F.pin("A")), .require(pin: F.pin("C"))])
+
+        // Once its request has finished, the next rotation lets go of A as well.
+        let drained = try await invalidatedOnClose(rotations: ["B", "C"], finishingBeforeTheLast: true)
+        #expect(drained.slow == nil)
+        #expect(drained.invalidated == [.require(pin: F.pin("C"))])
+    }
+
+    /// `send` picks the transport on the actor and the request reaches it on another executor.
+    /// A rotation adopted in between retires that transport before it was given the request.
+    @Test func aRequestHandedTheOldTransportAsARotationIsAdoptedIsStillSent() async throws {
+        let enrollment = try F.enrollment()
+        let hub = FakeHub(servedPin: F.pin("B"))
+        let held = Counter()
+        hub.onRequest { call in
+            guard call.path == F.proofPath else { return .json(200, #"{"ok":true}"#) }
+            // The proof only completes once the late request is on its way to the old transport.
+            while held.count == 0 { try await Task.sleep(for: .milliseconds(1)) }
+            return F.proofReply(to: call, signing: hub.servedPin)
+        }
+        let store = InMemoryCredentialStore(enrollment)
+        let inner = hub.connect
+        let client = HubClient(enrollment: enrollment, store: store) { policy in
+            HeldTransport(inner(policy)) { request in
+                guard request.url?.path == "/api/late", policy == .require(pin: F.pin("A")) else { return }
+                held.increment()
+                while hub.retired.isEmpty { try? await Task.sleep(for: .milliseconds(1)) }
+            }
+        }
+        async let first = hubError { _ = try await client.request(path: "/api/first") }
+        let body = Data(#"{"ids":["a","b"]}"#.utf8)
+        let late = await hubError { _ = try await client.request(method: "PUT", path: "/api/late", body: body) }
+        #expect(late == nil)
+        #expect(await first == nil)
+        #expect(held.count == 1)
+
+        // The retired transport sent nothing, so the PUT reached the hub exactly once, on the new key.
+        let sent = hub.calls(to: "/api/late")
+        #expect(sent.count == 1)
+        #expect(sent.first?.policy == .require(pin: F.pin("B")) && sent.first?.body == body && sent.first?.timeout ?? 0 <= 15)
+        #expect(hub.calls(to: F.proofPath).count == 1)
+        #expect(hub.refusedHandshakes == [.require(pin: F.pin("A"))])
+        #expect(try store.load()?.pin == F.pin("B"))
+        await client.close()
+    }
+
     @Test func closingCancelsAPendingProof() async throws {
         let (hub, store, client) = try Self.setUp(serving: F.pin("B"))
         let started = Counter()
