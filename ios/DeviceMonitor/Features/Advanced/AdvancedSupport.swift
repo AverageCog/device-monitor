@@ -138,7 +138,8 @@ nonisolated enum AdvancedTableFit {
 
 /// Shared measures of the two tables.
 nonisolated enum AdvancedTableMetrics {
-    /// Between columns. Tighter than the dashboard's 28: an iPad held upright is 700 points wide.
+    /// Between columns. Tighter than the dashboard's 28: the smallest iPad, held upright, leaves
+    /// the page 700 points.
     static let columnSpacing: CGFloat = 12
     /// `padding: 9px 14px` of a cell.
     static let rowPadding: CGFloat = 14

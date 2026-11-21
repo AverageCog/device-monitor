@@ -255,10 +255,11 @@ struct AdvancedPowerSection: View {
             .lineLimit(1)
     }
 
-    /// "67%" and its bar (`.share`). The text is there even when empty, to keep the row's baseline.
+    /// "67%" and its bar (`.share`). Without totals there is only the bar; a space then keeps the
+    /// line's height, so the cell stays level with its neighbours.
     private func share(_ row: AdvancedModel.PowerRow) -> some View {
-        HStack(alignment: .center, spacing: Metrics.swatchSpacing) {
-            Text(row.share)
+        HStack(alignment: .center, spacing: row.share.isEmpty ? 0 : Metrics.swatchSpacing) {
+            Text(row.share.isEmpty ? " " : row.share)
                 .lineLimit(1)
                 .fixedSize()
             MeterBar(percent: row.shareFraction * 100, color: row.color.color, height: 6)
