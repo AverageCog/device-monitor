@@ -79,6 +79,8 @@ final class AppModel {
                     case .retry: session.retryNow()
                     case .outage:
                         if let hub = session.demoHub ?? debugHub { DebugTools.interrupt(hub, for: .seconds(20)) }
+                    case .blip:
+                        if let hub = session.demoHub ?? debugHub { DebugTools.interrupt(hub, for: .seconds(5)) }
                     }
                     return
                 case .onboarding, .connecting:

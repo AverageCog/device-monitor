@@ -6,6 +6,8 @@ import SwiftUI
 struct MainTabView: View {
     @Environment(AppRouter.self) private var router
     @Environment(HubStore.self) private var store
+    /// The outage the "Reconnecting to hub…" banners are up for.
+    @State private var shownOutage: Double?
 
     var body: some View {
         @Bindable var router = router
@@ -16,7 +18,7 @@ struct MainTabView: View {
                         .dmScreen()
                 }
                 // Above the tab bar on every tab, so no screen has to say it itself.
-                .safeAreaInset(edge: .bottom, spacing: 0) { ReconnectingBanner() }
+                .safeAreaInset(edge: .bottom, spacing: 0) { ReconnectingBanner(isShown: lostSince != nil && lostSince == shownOutage) }
                 .tabItem { Label(tab.title, systemImage: tab.systemImage) }
                 .badge(tab == .alerts ? store.alerts.active.count : 0)
                 .tag(tab)
@@ -28,11 +30,34 @@ struct MainTabView: View {
             case .electricityPrice: ElectricityPriceSheet()
             }
         }
+        // Followed here rather than by the banners: there is one on each tab, and VoiceOver is
+        // to hear of an outage once.
+        .task(id: lostSince) { await follow(outageSince: lostSince) }
         #if DEBUG
         .fullScreenCover(item: $router.debugScreen) { screen in
             DebugScreenHost(screen: screen)
         }
         #endif
+    }
+
+    private var lostSince: Double? {
+        if case .reconnecting(let since) = store.connection { since } else { nil }
+    }
+
+    /// Puts the banners up once an outage has lasted a moment and tells VoiceOver, whose user would
+    /// otherwise read on through figures that have stopped updating. When the stream is back, it
+    /// says that too.
+    private func follow(outageSince since: Double?) async {
+        guard let since else {
+            // Going to the background or being refused ends an outage as well, with nothing back.
+            if shownOutage != nil, store.isLive { ReconnectingBanner.announce(ReconnectingBanner.reconnectedText, urgently: false) }
+            shownOutage = nil
+            return
+        }
+        try? await Task.sleep(for: ReconnectingBanner.delay)
+        guard !Task.isCancelled else { return }
+        shownOutage = since
+        ReconnectingBanner.announce(FleetCounts.reconnectingText, urgently: true)
     }
 
     @ViewBuilder
@@ -49,19 +74,18 @@ struct MainTabView: View {
 
 /// "Reconnecting to hub…" while the live stream is down and what is on show is the last known
 /// state (`#summaryText` of the dashboard). After ten seconds the session shows the unreachable
-/// screen instead.
+/// screen instead. `MainTabView` says when.
 struct ReconnectingBanner: View {
-    @Environment(HubStore.self) private var store
-    /// The outage the banner is up for.
-    @State private var shownSince: Double?
+    let isShown: Bool
 
     /// Coming back to the app reconnects in a moment; saying so each time would only flicker.
-    private static let delay: Duration = .milliseconds(1200)
+    static let delay: Duration = .milliseconds(1200)
+    /// What VoiceOver hears when the stream is back after the banner was up.
+    static let reconnectedText = "Reconnected to hub"
 
     var body: some View {
-        let since = lostSince
         Group {
-            if let since, since == shownSince {
+            if isShown {
                 BannerView(FleetCounts.reconnectingText, showsProgress: true)
                     .padding(.horizontal, Theme.Layout.screenPaddingCompact)
                     .padding(.vertical, Theme.Spacing.xs)
@@ -69,19 +93,17 @@ struct ReconnectingBanner: View {
                     .transition(.opacity)
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: shownSince)
-        .task(id: since) {
-            guard let since else {
-                shownSince = nil
-                return
-            }
-            try? await Task.sleep(for: Self.delay)
-            if !Task.isCancelled { shownSince = since }
-        }
+        .animation(.easeInOut(duration: 0.2), value: isShown)
     }
 
-    private var lostSince: Double? {
-        if case .reconnecting(let since) = store.connection { since } else { nil }
+    /// - Parameter urgently: Spoken over whatever VoiceOver is reading, rather than after it.
+    static func announce(_ text: String, urgently: Bool) {
+        var announcement = AttributedString(text)
+        if urgently { announcement.accessibilitySpeechAnnouncementPriority = .high }
+        AccessibilityNotification.Announcement(announcement).post()
+        #if DEBUG
+        AnnouncementProbe.record(text)
+        #endif
     }
 }
 

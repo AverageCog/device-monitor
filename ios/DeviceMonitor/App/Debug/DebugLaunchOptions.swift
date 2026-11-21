@@ -21,11 +21,11 @@ import Foundation
 ///                                           present that shared sheet
 ///     -dm-gallery [section]                 open the component gallery, optionally at a section
 ///     -dm-probe phase-container             open the PhaseContainer check
-///     -dm-then <disconnect|pair-again|retry|outage>
+///     -dm-then <disconnect|pair-again|retry|outage|blip>
 ///                                           once the session has settled (live, unreachable or
 ///                                           revoked), do what that button does, for showing
 ///                                           those paths where nothing can tap; `outage` takes a
-///                                           demo hub away for twenty seconds
+///                                           demo hub away for twenty seconds, `blip` for five
 ///
 /// `-dm-tab`, `-dm-history` and `-dm-sheet` take effect once the tabs are showing, so combine them
 /// with `-dm-demo` or `-dm-phase live` unless the app is paired. The gallery and the probe cover
@@ -43,6 +43,9 @@ nonisolated struct DebugLaunchOptions: Sendable {
         case retry
         /// Demo hubs only: the hub is unreachable for twenty seconds.
         case outage
+        /// Demo hubs only: the hub is unreachable for five seconds, back before the session
+        /// calls it unreachable.
+        case blip
     }
 
     var startsDemo = false

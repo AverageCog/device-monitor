@@ -42,7 +42,10 @@ struct RootView: View {
             }
         }
         #if DEBUG
-        .overlay(alignment: .topLeading) { SessionProbe() }
+        .overlay(alignment: .topLeading) {
+            SessionProbe()
+            AnnouncementProbe()
+        }
         #endif
     }
 }

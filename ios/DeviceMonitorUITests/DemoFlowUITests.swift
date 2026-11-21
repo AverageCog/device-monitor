@@ -167,6 +167,25 @@ final class DemoFlowUITests: XCTestCase {
         XCTAssertFalse(app.element(withIdentifier: ID.unreachable).exists)
     }
 
+    /// A VoiceOver user reading the cards is told when the figures stop updating, once although
+    /// every tab has its banner, and told again when they are live.
+    @MainActor
+    func testAShortOutageIsAnnouncedOnceAndSoIsTheWayBack() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-dm-demo", "-dm-then", "blip"]
+        app.launch()
+        let announcements = app.element(withIdentifier: ID.announcements)
+        XCTAssertTrue(announcements.waitForExistence(timeout: 20))
+        let banner = app.element(withIdentifier: ID.reconnectingBanner)
+        XCTAssertTrue(banner.waitForExistence(timeout: 20), "The banner says the stream is down")
+        XCTAssertTrue(wait(upTo: 5) { announcements.label == "Reconnecting to hub…" }, "Announced once: \(announcements.label)")
+
+        XCTAssertTrue(wait(upTo: 15) { !banner.exists }, "The demo hub is back after five seconds")
+        XCTAssertTrue(
+            wait(upTo: 5) { announcements.label == "Reconnecting to hub…|Reconnected to hub" }, "The way back is announced once: \(announcements.label)")
+        XCTAssertEqual(app.sessionState?.phase, "live", "Back before the hub is called unreachable")
+    }
+
     /// The debug menu can have the demo hub refuse the app. There is no enrollment to forget
     /// then, and the revoked screen still has to lead somewhere.
     @MainActor
