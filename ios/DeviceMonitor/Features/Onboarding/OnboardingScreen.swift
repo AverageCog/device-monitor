@@ -11,7 +11,7 @@ struct OnboardingScreen: View {
                 title: "Device Monitor",
                 message: "Pair this device with your hub to see your computers here.",
                 // Also proves the DMCore package is linked into the app.
-                hint: "An invitation looks like https://your-hub\(DMCore.invitationPath)#join=…",
+                hint: "An invitation looks like https://your-hub\(DMCoreInfo.invitationPath)#join=…",
                 systemImage: "gauge.with.dots.needle.33percent"
             ) {
                 #if DEBUG

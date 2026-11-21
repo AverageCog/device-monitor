@@ -31,7 +31,7 @@ public struct Invitation: Sendable, Equatable {
         let address = text[..<hash]
         guard let code = fragmentValue("join", in: text[text.index(after: hash)...]) else { throw HubError.invalidInvitation(.malformed) }
 
-        guard address.hasSuffix(DMCore.invitationPath) else {
+        guard address.hasSuffix(DMCoreInfo.invitationPath) else {
             // The hub's other two invitations look almost the same; say which one this is.
             let looksLikeLink = address.lowercased().hasPrefix("https://") || address.lowercased().hasPrefix("http://")
             if looksLikeLink, address.hasSuffix("/pair") { throw HubError.invalidInvitation(.desktopInvitation) }
@@ -40,7 +40,7 @@ public struct Invitation: Sendable, Equatable {
         }
         // Whatever precedes the path must be a bare origin, so userinfo, a query, a longer path or
         // a second slash all fail here.
-        guard let origin = try? HubOrigin(String(address.dropLast(DMCore.invitationPath.count)), allowTrailingSlash: false) else {
+        guard let origin = try? HubOrigin(String(address.dropLast(DMCoreInfo.invitationPath.count)), allowTrailingSlash: false) else {
             throw HubError.invalidInvitation(.malformed)
         }
         return try Invitation(origin: origin, code: code)

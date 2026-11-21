@@ -39,7 +39,7 @@ final class TransportE2ETests: Sendable {
             return try await HubPairing.pair(invitation: Invitation(origin: hub.origin, code: code), name: name, redeemPath: "/api/pair", secondSecret: "agent", connect: connect)
         }
         // The text a person scans or pastes, and the production endpoint and field.
-        let invitation = try Invitation.parse("\(hub.origin)\(DMCore.invitationPath)#join=\(code)")
+        let invitation = try Invitation.parse("\(hub.origin)\(DMCoreInfo.invitationPath)#join=\(code)")
         return try await HubPairing.pair(invitation: invitation, name: name, redeemPath: HubPairing.redeemPath, secondSecret: HubPairing.secondSecret, connect: connect)
     }
 

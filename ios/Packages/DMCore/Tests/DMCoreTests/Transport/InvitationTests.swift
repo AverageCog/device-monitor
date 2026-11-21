@@ -19,7 +19,7 @@ import Testing
     }
 
     @Test func parsesWhatTheHubShows() throws {
-        #expect(DMCore.invitationPath == "/mobile")
+        #expect(DMCoreInfo.invitationPath == "/mobile")
         let cases: [(String, String)] = [
             ("\(Self.hub)/mobile#join=\(Self.code)", "https://hub.example"),
             ("\(Self.hub):8443/mobile#join=\(Self.code)", "https://hub.example:8443"),
