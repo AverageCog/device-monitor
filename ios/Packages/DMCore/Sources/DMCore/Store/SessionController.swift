@@ -68,7 +68,7 @@ public struct HubLink: Sendable {
 /// ```
 ///
 /// `store` is non-nil in every phase but `.onboarding` (and before `launch()`), and is the same
-/// object from pairing to disconnecting, so screens can keep reading it across an outage.
+/// object from pairing to disconnecting, through any outage.
 @MainActor
 @Observable
 public final class SessionController {
@@ -127,8 +127,8 @@ public final class SessionController {
         case lost(since: Double)
     }
 
-    /// Whether the stored enrollment has been looked up.
-    private var isRestored = false
+    /// Whether `launch()` has been called.
+    private var isLaunched = false
     /// The phase to keep showing while the store is stopped on purpose: in the background, and
     /// while disconnecting.
     private var heldPhase: SessionPhase?
@@ -145,6 +145,8 @@ public final class SessionController {
     /// False once the Keychain could not be read in this process: what looks like a first
     /// launch may then be a phone that had not been unlocked yet.
     @ObservationIgnored private var mayForget = true
+    /// The stored enrollment could not be looked up yet.
+    @ObservationIgnored private var needsRestore = false
 
     /// - Parameters:
     ///   - credentials: where the enrollment is kept (`KeychainCredentialStore` in the app).
@@ -183,7 +185,7 @@ public final class SessionController {
     // MARK: - Phase
 
     public var phase: SessionPhase {
-        guard let store else { return isRestored ? .onboarding : .connecting }
+        guard let store else { return isLaunched ? .onboarding : .connecting }
         if let heldPhase { return heldPhase }
         switch store.connection {
         case .live: return .live
@@ -230,7 +232,12 @@ public final class SessionController {
     /// is found is therefore deleted unused, so that a reinstalled app starts at onboarding
     /// instead of quietly using an old credential.
     public func launch() {
-        guard !isRestored else { return }
+        guard !isLaunched else { return }
+        isLaunched = true
+        restore()
+    }
+
+    private func restore() {
         // Absent when the app has never run, and when the phone has not been unlocked since it
         // started: then defaults cannot be read, and neither can the Keychain.
         let firstLaunch = defaults.object(forKey: Key.hasLaunched.rawValue) == nil
@@ -241,12 +248,15 @@ public final class SessionController {
         } catch CredentialStoreError.corrupted {
             unreadable = true
         } catch {
-            // The Keychain itself is out of reach. Nothing is known and nothing is deleted;
-            // `enterForeground()` looks again.
+            // The Keychain itself is out of reach: nothing is known, and nothing is deleted on
+            // the strength of it. `enterForeground()` looks again; until then the app is as
+            // good as unpaired, and says why.
             mayForget = false
+            needsRestore = true
+            pairingError = Self.message(for: error)
             return
         }
-        isRestored = true
+        needsRestore = false
 
         if firstLaunch, mayForget {
             if stored != nil || unreadable {
@@ -277,7 +287,13 @@ public final class SessionController {
     ///   - name: the label the hub shows for this phone.
     @discardableResult
     public func pair(invitationText: String, name: String) async -> Bool {
-        guard isRestored, store == nil, !isPairing else { return false }
+        guard isLaunched, store == nil, !isPairing else { return false }
+        if needsRestore {
+            // An invitation works once: it is not spent on an enrollment that could not be kept.
+            pairingError = nil
+            restore()
+            guard !needsRestore, store == nil else { return false }
+        }
         isPairing = true
         pairingError = nil
         defer { isPairing = false }
@@ -414,7 +430,7 @@ public final class SessionController {
     /// Runs the app on a hub that exists only in memory. Only from onboarding; nothing is read
     /// from or written to the credential store.
     public func startDemo() {
-        guard isRestored, store == nil, !isPairing else { return }
+        guard isLaunched, store == nil, !isPairing else { return }
         pairingError = nil
         let hub = demoFactory(clock)
         demoHub = hub
@@ -440,12 +456,12 @@ public final class SessionController {
     }
 
     /// The app is in front again: reconnects at once. Also looks for the stored enrollment
-    /// again if `launch()` could not read the Keychain.
+    /// again if the Keychain could not be read before.
     public func enterForeground() {
         isForeground = true
-        guard isRestored else {
-            launch()
-            return
+        if needsRestore, store == nil, !isPairing {
+            pairingError = nil
+            restore()
         }
         guard let store, !isDisconnecting else { return }
         if store.isSuspended {

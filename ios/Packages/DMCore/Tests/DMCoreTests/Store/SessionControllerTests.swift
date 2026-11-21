@@ -102,7 +102,6 @@ enum SessionFixtures {
     static let noConnection = HubError.unreachable("Could not connect to the hub.")
 
     static func enrollment(origin: String = SessionFixtures.origin, id: String = "0b0e2f6e-7a51-4d0c-9a0b-0f3c5d1e2a44", name: String = "Test iPhone") -> Enrollment {
-        // swiftlint:disable:next force_try
         try! Enrollment(
             origin: try! HubOrigin(origin), id: id, client: String(repeating: "c", count: 43), proof: String(repeating: "p", count: 43),
             pin: String(repeating: "A", count: 43) + "=", name: name, pairedAt: Date(timeIntervalSince1970: 1_795_000_000))
@@ -276,15 +275,57 @@ struct SessionControllerTests {
         h.credentials.fail { $0.load = .keychain(status: -25308) }
         h.session.enterBackground()
         h.session.launch()
-        #expect(h.session.phase == .connecting && h.session.store == nil && h.credentials.calls == ["load"])
-        #expect(await h.session.pair(invitationText: SessionFixtures.invitation, name: "x") == false)
+        #expect(h.session.phase == .onboarding && h.session.store == nil && h.credentials.calls == ["load"])
+        #expect(h.session.pairingError == "The Keychain is unavailable (error -25308).")
+        #expect(h.defaults.object(forKey: SessionController.Key.hasLaunched.rawValue) == nil)
 
         h.credentials.fail { $0.load = nil }
         h.session.enterForeground()
-        #expect(h.session.phase == .connecting && h.session.store != nil)
+        #expect(h.session.phase == .connecting && h.session.store != nil && h.session.pairingError == nil)
         #expect(h.credentials.calls == ["load", "load"] && h.credentials.enrollment == enrollment)
         try await h.connection(0).send(.snapshot(SessionFixtures.devices))
         try await eventually("the session is live") { h.session.phase == .live }
+        h.session.enterForeground()                         // read once is enough
+        #expect(h.credentials.calls == ["load", "load"])
+    }
+
+    @Test func aKeychainThatStaysOutOfReachIsSaidSoAndCostsNoInvitation() async throws {
+        // What an app without a Keychain entitlement gets, for example.
+        let h = SessionHarness()
+        h.credentials.fail { $0.load = .keychain(status: -34018) }
+        h.session.launch()
+        #expect(h.session.phase == .onboarding && h.session.pairingError == "The Keychain is unavailable (error -34018).")
+        h.session.enterForeground()
+        #expect(h.session.phase == .onboarding && h.session.pairingError == "The Keychain is unavailable (error -34018).")
+        #expect(h.credentials.calls == ["load", "load"])
+
+        // Pairing looks first: an invitation works once, and the enrollment could not be kept.
+        h.log.answerPairing { [enrollment] _, _ in enrollment }
+        #expect(await h.session.pair(invitationText: SessionFixtures.invitation, name: "x") == false)
+        #expect(h.log.attempts.isEmpty && h.session.pairingError == "The Keychain is unavailable (error -34018).")
+        #expect(h.credentials.calls == ["load", "load", "load"] && h.session.phase == .onboarding)
+
+        // The demo needs no Keychain.
+        h.session.startDemo()
+        #expect(h.session.isDemo && h.session.pairingError == nil)
+        h.session.stopDemo()
+
+        // Once the Keychain answers, pairing goes ahead.
+        h.credentials.fail { $0.load = nil }
+        #expect(await h.session.pair(invitationText: SessionFixtures.invitation, name: "x"))
+        #expect(h.log.attempts.count == 1 && h.credentials.enrollment == enrollment && h.session.phase == .connecting)
+        #expect(h.credentials.calls == ["load", "load", "load", "load", "save"])
+    }
+
+    @Test func pairingFindsTheEnrollmentThatCouldNotBeReadBeforeAndKeepsTheInvitation() async throws {
+        let h = SessionHarness(stored: enrollment)
+        h.credentials.fail { $0.load = .keychain(status: -25308) }
+        h.session.launch()
+        #expect(h.session.phase == .onboarding)
+        h.credentials.fail { $0.load = nil }
+        #expect(await h.session.pair(invitationText: SessionFixtures.invitation, name: "x") == false)
+        #expect(h.log.attempts.isEmpty && h.session.pairingError == nil)
+        #expect(h.session.phase == .connecting && h.session.hub == PairedHub(enrollment) && h.credentials.enrollment == enrollment)
     }
 
     @Test func anUnreadableEnrollmentIsExplainedAndLeftForPairingToReplace() async {
