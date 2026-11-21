@@ -159,7 +159,6 @@ struct OnboardingPairingForm: View {
                 .labelStyle(.titleAndIcon)
                 .buttonBorderShape(.roundedRectangle(radius: Theme.Radius.control))
                 .tint(Theme.surface2)
-                .disabled(isBusy)
                 .accessibilityIdentifier("pair-paste-button")
             }
             .disabled(isBusy)

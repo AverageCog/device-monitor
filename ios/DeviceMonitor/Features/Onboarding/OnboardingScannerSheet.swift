@@ -6,14 +6,30 @@ import UIKit
 /// "Scan invitation": the camera with a viewfinder, in a sheet over the pairing screen. It closes
 /// by itself when it has read an invitation for this app, handing its text to `onInvitation`.
 struct OnboardingScannerSheet: View {
-    /// Called once with the scanned invitation; the caller dismisses the sheet.
-    let onInvitation: (String) -> Void
+    private let onInvitation: (String) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
     @Environment(\.verticalSizeClass) private var verticalSizeClass
-    @State private var model = OnboardingScannerSheet.makeModel()
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var model: OnboardingScannerModel
+    @State private var instructionHeight: CGFloat = 0
+    @State private var controlsHeight: CGFloat = 0
+
+    /// - Parameter onInvitation: called once with the scanned invitation; the caller dismisses the sheet.
+    init(onInvitation: @escaping (String) -> Void) {
+        self.onInvitation = onInvitation
+        _model = State(initialValue: Self.makeModel())
+    }
+
+    #if DEBUG
+    /// A scanner without a camera that shows `state` (see `OnboardingDebugOptions`), for previews.
+    init(simulating state: String) {
+        onInvitation = { _ in }
+        _model = State(initialValue: OnboardingScannerModel(simulating: state))
+    }
+    #endif
 
     var body: some View {
         NavigationStack {
@@ -120,7 +136,7 @@ struct OnboardingScannerSheet: View {
 
     private var viewfinder: some View {
         GeometryReader { proxy in
-            let side = Self.windowSide(in: proxy.size)
+            let side = windowSide(in: proxy.size)
             ZStack {
                 if let session = model.camera?.session {
                     OnboardingScannerPreview(session: session, isRunning: model.status == .scanning)
@@ -142,14 +158,18 @@ struct OnboardingScannerSheet: View {
                         .dmFont(.bodyStrong)
                         .foregroundStyle(Theme.textPrimary)
                         .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
                         .shadow(color: .black.opacity(0.6), radius: 3)
                         .accessibilityIdentifier("scanner-instruction")
+                        .onGeometryChange(for: CGFloat.self, of: { $0.size.height }, action: { instructionHeight = $0 })
                     Spacer(minLength: 0)
                     controls
+                        .onGeometryChange(for: CGFloat.self, of: { $0.size.height }, action: { controlsHeight = $0 })
                 }
                 .padding(Theme.Spacing.l)
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: side)
         }
     }
 
@@ -186,7 +206,7 @@ struct OnboardingScannerSheet: View {
                 .accessibilityIdentifier("scanner-torch-button")
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: model.rejection)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: model.rejection)
     }
 
     /// What is drawn inside the window while there is no picture to look at there.
@@ -222,9 +242,11 @@ struct OnboardingScannerSheet: View {
     }
 
     /// The side of the square window: as large as leaves room for the instruction above it and
-    /// the controls below, on any screen and either way up.
-    private static func windowSide(in size: CGSize) -> CGFloat {
-        max(140, min(320, size.width - 64, size.height - 200))
+    /// the controls below, on any screen, either way up and at any text size. The window is
+    /// centred, so the taller of the two decides.
+    private func windowSide(in size: CGSize) -> CGFloat {
+        let margin = max(instructionHeight, controlsHeight) + 2 * Theme.Spacing.l
+        return max(120, min(320, size.width - 64, size.height - 2 * margin))
     }
 }
 
@@ -290,9 +312,24 @@ private nonisolated struct OnboardingScannerCorners: Shape {
     }
 }
 
-#if DEBUG
 #Preview("Scanner, no camera") {
     OnboardingScannerSheet { _ in }
+        .demoEnvironment(.onboarding)
+}
+
+#if DEBUG
+#Preview("Scanner") {
+    OnboardingScannerSheet(simulating: "scanning")
+        .demoEnvironment(.onboarding)
+}
+
+#Preview("Scanner, a desktop invitation in view") {
+    OnboardingScannerSheet(simulating: "desktop")
+        .demoEnvironment(.onboarding)
+}
+
+#Preview("Scanner, camera denied") {
+    OnboardingScannerSheet(simulating: "denied")
         .demoEnvironment(.onboarding)
 }
 #endif
