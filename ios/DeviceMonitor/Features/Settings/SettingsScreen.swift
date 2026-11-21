@@ -209,9 +209,14 @@ private struct SettingsLinkRows: View {
         case .ready(let link, let expires):
             VStack(alignment: .leading, spacing: Theme.Spacing.s) {
                 AddDeviceLinkText(link: link, identifier: "settings-link")
-                HStack(spacing: Theme.Spacing.s) {
-                    AddDeviceLinkActions(link: link, expires: expires, identifier: "settings-link")
-                    Spacer(minLength: 0)
+                // Side by side while they fit; one under the other at the largest text sizes.
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: Theme.Spacing.s) {
+                        AddDeviceLinkActions(link: link, expires: expires, identifier: "settings-link")
+                    }
+                    VStack(alignment: .leading, spacing: Theme.Spacing.s) {
+                        AddDeviceLinkActions(link: link, expires: expires, identifier: "settings-link")
+                    }
                 }
                 note(session.isDemo ? AddDeviceGuide.demoNote : BrowserInvitation.Labels.validity)
             }

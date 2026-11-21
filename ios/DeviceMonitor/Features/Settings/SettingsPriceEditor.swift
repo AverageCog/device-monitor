@@ -383,7 +383,9 @@ struct SettingsPriceEditor: View {
                 .frame(minHeight: SettingsPriceMetrics.controlHeight)
                 .dmField(isInvalid: isInvalid)
                 .monospacedDigit()
-                .frame(width: metrics.field)
+                // Its full width while there is room; at the very largest text sizes it gives way
+                // to "per kWh" rather than push the editor past the card's edge.
+                .frame(maxWidth: metrics.field)
                 .accessibilityLabel(label)
                 .accessibilityIdentifier(identifier)
             Text(PriceEditor.Labels.perKwh)
