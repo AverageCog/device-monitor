@@ -201,7 +201,10 @@ final class DemoFlowUITests: XCTestCase {
         add.tap()
         let sheet = app.element(withIdentifier: "screen-add-device")
         XCTAssertTrue(sheet.waitForExistence(timeout: 5), "The + button presents the shared sheet")
-        XCTAssertTrue(sheet.label.contains("https://hub.demo.example"), "The sheet reads the tabs' environment: \(sheet.label)")
+        // The browser link it shows comes from the hub of the tabs' environment.
+        let link = app.element(withIdentifier: "add-device-link")
+        XCTAssertTrue(link.waitForExistence(timeout: 10), "The sheet asks the tabs' hub for a link")
+        XCTAssertTrue(link.label.hasPrefix("https://hub.demo.example/unlock#join="), "The sheet reads the tabs' environment: \(link.label)")
         app.buttons["add-device-done-button"].tap()
 
         app.tabBars.buttons["Advanced"].tap()
