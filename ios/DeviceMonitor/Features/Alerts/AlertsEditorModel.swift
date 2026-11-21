@@ -74,13 +74,34 @@ final class AlertsEditorModel {
     private(set) var failures = 0
     private(set) var test = AlertsTestState.idle
 
-    /// The rule whose screen is pushed.
+    /// The editor is pushed over the Alerts tab.
+    var isOpen = AlertsLaunch.opensSettings
+    /// The rule whose screen is pushed over the editor.
     var editedRuleID: String?
+    @ObservationIgnored private var ruleToOpen: String?
     /// The webhook URL field is shown although the hub holds a URL.
     var isReplacingWebhook = false
 
     var isDirty: Bool { editor?.isDirty ?? false }
     var canSave: Bool { (editor?.canSave ?? false) && !isSaving }
+
+    /// "Edit rule" on an alert: the editor, opened at the rule that raised it. The rule's screen
+    /// follows once the editor is on screen (`takeRuleToOpen()`): pushed in the same breath, the
+    /// second screen can come up without its title.
+    func open(rule id: String) {
+        if isOpen {
+            editedRuleID = id
+        } else {
+            ruleToOpen = id
+            isOpen = true
+        }
+    }
+
+    /// The rule the editor was opened for, once.
+    func takeRuleToOpen() -> String? {
+        defer { ruleToOpen = nil }
+        return ruleToOpen
+    }
 
     // MARK: The hub
 

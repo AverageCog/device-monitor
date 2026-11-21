@@ -111,6 +111,48 @@ final class AlertsUITests: XCTestCase {
     }
 
     @MainActor
+    func testAnAlertLeadsToTheRuleThatRaisedIt() {
+        let app = launch()
+        let active = elements(in: app, withPrefix: AlertsID.activePrefix)
+        XCTAssertTrue(wait(upTo: 20) { active.count == 2 })
+        active.matching(NSPredicate(format: "label CONTAINS %@", "Living Room PC")).firstMatch.tap()
+        let edit = app.element(labelled: "Edit rule")
+        XCTAssertTrue(edit.waitForExistence(timeout: 5))
+        edit.tap()
+
+        XCTAssertTrue(app.element(withIdentifier: AlertsID.ruleScreen).waitForExistence(timeout: 10), "Edit rule opens the rule, over the editor")
+        XCTAssertTrue(app.element(withIdentifier: "alert-rule-summary").label.contains("Offline for 10 min"))
+        XCTAssertTrue(app.navigationBars["Offline"].waitForExistence(timeout: 5), "The rule's screen carries its title")
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(app.element(withIdentifier: AlertsID.settingsScreen).waitForExistence(timeout: 10), "Back leads to the editor")
+    }
+
+    @MainActor
+    func testAnAlertThatFiresShowsAtOnceAndIsAnnounced() {
+        // The demo hub's Gaming PC fills its D: drive for eight seconds; the probe tells what the
+        // notifier made of it (nothing can answer the system's permission question here).
+        let app = launch("-dm-alerts-probe", "-dm-alerts-script", "disk-alert")
+        let active = elements(in: app, withPrefix: AlertsID.activePrefix)
+        XCTAssertTrue(wait(upTo: 30) { active.count == 3 }, "A third alert fires while the tab is open, found \(active.count)")
+        let fired = active.matching(NSPredicate(format: "label CONTAINS %@", "Gaming PC: disk D:")).firstMatch
+        XCTAssertTrue(fired.exists)
+        XCTAssertTrue(app.element(labelled: "Today").exists, "It is in today's log too")
+        let tab = app.tabBars.buttons["Alerts"]
+        XCTAssertTrue(wait(upTo: 10) { (tab.value as? String)?.contains("3") == true }, "Alerts badge: \(String(describing: tab.value))")
+        attachScreenshot(of: app, named: "alerts-fired")
+
+        let probe = app.element(withIdentifier: "debug-alerts-notifier")
+        XCTAssertTrue(wait(upTo: 10) { probe.label.contains("notify: [Gaming PC: disk D:") }, "The notifier plans a notification for it: \(probe.label)")
+        XCTAssertTrue(probe.label.contains("log: "), "…after going through the hub's log first: \(probe.label)")
+        let log = probe.label.range(of: "log: "), live = probe.label.range(of: "live: Gaming PC")
+        if let log, let live { XCTAssertTrue(log.lowerBound < live.lowerBound, "The log comes before live alerts: \(probe.label)") }
+
+        // And clears by itself.
+        XCTAssertTrue(wait(upTo: 40) { active.count == 2 }, "The alert clears when the disk has room again, found \(active.count)")
+        XCTAssertTrue(wait(upTo: 10) { probe.label.contains("back under") }, "Its end is announced too: \(probe.label)")
+    }
+
+    @MainActor
     func testClearingTheLogAsksFirst() {
         let app = launch()
         let clear = app.element(withIdentifier: AlertsID.clearButton)
@@ -131,7 +173,7 @@ final class AlertsUITests: XCTestCase {
     func testEveryStateOfTheListHasItsScreen() {
         for (state, identifier) in [
             ("loading", "alerts-loading"), ("error", "alerts-load-error"), ("empty", AlertsID.emptyLog),
-            ("all-clear", AlertsID.allClear), ("no-rules", "alerts-no-rules"),
+            ("all-clear", AlertsID.allClear), ("no-rules", "alerts-no-rules"), ("kinds", "alert-event-sample-test"),
         ] {
             let app = launch("-dm-alerts-list", state)
             XCTAssertTrue(app.element(withIdentifier: identifier).waitForExistence(timeout: 20), "-dm-alerts-list \(state) shows \(identifier)")

@@ -70,7 +70,14 @@ struct AlertsSettingsScreen: View {
         .navigationDestination(item: $model.editedRuleID) { id in
             AlertsRuleScreen(model: model, ruleID: id, directory: directory)
         }
+        .task {
+            // Opened from "Edit rule" on an alert: on to the rule, once this screen has arrived.
+            guard let rule = model.takeRuleToOpen() else { return }
+            try? await Task.sleep(for: .milliseconds(450))
+            if !Task.isCancelled, model.isOpen, model.editor?.rule(rule) != nil { model.editedRuleID = rule }
+        }
         .modifier(AlertsPermissionRefresh())
+        .modifier(AlertsFollowHub(model: model))
         .sensoryFeedback(.success, trigger: model.saves + model.tests)
         .sensoryFeedback(.error, trigger: model.failures)
         .onChange(of: model.saves) {
@@ -459,7 +466,6 @@ struct AlertsSettingsPreview: View {
     var body: some View {
         AlertsSettingsScreen(model: model, directory: AlertsDirectory(store.devices))
             .onChange(of: store.alerts.settings, initial: true) { _, settings in
-                model.follow(settings)
                 if let ruleKind, model.editedRuleID == nil {
                     model.editedRuleID = settings?.rules.first { $0.type == ruleKind }?.id
                 }

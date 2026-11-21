@@ -7,14 +7,17 @@ import UIKit
 // `-dm-phase live`, and `-dm-tab alerts`. None of them exists in a release build: there
 // `AlertsLaunch` answers nil, false or "unchanged" to everything and reads nothing.
 //
-//     -dm-alerts-list <loading|error|empty|all-clear|no-rules>
+//     -dm-alerts-list <loading|error|empty|all-clear|no-rules|kinds>
 //                                 the Alerts tab as if the hub had answered that way: not yet,
-//                                 not at all, with nothing, with nothing firing, with every rule off
+//                                 not at all, with nothing, with nothing firing, with every rule
+//                                 off, or with the kinds of log entry a demo never has (a test
+//                                 alert, an unknown state, no device, a device that is gone)
 //     -dm-alerts-open settings    the editor ("Alert settings") is pushed
 //     -dm-alerts-rule <n|kind|new:kind>
-//                                 a rule's screen is pushed over the editor: the n-th rule (from 0),
-//                                 the first of that kind (cpuTemp, offline, dailyCost…), or a rule
-//                                 of that kind added as "Add rule" adds it
+//                                 a rule's screen is opened the way "Edit rule" on an alert opens
+//                                 it, editor and rule at once: the n-th rule (from 0), the first
+//                                 of that kind (cpuTemp, offline, dailyCost…), or a rule of that
+//                                 kind added as "Add rule" adds it
 //     -dm-alerts-scroll <history|iphone|rules|channels|messages|test>
 //                                 scrolled to that part (history: the tab; the others: the editor)
 //     -dm-alerts-notify <undecided|off|asking|on|blocked>
@@ -36,6 +39,9 @@ import UIKit
 //                                     test-failed     a test result with a delivery that failed
 //                                     back            leave the rule's screen for the editor
 //                                     disk-alert      a demo hub raises a disk alert (see -dm-alerts-probe)
+//                                     price           "Set electricity price": the shared price sheet
+//                                     elsewhere       the hub's settings change behind the draft's
+//                                                     back (offline after 45 min, resolved flipped)
 //                                 e.g. webhook=on,url=https://chat.example/hook,save,replace=on
 //     -dm-alerts-fail <save|test> the hub cannot be reached for that request (a stand-in: the
 //                                 demo hub itself is left alone)
@@ -54,7 +60,7 @@ import UIKit
 #if DEBUG
 nonisolated struct AlertsDebugOptions: Sendable {
     enum List: String, Sendable {
-        case loading, error, empty
+        case loading, error, empty, kinds
         case allClear = "all-clear"
         case noRules = "no-rules"
     }
@@ -82,7 +88,7 @@ nonisolated struct AlertsDebugOptions: Sendable {
         }
         list = value(after: "-dm-alerts-list").flatMap(List.init(rawValue:))
         rule = value(after: "-dm-alerts-rule")
-        opensSettings = value(after: "-dm-alerts-open") == "settings" || rule != nil
+        opensSettings = value(after: "-dm-alerts-open") == "settings"
         scroll = value(after: "-dm-alerts-scroll").flatMap(AlertsAnchor.init(rawValue:))
         notice = value(after: "-dm-alerts-notify")
         confirm = value(after: "-dm-alerts-confirm")
@@ -208,6 +214,16 @@ nonisolated enum AlertsLaunch {
         case .empty:
             alerts.active = []
             alerts.events = []
+        case .kinds:
+            // What the demo's log never holds: a test alert, a state this app does not know, an
+            // alert without a device, and one whose device and rule are gone.
+            let newest = alerts.events.first?.t ?? 0
+            alerts.events.insert(contentsOf: [
+                AlertEvent(id: "sample-test", t: newest + 4000, title: "Device Monitor test alert", message: "Alerts from your hub will arrive like this.", test: true),
+                AlertEvent(id: "sample-state", t: newest + 3000, type: .mem, device: "gaming", deviceName: "Gaming PC", state: .other("snoozed"), title: "Gaming PC: Memory use 93%", message: "Above 90% for 5 min."),
+                AlertEvent(id: "sample-cost", t: newest + 2000, ruleId: "0", type: .dailyCost, device: AlertRule.allDevices, deviceName: "All devices", title: "All devices: electricity today is $5.12", message: "Over your $5.00 daily limit."),
+                AlertEvent(id: "sample-gone", t: newest + 1000, ruleId: "0", type: .power, device: "gone", deviceName: "Old Laptop", state: .resolved, value: 40, title: "Old Laptop: Power draw back to normal", message: "Now 40 W (limit 90 W)."),
+            ], at: 0)
         case .allClear:
             alerts.active = []
         case .noRules:
@@ -237,12 +253,20 @@ nonisolated enum AlertsLaunch {
         }
         guard let editor = model.editor else { return }
         if let rule = options.rule {
+            let rules = editor.settings.rules
             if rule.hasPrefix("new:") {
+                // "Add rule" is a button of the editor: open that first.
+                model.isOpen = true
+                try? await Task.sleep(for: .milliseconds(600))
                 model.addRule(AlertRule.Kind(rawValue: String(rule.dropFirst(4))))
-            } else if let index = Int(rule) {
-                model.editedRuleID = editor.settings.rules.indices.contains(index) ? editor.settings.rules[index].id : nil
-            } else {
-                model.editedRuleID = editor.settings.rules.first { $0.type.rawValue == rule }?.id
+            } else if let index = Int(rule), rules.indices.contains(index) {
+                model.open(rule: rules[index].id)
+            } else if let id = rules.first(where: { $0.type.rawValue == rule })?.id {
+                model.open(rule: id)
+            }
+            // The script's edits are for the rule's screen: wait until it is up.
+            for _ in 0..<30 where model.editedRuleID == nil {
+                try? await Task.sleep(for: .milliseconds(100))
             }
         }
         let unit = unit(store.preferences.temperatureUnit)
@@ -259,6 +283,17 @@ nonisolated enum AlertsLaunch {
                 model.editedRuleID = nil
             case "disk-alert":
                 AppModel.shared.session.demoHub?.simulateDiskAlert()
+            case "price":
+                AppModel.shared.router.showElectricityPrice()
+            case "elsewhere":
+                // Not through the draft: as another app or the dashboard would change the settings.
+                if var settings = store.alerts.settings {
+                    settings.notifyResolved.toggle()
+                    if let index = settings.rules.firstIndex(where: { $0.type == .offline }) { settings.rules[index].minutes = 45 }
+                    _ = try? await store.saveAlerts(settings)
+                    // Let the screens hear of it before the next step.
+                    try? await Task.sleep(for: .milliseconds(300))
+                }
             default:
                 let parts = step.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
                 if parts.count == 2 { edit(model, parts[0], parts[1], unit: unit) }

@@ -51,6 +51,7 @@ struct AlertsRuleScreen: View {
                     .accessibilityIdentifier("alert-rule-keyboard-done")
             }
         }
+        .modifier(AlertsFollowHub(model: model))
         .sensoryFeedback(.success, trigger: model.saves)
         .sensoryFeedback(.error, trigger: model.failures)
         // What the fields show follows the draft whenever it changes by other means than typing:

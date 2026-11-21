@@ -186,15 +186,20 @@ struct AlertsSplitRow<Control: View>: View {
                 control
             }
         } else if description == nil {
-            // A short title keeps its width; the control gets the rest, and shortens what it shows
-            // (a long device name) rather than the title.
-            HStack(alignment: .center, spacing: Theme.Spacing.l) {
-                Text(title)
-                    .dmFont(.rowTitle)
-                    .foregroundStyle(Theme.textPrimary)
-                    .fixedSize()
-                control
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+            // Side by side while both fit whole; otherwise the control goes underneath, where a
+            // long device name has the full width before it is shortened.
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .center, spacing: Theme.Spacing.l) {
+                    titleText
+                        .fixedSize()
+                    control
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                }
+                VStack(alignment: .leading, spacing: Theme.Spacing.s) {
+                    titleText
+                    control
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         } else {
             // A description wraps; the control keeps the width it needs.
@@ -204,6 +209,12 @@ struct AlertsSplitRow<Control: View>: View {
                     .layoutPriority(1)
             }
         }
+    }
+
+    private var titleText: some View {
+        Text(title)
+            .dmFont(.rowTitle)
+            .foregroundStyle(Theme.textPrimary)
     }
 }
 

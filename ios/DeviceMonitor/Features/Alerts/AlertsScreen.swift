@@ -15,11 +15,11 @@ struct AlertsScreen: View {
     @State private var model = AlertsEditorModel()
     @State private var directory = AlertsDirectory()
     @State private var dayStart: Double = 0
-    @State private var showsSettings = AlertsLaunch.opensSettings
     @State private var loadFailure: String? = AlertsLaunch.loadFailure
     @State private var isRetrying = false
 
     var body: some View {
+        @Bindable var model = model
         // What is on show; a DEBUG launch argument can stand in for the hub's answer.
         let alerts = AlertsLaunch.shown(store.alerts)
         ScrollViewReader { proxy in
@@ -28,8 +28,8 @@ struct AlertsScreen: View {
                 LazyVStack(alignment: .leading, spacing: 0) {
                     AlertsDeviceBanner()
                     if alerts.isLoaded {
-                        AlertsActiveSection(alerts: alerts, directory: directory, editRule: edit(rule:)) { showsSettings = true }
-                        AlertsLogSection(alerts: alerts, dayStart: dayStart, directory: directory, editRule: edit(rule:))
+                        AlertsActiveSection(alerts: alerts, directory: directory, editRule: model.open(rule:)) { model.isOpen = true }
+                        AlertsLogSection(alerts: alerts, dayStart: dayStart, directory: directory, editRule: model.open(rule:))
                     } else if let loadFailure {
                         EmptyStateView(
                             title: "Can't load alerts", message: loadFailure, systemImage: "exclamationmark.triangle",
@@ -64,7 +64,7 @@ struct AlertsScreen: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
-                    showsSettings = true
+                    model.isOpen = true
                 } label: {
                     Label("Alert settings", systemImage: "slider.horizontal.3")
                 }
@@ -73,12 +73,12 @@ struct AlertsScreen: View {
                 .accessibilityIdentifier("alerts-settings-button")
             }
         }
-        .navigationDestination(isPresented: $showsSettings) {
+        .navigationDestination(isPresented: $model.isOpen) {
             AlertsSettingsScreen(model: model, directory: directory)
         }
         .background { AlertsStoreWatcher(directory: $directory, dayStart: $dayStart) }
         .modifier(AlertsPermissionRefresh())
-        .onChange(of: store.alerts.settings, initial: true) { _, settings in model.follow(settings) }
+        .modifier(AlertsFollowHub(model: model))
         // Whoever is looking at the alerts no longer needs them in Notification Centre.
         .onAppear { AlertsNotificationCenter.shared.clearDelivered() }
         .onChange(of: scenePhase) { _, phase in
@@ -105,10 +105,16 @@ struct AlertsScreen: View {
         }
     }
 
-    /// "Edit rule" on an alert: the editor, opened at the rule that raised it.
-    private func edit(rule id: String) {
-        model.editedRuleID = id
-        showsSettings = true
+}
+
+/// Keeps the draft in step with the hub's settings: a draft without edits follows them. On each
+/// screen of the editor, because whichever is on show must not depend on one underneath it.
+struct AlertsFollowHub: ViewModifier {
+    @Environment(HubStore.self) private var store
+    let model: AlertsEditorModel
+
+    func body(content: Content) -> some View {
+        content.onChange(of: store.alerts.settings, initial: true) { _, settings in model.follow(settings) }
     }
 }
 
@@ -332,6 +338,14 @@ private struct AlertsLogSection: View {
         }
         .padding(.bottom, Theme.Spacing.xs)
         .id(AlertsAnchor.history)
+        // On the heading, which stays: the button goes with the last entry.
+        .alert("The log was not cleared", isPresented: Binding(get: { failure != nil }, set: { if !$0 { failure = nil } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(failure ?? "")
+        }
+        .sensoryFeedback(.success, trigger: cleared)
+        .sensoryFeedback(.error, trigger: failure) { _, failure in failure != nil }
         if sections.isEmpty {
             EmptyStateView(message: AlertRows.emptyLog, isCompact: true)
                 .dmSurface()
@@ -375,12 +389,6 @@ private struct AlertsLogSection: View {
             } message: {
                 Text("Every entry is removed from the hub, for everyone who uses it. Alerts that are firing stay.")
             }
-            .alert("The log was not cleared", isPresented: Binding(get: { failure != nil }, set: { if !$0 { failure = nil } })) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(failure ?? "")
-            }
-            .sensoryFeedback(.success, trigger: cleared)
     }
 
     private func clear() async {

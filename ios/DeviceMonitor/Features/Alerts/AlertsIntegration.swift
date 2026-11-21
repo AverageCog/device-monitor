@@ -197,9 +197,29 @@ final class AlertsNotifier {
 
     // MARK: Announcing
 
+    /// The demo's store while the demo runs. What was seen of a demo hub is kept in memory, for
+    /// that demo only: nothing about a hub that is not real is stored, and every demo raises
+    /// its alerts under the same ids, which a stored marker would take for old news.
+    private var demoStore: ObjectIdentifier? {
+        guard let session, session.isDemo, let store = session.store else { return nil }
+        return ObjectIdentifier(store)
+    }
+
+    private var demoMarker: (store: ObjectIdentifier, marker: AlertSeenMarker)?
+
+    /// The newest alert already dealt with.
     private var marker: AlertSeenMarker? {
+        if let demoStore { return demoMarker?.store == demoStore ? demoMarker?.marker : nil }
         guard let preferences, let id = preferences.lastSeenAlertID, let time = preferences.lastSeenAlertTime else { return nil }
         return AlertSeenMarker(id: id, t: time)
+    }
+
+    private func remember(_ marker: AlertSeenMarker) {
+        if let demoStore {
+            demoMarker = (demoStore, marker)
+        } else {
+            preferences?.markAlertSeen(id: marker.id, time: marker.t)
+        }
     }
 
     private func announce(fetched alerts: AlertsState, now: Double) {
@@ -211,7 +231,7 @@ final class AlertsNotifier {
         guard let preferences else { return }
         // Remembered whether or not this device shows anything, so that switching notifications
         // on later does not bring up alerts from before.
-        if let marker = plan.marker { preferences.markAlertSeen(id: marker.id, time: marker.t) }
+        if let marker = plan.marker { remember(marker) }
         note("notify: [\(plan.notifications.map(\.title).joined(separator: " + "))] \(preferences.notificationsEnabled ? "posted" : "kept back, off on this device")")
         guard preferences.notificationsEnabled, !plan.notifications.isEmpty else { return }
         let notifications = plan.notifications
