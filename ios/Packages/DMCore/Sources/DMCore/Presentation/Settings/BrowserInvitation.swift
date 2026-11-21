@@ -195,4 +195,6 @@ public enum AddDeviceGuide {
     public static let viewText = "Open this link on any phone, tablet or computer on your network. It is a single-use, ten-minute invitation for one browser tab."
     /// Under the QR code.
     public static let scanHint = "Scan with the other device's camera, or send the link."
+    /// With the link, while the app runs on the demo hub: there is no hub behind it.
+    public static let demoNote = "Demo mode: this link is simulated and opens nothing."
 }
