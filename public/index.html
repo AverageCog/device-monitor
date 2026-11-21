@@ -957,6 +957,7 @@ async function updateCmd() {
       return;
     }
     const known = mobile && await listed ? new Set(phones.keys()) : null;
+    if (request !== invitationRequest) return;   // the tab or the dialog was left while the phone list loaded: issue nothing
     const code = await issue(mobile ? 'mobile' : osTab === 'app' ? 'desktop' : 'agent');
     if (request !== invitationRequest) return;
     if (mobile) {
