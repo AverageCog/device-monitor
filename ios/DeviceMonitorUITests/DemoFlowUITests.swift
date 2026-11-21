@@ -139,11 +139,7 @@ final class DemoFlowUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Advanced"].waitForExistence(timeout: 20))
         waitForSession(of: app, "the demo is live") { $0.phase == "live" && $0.devices == 6 }
 
-        app.tabBars.buttons["Devices"].tap()
-        let menu = app.buttons["debug-hub-menu"]
-        XCTAssertTrue(menu.waitForExistence(timeout: 10))
-        menu.tap()
-        app.buttons["Unreachable for 20 s"].tap()
+        directDemoHub(of: app, "Unreachable for 20 s")
         app.tabBars.buttons["Advanced"].tap()
 
         XCTAssertTrue(app.element(withIdentifier: ID.reconnectingBanner).waitForExistence(timeout: 8), "The banner says the stream is down")
@@ -158,6 +154,40 @@ final class DemoFlowUITests: XCTestCase {
         XCTAssertEqual(back.devices, 6)
         XCTAssertTrue(app.navigationBars["Advanced"].waitForExistence(timeout: 5), "The user is on the tab they were on")
         XCTAssertFalse(app.element(withIdentifier: ID.unreachable).exists)
+    }
+
+    /// The debug menu can have the demo hub refuse the app. There is no enrollment to forget
+    /// then, and the revoked screen still has to lead somewhere.
+    @MainActor
+    func testADemoThatRefusesTheAppCanBeLeft() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-dm-demo"]
+        app.launch()
+        waitForSession(of: app, "the demo is live") { $0.phase == "live" && $0.devices == 6 }
+
+        directDemoHub(of: app, "Revoke this enrollment")
+        XCTAssertTrue(app.element(withIdentifier: ID.revoked).waitForExistence(timeout: 15), "A demo hub that refuses the app shows the revoked screen")
+        XCTAssertEqual(app.sessionState?.isDemo, true)
+        attachScreenshot(of: app, named: "demo-revoked")
+        app.buttons[ID.revokedPairAgain].tap()
+        XCTAssertTrue(app.element(withIdentifier: ID.onboarding).waitForExistence(timeout: 10), "Pair again leaves the demo")
+        XCTAssertEqual(app.sessionState?.isDemo, false)
+    }
+
+    /// Picks an item of the menu that directs the demo hub (DebugTools, at the end of the Devices tab).
+    @MainActor
+    private func directDemoHub(of app: XCUIApplication, _ item: String, file: StaticString = #filePath, line: UInt = #line) {
+        app.tabBars.buttons["Devices"].tap()
+        // A SwiftUI Menu is a pop-up button to the accessibility tree, not a button, so it is
+        // looked up by its identifier alone. It is under the tab bar until the list is scrolled.
+        let menu = app.element(withIdentifier: ID.debugHubMenu)
+        XCTAssertTrue(menu.waitForExistence(timeout: 10), "The Devices tab has the debug tools", file: file, line: line)
+        XCTAssertTrue(
+            app.scrollUp(app.element(withIdentifier: "screen-devices"), until: menu), "The debug menu scrolls clear of the tab bar", file: file, line: line)
+        menu.tap()
+        let choice = app.element(labelled: item)
+        XCTAssertTrue(choice.waitForExistence(timeout: 5), "The debug menu offers \"\(item)\"", file: file, line: line)
+        choice.tap()
     }
 
     @MainActor

@@ -21,6 +21,8 @@ enum ID {
     static let disconnectButton = "settings-disconnect-button"
     /// DEBUG builds only: see SessionProbe in the app.
     static let sessionProbe = "debug-session"
+    /// DEBUG builds only: the menu that directs a demo hub, in DebugTools. A pop-up button.
+    static let debugHubMenu = "debug-hub-menu"
 
     static func deviceRow(_ id: String) -> String { "device-row-\(id)" }
 }
@@ -77,6 +79,29 @@ extension XCUIApplication {
     @MainActor
     func deviceRow(_ id: String) -> XCUIElement {
         element(withIdentifier: ID.deviceRow(id))
+    }
+
+    /// Any element with exactly this label, whatever its type. For what the system draws, a
+    /// menu's items for one, where the type is the system's choice and not the same on every iOS.
+    @MainActor
+    func element(labelled label: String) -> XCUIElement {
+        descendants(matching: .any).matching(NSPredicate(format: "label == %@", label)).firstMatch
+    }
+
+    /// Swipes `container` up until `element` can be tapped: on screen, and clear of the tab bar,
+    /// which floats over the end of every list. False when `swipes` were not enough.
+    @MainActor
+    func scrollUp(_ container: XCUIElement, until element: XCUIElement, swipes: Int = 5) -> Bool {
+        func isClear() -> Bool {
+            guard element.exists, element.isHittable else { return false }
+            let bar = tabBars.firstMatch
+            return !bar.exists || element.frame.maxY <= bar.frame.minY
+        }
+        for _ in 0..<swipes {
+            if isClear() { return true }
+            container.swipeUp()
+        }
+        return isClear()
     }
 }
 
