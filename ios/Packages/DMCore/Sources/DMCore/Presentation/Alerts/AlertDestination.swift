@@ -58,21 +58,28 @@ public enum AlertDestination {
         switch host {
         case .ipv4(let address):
             return isBlocked(ipv4: address)
-        case .ipv6(let pieces):
-            if pieces == [0xfd00, 0x0ec2, 0, 0, 0, 0, 0, 0x0254] { return true }   // a cloud's metadata service
-            // IPv4-mapped: ::ffff:a.b.c.d
-            if pieces[0..<5].allSatisfy({ $0 == 0 }), pieces[5] == 0xffff {
-                return isBlocked(ipv4: UInt32(pieces[6]) << 16 | UInt32(pieces[7]))
+        case .ipv6:
+            // isBlockedAddress judges the address as URL writes it, without the brackets.
+            var address = String(ParsedURL.serialize(host).dropFirst().dropLast())
+            if address == "fd00:ec2::254" { return true }   // a cloud's metadata service
+            if address.hasPrefix("::ffff:") {
+                // Two groups after it are an IPv4 address (::ffff:7f00:1 is 127.0.0.1). Anything
+                // else goes on without the prefix, so "::ffff:fe80:1:2" is refused for its "fe80".
+                address.removeFirst(7)
+                let groups = address.split(separator: ":", omittingEmptySubsequences: false).map { UInt32($0, radix: 16) }
+                if groups.count == 2, let high = groups[0], let low = groups[1] {
+                    return isBlocked(ipv4: high << 16 | low)
+                }
             }
-            if pieces.allSatisfy({ $0 == 0 }) || pieces == [0, 0, 0, 0, 0, 0, 0, 1] { return true }   // unspecified, loopback
-            return startsLikeLinkLocal(String(ParsedURL.serialize(host).dropFirst()))
+            return address == "::1" || address == "::" || startsLikeLinkLocal(address)   // loopback, unspecified, link-local
         case .domain(let name):
             return name == "localhost" || name.hasSuffix(".localhost") || startsLikeLinkLocal(name)
         }
     }
 
     /// `/^fe[89ab]/`: how the hub spots fe80::/10. It runs the test on whatever the host is
-    /// written as, so it also catches "fe8::1" and names like "feature.example.com".
+    /// written as, so it also catches "fe8::1", names like "feature.example.com", and what is
+    /// left of an address once a leading "::ffff:" is taken off.
     private static func startsLikeLinkLocal(_ host: String) -> Bool {
         let start = Array(host.utf8.prefix(3))
         return start.count == 3 && start[0] == UInt8(ascii: "f") && start[1] == UInt8(ascii: "e") && "89ab".utf8.contains(start[2])

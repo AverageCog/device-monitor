@@ -22,6 +22,42 @@ import Testing
         #expect(failures.isEmpty, "\(failures.count) of \(fixture.rows.count) differ:\n\(failures.prefix(40).joined(separator: "\n"))")
         #expect(fixture.emptyServerBecomes == AlertChannels.Ntfy.defaultServer)
         #expect(fixture.rows.filter { $0.normalized != nil }.count > 150)
+        // Addresses the hub writes with a leading "::ffff:" are among them, on both sides.
+        let afterPrefix = fixture.rows.filter { $0.input.lowercased().hasPrefix("http://[::ffff:") }
+        #expect(afterPrefix.filter { $0.normalized == nil && $0.input.lowercased().hasPrefix("http://[::ffff:fe") }.count >= 10)
+        #expect(afterPrefix.filter { $0.normalized != nil }.count >= 20)
+    }
+
+    @Test func whatFollowsTheMappedPrefixDecides() throws {
+        // The hub takes "::ffff:" off the address as it writes it. Two groups after it are an
+        // IPv4 address; anything else is tested for a link-local start as it then stands.
+        let fixture = try F.load(F.URLs.self, "urls.json")
+        let hub = Dictionary(fixture.rows.map { ($0.input, $0.normalized) }, uniquingKeysWith: { first, _ in first })
+        let refused = ["http://[::ffff:fe80:1:2]", "http://[::ffff:fe80:1:2]/hook", "http://[::ffff:fe80]", "http://[::ffff:fe8]", "http://[0:0:0:ffff:fe80::]", "http://[::ffff:7f00:1]", "http://[::ffff:0:0]"]
+        for address in refused {
+            #expect(hub[address] == .some(nil), "\(address) is not a refused row of urls.json")
+            #expect(AlertDestination.problem(with: address) == .blockedHost, "\(address)")
+            #expect(AlertDestination.normalized(address) == nil, "\(address)")
+        }
+        let accepted = ["http://[::ffff:1:2:3]", "http://[::ffff:fe80:1]", "http://[::ffff:fe7f:1:2]", "http://[::ffff:fec0:1:2]", "http://[::ffff:7f00:0:1]", "http://[::ffff:fe]", "http://[1::ffff:fe80:1:2]", "http://[0:0:ffff:fe80::]"]
+        for address in accepted {
+            #expect(hub[address] == .some(address), "\(address) is not an accepted row of urls.json")
+            #expect(AlertDestination.problem(with: address) == nil, "\(address)")
+            #expect(AlertDestination.normalized(address) == address, "\(address)")
+        }
+        // The same check stands behind both address fields of the form.
+        var settings = AlertSettings()
+        settings.channels.webhook = AlertChannels.Webhook(enabled: true, url: "http://[::ffff:fe80:1:2]/hook", keepUrl: false)
+        #expect(AlertValidation.issues(in: settings).map(\.field) == [.webhookURL])
+        #expect(AlertValidation.hubStored(settings, hasStoredWebhook: false) == nil)
+        var editor = AlertSettingsEditor(settings: AlertSettings())
+        editor.setWebhookEnabled(true)
+        editor.setWebhookURL("http://[::ffff:fe80:1:2]/hook")
+        #expect(editor.body == nil && !editor.canSave)
+        editor.setWebhookURL("http://[::ffff:1:2:3]/hook")
+        #expect(editor.body != nil && editor.issues().isEmpty)
+        editor.setNtfyServer("http://[::ffff:fe80]")
+        #expect(editor.issues().map(\.field) == [.ntfyServer] && editor.body == nil)
     }
 
     @Test func refusalsNameTheReason() {
