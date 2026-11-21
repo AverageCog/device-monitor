@@ -331,6 +331,36 @@ import Testing
         h.store.stop()
     }
 
+    @Test func everythingAScreenReadsIsObserved() async throws {
+        let h = StoreHarness()
+        let connection = try await h.goLive([F.device("a", order: 0, platform: "windows", appVersion: "1.2.32")])
+        // Each read is followed by an event that changes what it returned; the read must notice.
+        func changes(_ what: String, after event: HubEvent, _ read: @escaping @MainActor () -> Void, sourceLocation: SourceLocation = #_sourceLocation) async throws {
+            let noticed = Counter()
+            withObservationTracking { read() } onChange: { noticed.increment() }
+            connection.send(event)
+            try await eventually("\(what) is seen to change", sourceLocation: sourceLocation) { noticed.count == 1 }
+        }
+        try await changes("one device", after: .device(F.device("a", name: "Renamed", order: 0, platform: "windows", appVersion: "1.2.32"))) { _ = h.store.device("a") }
+        try await changes("the version label", after: .update(platform: "windows", version: "1.2.33")) {
+            _ = h.store.device("a").flatMap(h.store.versionLabel(for:))
+        }
+        try await changes("a card's samples", after: .report(id: "a", device: F.device("a", order: 0), sample: F.point(F.now))) { _ = h.store.series(for: "a") }
+        try await changes("the saved price", after: .energySettings(EnergySettings(region: "DE", rate: 0.39, currency: "EUR"))) { _ = h.store.energySettings }
+        try await changes("the unseen count", after: .alert(event: F.alert("e1", t: 1), notify: false, active: [])) { _ = h.store.unseenAlertCount }
+        try await changes("the summary", after: .status(["a": false])) { _ = h.store.summaryText }
+
+        // And what does not come from the stream: a card's range, and the connection.
+        let range = Counter(), connected = Counter()
+        withObservationTracking { _ = h.store.range(for: "a") } onChange: { range.increment() }
+        h.store.setRange(.hour, for: "a")
+        #expect(range.count == 1)
+        withObservationTracking { _ = (h.store.isLive, h.store.summaryText) } onChange: { connected.increment() }
+        connection.finish()
+        try await eventually("the lost connection is seen") { connected.count == 1 }
+        h.store.stop()
+    }
+
     // MARK: Card charts
 
     @Test func changingACardsRangeFetchesItsSeries() async throws {

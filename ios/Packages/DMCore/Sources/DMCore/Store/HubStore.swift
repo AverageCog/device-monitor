@@ -401,7 +401,8 @@ public final class HubStore {
     // MARK: - Devices
 
     public func device(_ id: String) -> Device? {
-        state.device(id)
+        // From the observable list, so that a view reading one device follows its changes.
+        devices.first { $0.id == id }
     }
 
     /// Renames a device. The hub keeps 60 characters and ignores a name that is empty once
