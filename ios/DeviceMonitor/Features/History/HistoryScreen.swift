@@ -32,11 +32,12 @@ struct HistoryScreen: View {
 }
 
 /// Owns the page's state and ties it to what happens around it: the device the router names, the
-/// unit, the connection coming back, and the page being on screen.
+/// unit, the connection coming back, the page being on screen, and the app being in front.
 private struct HistoryRoot: View {
     private let store: HubStore
     private let preferences: Preferences
     @State private var controller: HistoryController
+    @Environment(\.scenePhase) private var scenePhase
 
     #if DEBUG
     init(store: HubStore, preferences: Preferences, debug: HistoryDebugOptions) {
@@ -69,6 +70,11 @@ private struct HistoryRoot: View {
             // From appearing to disappearing: a tab that is not showing keeps nothing current.
             .task { await controller.run() }
             .onDisappear { controller.leave() }
+            // Neither of those happens when the app goes to the background: the tabs stay as they
+            // are behind the other apps, and so would the half-minute refresh.
+            .onChange(of: scenePhase, initial: true) { _, phase in
+                controller.setForeground(phase == .active)
+            }
     }
 }
 

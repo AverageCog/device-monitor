@@ -20,7 +20,8 @@ final class HistoryUITests: XCTestCase {
         static let retry = "history-retry-button"
         static let loading = "history-loading"
         static let addDevice = "history-add-device-button"
-        /// DEBUG builds only: what `-dm-history-away` found, see HistoryDebugOptions in the app.
+        /// DEBUG builds only: what `-dm-history-away` or `-dm-history-background` found, see
+        /// HistoryDebugOptions in the app.
         static let debug = "history-debug"
 
         static func device(_ id: String) -> String { "history-device-\(id)" }
@@ -329,6 +330,28 @@ final class HistoryUITests: XCTestCase {
         // What it left alone it catches up on: coming back moves the window up to now.
         XCTAssertTrue(wait(upTo: 20) { probe.exists && !probe.label.contains("since=0") }, "Back on screen History did not ask the hub again, got: \(probe.label)")
         XCTAssertTrue(app.element(withIdentifier: HistoryID.chart("utilization")).waitForExistence(timeout: 20), "Back on screen the charts are there")
+    }
+
+    @MainActor
+    func testTheAppInTheBackgroundLeavesTheHubAlone() {
+        // -dm-history-background refreshes every two seconds instead of thirty, and keeps the app
+        // running behind the others for a while, as iOS does when it wakes it for the alerts check.
+        // The page stays on screen there: only the scene's phase says that nobody is looking.
+        let app = launch(["-dm-tab", "history", "-dm-history-background"])
+        waitForHistory(of: "Gaming PC", in: app)
+        XCTAssertTrue(app.element(withIdentifier: HistoryID.chart("utilization")).waitForExistence(timeout: 20))
+
+        XCUIDevice.shared.press(.home)
+        // Long enough for a few refreshes to come due.
+        RunLoop.current.run(until: Date().addingTimeInterval(8))
+        app.activate()
+
+        let probe = app.element(withIdentifier: HistoryID.debug)
+        XCTAssertTrue(wait(upTo: 30) { probe.exists && probe.label.contains("background=done") }, "-dm-history-background did not see the app leave and come back")
+        let report = probe.label
+        XCTAssertTrue(report.contains("requests=0"), "History asked the hub for charts while the app was in the background, got: \(report)")
+        // The refresh it held back runs once the app is in front again.
+        XCTAssertTrue(wait(upTo: 20) { probe.exists && !probe.label.contains("since=0") }, "Back in front History did not ask the hub again, got: \(probe.label)")
     }
 
     @MainActor

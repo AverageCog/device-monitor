@@ -97,15 +97,21 @@ final class HistoryController {
     /// The page is on screen: from `run()` to `leave()`. The tab lives on behind the others once
     /// it has been opened, and there it keeps nothing current.
     @ObservationIgnored private var isOnScreen = false
+    /// The app is in front. In the background the page is still "on screen", and the thirty
+    /// seconds run out whenever iOS lets the app run there, as it does for the alerts check.
+    @ObservationIgnored private var isForeground = true
     @ObservationIgnored private var pointerTime: Double?
     @ObservationIgnored private var pinch: Pinch?
     /// A finger is resting on a chart; a pointer hovering over one does not count.
     @ObservationIgnored private var isHolding = false
-    /// A refresh came due while a finger was on a chart; it runs when the finger lifts.
+    /// A refresh came due while a finger was on a chart or the app was not in front; it runs
+    /// when the finger lifts and the app is back.
     @ObservationIgnored private var missedTick = false
     #if DEBUG
     /// The launch arguments this page was started with.
     @ObservationIgnored var debug = HistoryDebugOptions()
+    /// Requests sent to the hub, counted for `-dm-history-background`.
+    @ObservationIgnored var debugRequests = 0
     #endif
 
     private struct Pinch {
@@ -253,7 +259,7 @@ final class HistoryController {
     // MARK: - Keeping it current
 
     /// For as long as the page is on screen: loads, then moves the window to now every thirty
-    /// seconds (`hv.timer`).
+    /// seconds (`hv.timer`) while the app is in front.
     func run() async {
         // The page was gone again before this got to start, and `leave()` has had the last word.
         guard !Task.isCancelled else { return }
@@ -268,12 +274,20 @@ final class HistoryController {
         tick()
         while !Task.isCancelled {
             do {
-                try await store.clock.sleep(milliseconds: HistoryWindow.refreshInterval)
+                try await store.clock.sleep(milliseconds: refreshInterval)
             } catch {
                 return
             }
             tick()
         }
+    }
+
+    /// `hv.timer`'s period; `-dm-history-background` shortens it.
+    private var refreshInterval: Double {
+        #if DEBUG
+        if debug.watchesBackground { return HistoryDebugOptions.backgroundRefreshInterval }
+        #endif
+        return HistoryWindow.refreshInterval
     }
 
     /// `if (!hv.zoomed) { setHvWindow(); loadHistory(); }`, and a second try after a failure.
@@ -282,7 +296,9 @@ final class HistoryController {
     /// page; here the connection coming back calls this too, whichever tab is showing.
     func tick() {
         guard isOnScreen, deviceID != nil else { return }
-        if isInteracting {
+        // Not under a finger, and not behind other apps: what time iOS gives the app there is
+        // for the alerts check, not for charts nobody sees.
+        if isInteracting || !isForeground {
             missedTick = true
             return
         }
@@ -299,6 +315,14 @@ final class HistoryController {
         isOnScreen = false
         cancelInteraction()
         missedTick = false
+    }
+
+    /// The app came to the front (`scenePhase == .active`) or left it. A refresh that came due
+    /// meanwhile runs when it is back.
+    func setForeground(_ foreground: Bool) {
+        guard foreground != isForeground else { return }
+        isForeground = foreground
+        if foreground { runMissedTick() }
     }
 
     private func reload(isRefresh: Bool = false) {
@@ -379,7 +403,7 @@ final class HistoryController {
         pointerTime = nil
         isHolding = false
         updateTooltip()
-        interactionEnded()
+        runMissedTick()
     }
 
     /// The pointer left the chart. A finger that is down meanwhile keeps its crosshair.
@@ -422,7 +446,7 @@ final class HistoryController {
         pointerTime = nil
         isHolding = false
         updateTooltip()
-        defer { interactionEnded() }
+        defer { runMissedTick() }
         // A range chosen meanwhile wins over a drag across the charts it is about to replace.
         guard commit, let ended, let shownWindow, shownWindow.range == window.range,
               let zoomed = shownWindow.zoomed(byDragFrom: ended.x1, to: ended.x2, chartWidth: ended.chartWidth) else { return false }
@@ -456,7 +480,7 @@ final class HistoryController {
         let ended = pinch
         pinch = nil
         selection = nil
-        defer { interactionEnded() }
+        defer { runMissedTick() }
         guard commit, let ended, ended.window.range == window.range else { return false }
         if let stretch = Self.stretch(of: ended, scale: scale), let zoomed = ended.window.zoomed(to: stretch.from, stretch.to) {
             window = zoomed
@@ -489,7 +513,9 @@ final class HistoryController {
         }
     }
 
-    private func interactionEnded() {
+    /// A finger lifted or the app came back. `tick()` holds the refresh again while the app is
+    /// still not in front.
+    private func runMissedTick() {
         guard missedTick, !isInteracting else { return }
         missedTick = false
         tick()
