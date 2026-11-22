@@ -1,0 +1,121 @@
+[
+  {
+    "id": "a3f1c9d2-7b64-4e0a-9c1d-2f5e8b7a6c40",
+    "name": "DESKTOP-7QK2M1P",
+    "firstSeen": 1795213867000,
+    "order": 1,
+    "hostname": "DESKTOP-7QK2M1P",
+    "platform": "windows",
+    "os": "Windows 11 Pro 24H2",
+    "lastSeen": 1795214169000,
+    "hw": {
+      "formFactor": "desktop",
+      "threads": 32
+    },
+    "macs": [
+      "a4:bb:6d:12:9f:0e",
+      "a4:bb:6d:12:9f:0f"
+    ],
+    "online": true,
+    "latest": null,
+    "history": []
+  },
+  {
+    "id": "4c2f9a7e1b3d4f6a8c0e2d4b6f8a1c3e",
+    "name": "dgx-station",
+    "firstSeen": 1795213867000,
+    "order": 0,
+    "hostname": "dgx-station",
+    "platform": "linux",
+    "os": "Ubuntu 24.04.2 LTS",
+    "lastSeen": 1795214169000,
+    "hw": {
+      "formFactor": "desktop",
+      "threads": 112
+    },
+    "macs": [
+      "3c:ec:ef:90:12:ab"
+    ],
+    "online": true,
+    "latest": null,
+    "history": []
+  },
+  {
+    "id": "5B8E2A11-93C4-5D7F-A012-6E4C9D3B7F21",
+    "name": "Sams-MacBook-Pro",
+    "firstSeen": 1795213867000,
+    "order": 2,
+    "hostname": "Sams-MacBook-Pro",
+    "platform": "macos",
+    "os": "macOS 15.5",
+    "lastSeen": 1795214169000,
+    "hw": {
+      "formFactor": "laptop",
+      "threads": 12
+    },
+    "macs": [
+      "f0:18:98:5a:6b:7c"
+    ],
+    "online": true,
+    "latest": null,
+    "history": []
+  },
+  {
+    "id": "nas-01",
+    "name": "nas",
+    "firstSeen": 1795213867000,
+    "order": 4,
+    "hostname": "nas",
+    "platform": "linux",
+    "os": null,
+    "lastSeen": 1795214169000,
+    "hw": {
+      "formFactor": null,
+      "threads": null
+    },
+    "online": true,
+    "latest": null,
+    "history": []
+  },
+  {
+    "id": "f0e1d2c3-b4a5-4697-8879-6a5b4c3d2e1f",
+    "name": "Lab PC",
+    "firstSeen": 1795213867000,
+    "order": 3,
+    "hostname": "LAB-PC-03",
+    "platform": "windows",
+    "os": "Windows 10 Enterprise",
+    "lastSeen": 1795214169000,
+    "hw": {
+      "formFactor": "desktop",
+      "threads": 6
+    },
+    "macs": [
+      "00:1b:21:3c:4d:5e"
+    ],
+    "renamed": true,
+    "online": true,
+    "latest": null,
+    "history": []
+  },
+  {
+    "id": "old-htpc",
+    "name": "htpc",
+    "firstSeen": 1795213867000,
+    "order": 5,
+    "hostname": "htpc",
+    "platform": "linux",
+    "os": "Debian GNU/Linux 12 (bookworm)",
+    "lastSeen": 1795213867000,
+    "hw": {
+      "formFactor": "desktop",
+      "threads": 4
+    },
+    "macs": [
+      "b8:27:eb:11:22:33"
+    ],
+    "online": false,
+    "latest": null,
+    "history": []
+  }
+]

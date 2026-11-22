@@ -243,6 +243,16 @@
   header #addBtn { width: 34px; padding: 0; justify-content: center; }
   .pair { display: flex; align-items: baseline; gap: 12px; margin-top: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; }
   .pair b { font-size: 22px; letter-spacing: .12em; font-variant-numeric: tabular-nums; }
+  .pair[hidden], .mobile[hidden] { display: none; }
+  /* Four ways to add a device do not fit one row, even on a wide screen: two rows of two. */
+  #osTabs { display: grid; grid-template-columns: 1fr 1fr; }
+  /* iPhone / iPad invitation: the QR code is always dark on white, with the text beside or below it. */
+  .mobile { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 14px 16px; margin-top: 12px; }
+  .mobile canvas { flex: none; border-radius: 8px; }
+  .mobile-side { flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+  .mobile-side .cmd { margin: 0; }
+  #phoneList .set-row + .set-row { border-top: 1px solid var(--border); }
+  #phoneList .set-k { overflow-wrap: anywhere; }
   header .view-btn.on { color: var(--accent); background: rgba(144,133,233,0.14); border-color: rgba(144,133,233,0.45); }
   /* ---------- settings (app-only rows are hidden in a browser) ---------- */
   #settingsBtn { display: inline-flex; background: none; border-color: transparent; color: var(--text-muted); padding: 7px; }
@@ -339,12 +349,20 @@
   <label class="hint">Hub address the device should connect to:
     <select id="hubSel"></select>
   </label>
-  <label class="hint">Enrollment <select id="enrollDevice"><option value="">New device</option></select></label>
+  <label class="hint" id="enrollRow">Enrollment <select id="enrollDevice"><option value="">New device</option></select></label>
   <button class="btn" id="enableHttps" hidden>Enable Tailscale HTTPS on this hub</button>
-  <div class="tabs seg" id="osTabs"><button data-os="win" class="on">Windows command</button><button data-os="app">Desktop app (Windows / Mac)</button><button data-os="linux">Mac / Linux command</button></div>
+  <div class="tabs seg" id="osTabs"><button data-os="win" class="on">Windows command</button><button data-os="app">Desktop app (Windows / Mac)</button><button data-os="linux">Mac / Linux command</button><button data-os="mobile">iPhone / iPad app</button></div>
   <div class="cmd" id="cmdRow"><code id="cmd"></code><button class="btn" id="copyBtn">Copy</button></div>
   <div class="hint" id="cmdHint"></div>
   <div class="pair" id="pairRow" hidden><span class="hint">Desktop invitation</span><code id="pairCode" style="overflow-wrap:anywhere;user-select:all"></code> <button class="btn" id="copyPair">Copy</button><span class="hint" id="pairHint"></span></div>
+  <div class="mobile" id="mobileRow" hidden>
+    <canvas id="mobileQr" role="img" aria-label="QR code of the invitation for the Device Monitor app"></canvas>
+    <div class="mobile-side">
+      <div class="hint">In Device Monitor on your iPhone or iPad, choose Scan invitation and point the camera at this code. Single use, valid ten minutes.</div>
+      <div class="cmd"><code id="mobileCode"></code><button class="btn" id="copyMobile">Copy</button></div>
+    </div>
+  </div>
+  <div class="section" id="phoneList" hidden></div>
   <h3 style="margin-top:22px">View from another device</h3>
   <p style="margin-bottom:8px">Open this link on any phone, tablet or computer on your network. It is a single-use, ten-minute invitation for one browser tab.</p>
   <div class="cmd"><code id="viewUrl"></code><button class="btn" id="copyView">Copy</button></div>
@@ -379,6 +397,7 @@
 
 
 <script src="/session.js"></script>
+<script src="/qr.js"></script>
 <script>
 if (!nativeDashboard && !sessionStorage.getItem('dm.session')) {
   location.replace('/unlock');
@@ -881,12 +900,45 @@ document.addEventListener('click', () => document.querySelector('.menu')?.remove
 // ---------- add device dialog ----------
 let osTab = 'win';
 let invitationRequest = 0;
+// iPhone / iPad tab: phoneInvite remembers who was already paired when the code on screen was issued,
+// so the dialog can tell when that code has been used, and when it lapses.
+let phoneTimer = null, phoneInvite = null, phoneHtml = null;
+const phones = new Map();
+function phoneRow(m) {
+  const paired = m.created ? new Date(m.created).toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' }) : 'date unknown';
+  const seen = !m.lastSeen ? 'not seen since the hub started' : Date.now() - m.lastSeen < 60e3 ? 'active now' : 'last active ' + ago(m.lastSeen);
+  return `<div class="set-row"><div class="set-text"><div class="set-k">${esc(m.name)}</div><div class="set-v hint">Paired ${esc(paired)} · ${esc(seen)}</div></div><button class="btn" data-id="${esc(m.id)}">Remove</button></div>`;
+}
+async function loadPhones(request) {
+  const list = await hubFetch('/api/mobile').then(r => r.ok ? r.json() : null).catch(() => null);
+  if (request !== invitationRequest) return false;
+  clearTimeout(phoneTimer); phoneTimer = setTimeout(() => loadPhones(request), 4000);
+  if (!Array.isArray(list)) return false;
+  phones.clear(); for (const m of list) phones.set(m.id, m);
+  const html = '<h4>Paired phones and tablets</h4>' + (list.map(phoneRow).join('') || '<div class="hint">No phone or tablet is paired yet.</div>');
+  if (html !== phoneHtml) $('#phoneList').innerHTML = phoneHtml = html;   // an unchanged list keeps its buttons under the pointer
+  if (phoneInvite && !phoneInvite.known) phoneInvite.known = new Set(phones.keys());
+  const added = phoneInvite && list.find(m => !phoneInvite.known.has(m.id));
+  if (added) {
+    phoneInvite = null; $('#mobileRow').hidden = true; $('#mobileCode').textContent = '';
+    $('#cmdHint').textContent = `“${added.name}” is paired. Choose iPhone / iPad app again to pair another device.`;
+  } else if (phoneInvite && Date.now() > phoneInvite.expires) updateCmd();
+  return true;
+}
 async function updateCmd() {
-  const request = ++invitationRequest, dest = $('#hubSel').value, id = $('#enrollDevice').value || null;
-  $('#cmd').textContent = ''; $('#viewUrl').textContent = ''; $('#pairCode').textContent = '';
-  $('#cmdRow').style.display = osTab === 'app' ? 'none' : ''; $('#pairRow').hidden = osTab !== 'app';
+  // + and Enable HTTPS wait for the hub before they get here, and the dialog may have been closed meanwhile:
+  // a closed dialog must not restart the phone list refresh or issue invitations nobody will see.
+  if (!$('#addDlg').open) return;
+  const request = ++invitationRequest, dest = $('#hubSel').value, mobile = osTab === 'mobile', id = mobile ? null : $('#enrollDevice').value || null;
+  $('#cmd').textContent = ''; $('#viewUrl').textContent = ''; $('#pairCode').textContent = ''; $('#mobileCode').textContent = '';
+  $('#cmdRow').style.display = osTab === 'app' || mobile ? 'none' : ''; $('#pairRow').hidden = osTab !== 'app';
+  // Phones always enrol as a new identity, so the Enrollment / Reconnect choice does not apply.
+  $('#enrollRow').hidden = mobile; $('#mobileRow').hidden = true; $('#phoneList').hidden = !(mobile && info?.canEnroll);
+  clearTimeout(phoneTimer); phoneInvite = null;
   $('#enableHttps').hidden = !!info?.origin || !info?.localOrigin;
-  $('#cmdHint').textContent = info?.origin ? 'Use this single-use invitation within ten minutes. Selecting an existing device replaces its previous credentials when redeemed.' : 'For remote devices, enable Tailscale HTTPS or configure a trusted HTTPS hub origin. The loopback browser link works only on this computer.';
+  $('#cmdHint').textContent = mobile ? (info?.origin ? '' : 'The iPhone and iPad app pairs through the hub’s HTTPS address. Enable Tailscale HTTPS or configure a trusted HTTPS hub origin first.')
+    : info?.origin ? 'Use this single-use invitation within ten minutes. Selecting an existing device replaces its previous credentials when redeemed.' : 'For remote devices, enable Tailscale HTTPS or configure a trusted HTTPS hub origin. The loopback browser link works only on this computer.';
+  const listed = mobile && info?.canEnroll ? loadPhones(request) : null;
   if (!dest) return;
   async function issue(kind) {
     const res = await hubFetch('/api/invites', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({kind, origin:dest, id:kind === 'browser' ? null : id})});
@@ -900,10 +952,22 @@ async function updateCmd() {
     if (request !== invitationRequest) return;
     $('#viewUrl').textContent = dest + '/unlock#join=' + view;
     if (!info?.canEnroll) { $('#cmdHint').textContent = 'Create device enrollments on the hub. The browser link below is ready to share.'; return; }
-    if (!info.origin || dest !== info.origin) return;
-    const code = await issue(osTab === 'app' ? 'desktop' : 'agent');
+    if (!info.origin || dest !== info.origin) {
+      if (mobile && info.origin) $('#cmdHint').textContent = 'Choose the hub’s HTTPS address above. The iPhone and iPad app cannot pair through this computer’s loopback address.';
+      return;
+    }
+    const known = mobile && await listed ? new Set(phones.keys()) : null;
+    if (request !== invitationRequest) return;   // the tab or the dialog was left while the phone list loaded: issue nothing
+    const code = await issue(mobile ? 'mobile' : osTab === 'app' ? 'desktop' : 'agent');
     if (request !== invitationRequest) return;
-    if (osTab === 'app') {
+    if (mobile) {
+      const link = dest + '/mobile#join=' + code, canvas = $('#mobileQr');
+      $('#mobileCode').textContent = link;
+      canvas.hidden = !window.QR;   // the text invitation still works without the encoder
+      if (window.QR) QR.paint(canvas, QR.encode(link), { size: 220, ratio: window.devicePixelRatio || 1 });
+      phoneInvite = { known, expires: Date.now() + 590e3 };
+      $('#mobileRow').hidden = false;
+    } else if (osTab === 'app') {
       $('#pairCode').textContent = dest + '/pair#join=' + code;
       $('#pairHint').textContent = 'Paste into Connect on the other computer.';
     } else if (osTab === 'win') {
@@ -940,8 +1004,16 @@ $('#enableHttps').addEventListener('click', async () => {
   } finally { b.disabled = false; }
 });
 $('#copyPair').addEventListener('click', e => copyFrom(e.currentTarget,'#pairCode'));
+$('#copyMobile').addEventListener('click', e => copyFrom(e.currentTarget, '#mobileCode'));
+$('#phoneList').addEventListener('click', async e => {
+  const b = e.target.closest('button[data-id]'), m = b && phones.get(b.dataset.id), request = invitationRequest;
+  if (!m || !confirm(`Remove “${m.name}”? Device Monitor on that phone or tablet is signed out at once and needs a new invitation to pair again.`)) return;
+  b.disabled = true;
+  await hubFetch('/api/mobile/' + encodeURIComponent(m.id), { method: 'DELETE' }).catch(() => null);
+  phoneHtml = null; loadPhones(request);
+});
 $('#addDone').addEventListener('click', () => $('#addDlg').close());
-$('#addDlg').addEventListener('close', () => { invitationRequest++; });
+$('#addDlg').addEventListener('close', () => { invitationRequest++; clearTimeout(phoneTimer); });
 $('#osTabs').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   osTab = b.dataset.os;

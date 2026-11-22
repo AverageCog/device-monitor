@@ -1,0 +1,33 @@
+{
+  "root": {
+    "app": "device-monitor",
+    "hostname": "hub-pc",
+    "port": 38017,
+    "canEnroll": true,
+    "canShare": true,
+    "origin": "https://hub.test",
+    "localOrigin": "http://127.0.0.1:38017"
+  },
+  "locked": {
+    "app": "device-monitor",
+    "locked": true
+  },
+  "client": {
+    "app": "device-monitor",
+    "hostname": "hub-pc",
+    "port": 38017,
+    "canEnroll": false,
+    "canShare": true,
+    "origin": "https://hub.test",
+    "localOrigin": null
+  },
+  "browser": {
+    "app": "device-monitor",
+    "hostname": "hub-pc",
+    "port": 38017,
+    "canEnroll": false,
+    "canShare": false,
+    "origin": "https://hub.test",
+    "localOrigin": null
+  }
+}

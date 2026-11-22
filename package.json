@@ -9,7 +9,7 @@
   "scripts": {
     "start": "electron .",
     "hub": "node server.js",
-    "test": "node --test build/test/security.test.js",
+    "test": "node --test build/test/security.test.js build/test/mobile.test.js",
     "icon": "node build/make-icon.js",
     "dist": "node build/make-icon.js && electron-builder --win nsis",
     "dist:mac": "node build/make-icon.js && electron-builder --mac dmg zip --universal",

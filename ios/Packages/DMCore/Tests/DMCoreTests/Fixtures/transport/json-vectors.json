@@ -1,0 +1,182 @@
+[
+ {
+  "note": "a report with every string cut inside an emoji (normalizeReport)",
+  "json": "{\"id\":\"ws-1\",\"hostname\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\ud83d\",\"platform\":\"linux\",\"os\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\ud83d\",\"uptime\":null,\"formFactor\":null,\"power\":null,\"features\":[],\"actions\":[],\"macs\":[],\"actionResult\":{\"id\":\"abcdef012345\",\"ok\":false,\"message\":\"nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\\ud83d\"},\"appVersion\":null,\"cpu\":{\"name\":\"ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\ud83d\",\"usage\":37,\"cores\":[],\"threads\":null,\"clockMHz\":null,\"temp\":null,\"tempSource\":null},\"memory\":{\"total\":8000000000,\"used\":2000000000},\"gpus\":[{\"name\":\"ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\\ud83d\",\"vendor\":\"eeeeeeeeeeeeeeeeeee\\ud83d\",\"usage\":null,\"temp\":null,\"memUsed\":null,\"memTotal\":null,\"power\":null,\"powerLimit\":null,\"fan\":null,\"clockMHz\":null}],\"disks\":[{\"name\":\"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\\ud83d\",\"label\":\"ggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg\\ud83d\",\"total\":1000000000000,\"used\":500000000000},{\"name\":\"C:\\\\\",\"label\":\"😀 intact\",\"total\":null,\"used\":null}],\"net\":null,\"diskIO\":null,\"temps\":[{\"name\":\"hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh\\ud83d\",\"parent\":\"iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii\\ud83d\",\"value\":40}],\"fans\":[{\"name\":\"jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj\\ud83d\",\"rpm\":900}],\"ai\":[{\"app\":\"kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk\\ud83d\",\"mem\":null,\"models\":[{\"name\":\"lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll\\ud83d\",\"size\":1,\"kind\":\"mmmmmmmmmmmmmmmmmmmmmmmmmmmmm\\ud83d\"}]}]}",
+  "repaired": "{\"id\":\"ws-1\",\"hostname\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\ufffd\",\"platform\":\"linux\",\"os\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\ufffd\",\"uptime\":null,\"formFactor\":null,\"power\":null,\"features\":[],\"actions\":[],\"macs\":[],\"actionResult\":{\"id\":\"abcdef012345\",\"ok\":false,\"message\":\"nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\\ufffd\"},\"appVersion\":null,\"cpu\":{\"name\":\"ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\ufffd\",\"usage\":37,\"cores\":[],\"threads\":null,\"clockMHz\":null,\"temp\":null,\"tempSource\":null},\"memory\":{\"total\":8000000000,\"used\":2000000000},\"gpus\":[{\"name\":\"ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\\ufffd\",\"vendor\":\"eeeeeeeeeeeeeeeeeee\\ufffd\",\"usage\":null,\"temp\":null,\"memUsed\":null,\"memTotal\":null,\"power\":null,\"powerLimit\":null,\"fan\":null,\"clockMHz\":null}],\"disks\":[{\"name\":\"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\\ufffd\",\"label\":\"ggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg\\ufffd\",\"total\":1000000000000,\"used\":500000000000},{\"name\":\"C:\\\\\",\"label\":\"😀 intact\",\"total\":null,\"used\":null}],\"net\":null,\"diskIO\":null,\"temps\":[{\"name\":\"hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh\\ufffd\",\"parent\":\"iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii\\ufffd\",\"value\":40}],\"fans\":[{\"name\":\"jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj\\ufffd\",\"rpm\":900}],\"ai\":[{\"app\":\"kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk\\ufffd\",\"mem\":null,\"models\":[{\"name\":\"lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll\\ufffd\",\"size\":1,\"kind\":\"mmmmmmmmmmmmmmmmmmmmmmmmmmmmm\\ufffd\"}]}]}",
+  "valid": true
+ },
+ {
+  "note": "a device list",
+  "json": "[{\"id\":\"ws-1\",\"hostname\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\ud83d\",\"latest\":{\"id\":\"ws-1\",\"hostname\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\ud83d\",\"platform\":\"linux\",\"os\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\ud83d\",\"uptime\":null,\"formFactor\":null,\"power\":null,\"features\":[],\"actions\":[],\"macs\":[],\"actionResult\":{\"id\":\"abcdef012345\",\"ok\":false,\"message\":\"nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\\ud83d\"},\"appVersion\":null,\"cpu\":{\"name\":\"ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\ud83d\",\"usage\":37,\"cores\":[],\"threads\":null,\"clockMHz\":null,\"temp\":null,\"tempSource\":null},\"memory\":{\"total\":8000000000,\"used\":2000000000},\"gpus\":[{\"name\":\"ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\\ud83d\",\"vendor\":\"eeeeeeeeeeeeeeeeeee\\ud83d\",\"usage\":null,\"temp\":null,\"memUsed\":null,\"memTotal\":null,\"power\":null,\"powerLimit\":null,\"fan\":null,\"clockMHz\":null}],\"disks\":[{\"name\":\"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\\ud83d\",\"label\":\"ggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg\\ud83d\",\"total\":1000000000000,\"used\":500000000000},{\"name\":\"C:\\\\\",\"label\":\"😀 intact\",\"total\":null,\"used\":null}],\"net\":null,\"diskIO\":null,\"temps\":[{\"name\":\"hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh\\ud83d\",\"parent\":\"iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii\\ud83d\",\"value\":40}],\"fans\":[{\"name\":\"jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj\\ud83d\",\"rpm\":900}],\"ai\":[{\"app\":\"kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk\\ud83d\",\"mem\":null,\"models\":[{\"name\":\"lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll\\ud83d\",\"size\":1,\"kind\":\"mmmmmmmmmmmmmmmmmmmmmmmmmmmmm\\ud83d\"}]}]}},{\"id\":\"nas\",\"hostname\":\"😀 intact\",\"latest\":null}]",
+  "repaired": "[{\"id\":\"ws-1\",\"hostname\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\ufffd\",\"latest\":{\"id\":\"ws-1\",\"hostname\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\ufffd\",\"platform\":\"linux\",\"os\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\ufffd\",\"uptime\":null,\"formFactor\":null,\"power\":null,\"features\":[],\"actions\":[],\"macs\":[],\"actionResult\":{\"id\":\"abcdef012345\",\"ok\":false,\"message\":\"nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\\ufffd\"},\"appVersion\":null,\"cpu\":{\"name\":\"ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\ufffd\",\"usage\":37,\"cores\":[],\"threads\":null,\"clockMHz\":null,\"temp\":null,\"tempSource\":null},\"memory\":{\"total\":8000000000,\"used\":2000000000},\"gpus\":[{\"name\":\"ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\\ufffd\",\"vendor\":\"eeeeeeeeeeeeeeeeeee\\ufffd\",\"usage\":null,\"temp\":null,\"memUsed\":null,\"memTotal\":null,\"power\":null,\"powerLimit\":null,\"fan\":null,\"clockMHz\":null}],\"disks\":[{\"name\":\"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\\ufffd\",\"label\":\"ggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg\\ufffd\",\"total\":1000000000000,\"used\":500000000000},{\"name\":\"C:\\\\\",\"label\":\"😀 intact\",\"total\":null,\"used\":null}],\"net\":null,\"diskIO\":null,\"temps\":[{\"name\":\"hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh\\ufffd\",\"parent\":\"iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii\\ufffd\",\"value\":40}],\"fans\":[{\"name\":\"jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj\\ufffd\",\"rpm\":900}],\"ai\":[{\"app\":\"kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk\\ufffd\",\"mem\":null,\"models\":[{\"name\":\"lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll\\ufffd\",\"size\":1,\"kind\":\"mmmmmmmmmmmmmmmmmmmmmmmmmmmmm\\ufffd\"}]}]}},{\"id\":\"nas\",\"hostname\":\"😀 intact\",\"latest\":null}]",
+  "valid": true
+ },
+ {
+  "note": "a dashboard label cut to 60 units (cleanText)",
+  "json": "{\"ok\":true,\"name\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\\ud83d\"}",
+  "repaired": "{\"ok\":true,\"name\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\\ufffd\"}",
+  "valid": true
+ },
+ {
+  "note": "a label that fits",
+  "json": "{\"ok\":true,\"name\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx😀\"}",
+  "repaired": "{\"ok\":true,\"name\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx😀\"}",
+  "valid": true
+ },
+ {
+  "note": "a snapshot frame",
+  "json": "{\"type\":\"snapshot\",\"devices\":[{\"id\":\"ws-1\",\"latest\":{\"id\":\"ws-1\",\"hostname\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\ud83d\",\"platform\":\"linux\",\"os\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\ud83d\",\"uptime\":null,\"formFactor\":null,\"power\":null,\"features\":[],\"actions\":[],\"macs\":[],\"actionResult\":{\"id\":\"abcdef012345\",\"ok\":false,\"message\":\"nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\\ud83d\"},\"appVersion\":null,\"cpu\":{\"name\":\"ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\ud83d\",\"usage\":37,\"cores\":[],\"threads\":null,\"clockMHz\":null,\"temp\":null,\"tempSource\":null},\"memory\":{\"total\":8000000000,\"used\":2000000000},\"gpus\":[{\"name\":\"ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\\ud83d\",\"vendor\":\"eeeeeeeeeeeeeeeeeee\\ud83d\",\"usage\":null,\"temp\":null,\"memUsed\":null,\"memTotal\":null,\"power\":null,\"powerLimit\":null,\"fan\":null,\"clockMHz\":null}],\"disks\":[{\"name\":\"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\\ud83d\",\"label\":\"ggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg\\ud83d\",\"total\":1000000000000,\"used\":500000000000},{\"name\":\"C:\\\\\",\"label\":\"😀 intact\",\"total\":null,\"used\":null}],\"net\":null,\"diskIO\":null,\"temps\":[{\"name\":\"hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh\\ud83d\",\"parent\":\"iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii\\ud83d\",\"value\":40}],\"fans\":[{\"name\":\"jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj\\ud83d\",\"rpm\":900}],\"ai\":[{\"app\":\"kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk\\ud83d\",\"mem\":null,\"models\":[{\"name\":\"lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll\\ud83d\",\"size\":1,\"kind\":\"mmmmmmmmmmmmmmmmmmmmmmmmmmmmm\\ud83d\"}]}]}}]}",
+  "repaired": "{\"type\":\"snapshot\",\"devices\":[{\"id\":\"ws-1\",\"latest\":{\"id\":\"ws-1\",\"hostname\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\ufffd\",\"platform\":\"linux\",\"os\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\ufffd\",\"uptime\":null,\"formFactor\":null,\"power\":null,\"features\":[],\"actions\":[],\"macs\":[],\"actionResult\":{\"id\":\"abcdef012345\",\"ok\":false,\"message\":\"nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\\ufffd\"},\"appVersion\":null,\"cpu\":{\"name\":\"ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\ufffd\",\"usage\":37,\"cores\":[],\"threads\":null,\"clockMHz\":null,\"temp\":null,\"tempSource\":null},\"memory\":{\"total\":8000000000,\"used\":2000000000},\"gpus\":[{\"name\":\"ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\\ufffd\",\"vendor\":\"eeeeeeeeeeeeeeeeeee\\ufffd\",\"usage\":null,\"temp\":null,\"memUsed\":null,\"memTotal\":null,\"power\":null,\"powerLimit\":null,\"fan\":null,\"clockMHz\":null}],\"disks\":[{\"name\":\"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\\ufffd\",\"label\":\"ggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg\\ufffd\",\"total\":1000000000000,\"used\":500000000000},{\"name\":\"C:\\\\\",\"label\":\"😀 intact\",\"total\":null,\"used\":null}],\"net\":null,\"diskIO\":null,\"temps\":[{\"name\":\"hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh\\ufffd\",\"parent\":\"iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii\\ufffd\",\"value\":40}],\"fans\":[{\"name\":\"jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj\\ufffd\",\"rpm\":900}],\"ai\":[{\"app\":\"kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk\\ufffd\",\"mem\":null,\"models\":[{\"name\":\"lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll\\ufffd\",\"size\":1,\"kind\":\"mmmmmmmmmmmmmmmmmmmmmmmmmmmmm\\ufffd\"}]}]}}]}",
+  "valid": true
+ },
+ {
+  "note": "nothing to repair",
+  "json": "{\"text\":\"plain é 😀\",\"n\":[1,2.5,null,true]}",
+  "repaired": "{\"text\":\"plain é 😀\",\"n\":[1,2.5,null,true]}",
+  "valid": true
+ },
+ {
+  "note": "half a pair at the end",
+  "json": "\"aaa\\ud83d\"",
+  "repaired": "\"aaa\\ufffd\"",
+  "valid": true
+ },
+ {
+  "note": "half a pair at the start",
+  "json": "\"\\ude00 tail\"",
+  "repaired": "\"\\ufffd tail\"",
+  "valid": true
+ },
+ {
+  "note": "the halves the wrong way round",
+  "json": "\"\\ude00\\ud83d\"",
+  "repaired": "\"\\ufffd\\ufffd\"",
+  "valid": true
+ },
+ {
+  "note": "halves kept apart",
+  "json": "\"\\ud83dx\\ude00\"",
+  "repaired": "\"\\ufffdx\\ufffd\"",
+  "valid": true
+ },
+ {
+  "note": "a half before a whole",
+  "json": "\"\\ud83d😀\"",
+  "repaired": "\"\\ufffd😀\"",
+  "valid": true
+ },
+ {
+  "note": "a whole before a half",
+  "json": "\"😀\\ude00\"",
+  "repaired": "\"😀\\ufffd\"",
+  "valid": true
+ },
+ {
+  "note": "a half before other escapes",
+  "json": "\"\\ud83dA\\n\\\"\\ud83d\\\\\"",
+  "repaired": "\"\\ufffdA\\n\\\"\\ufffd\\\\\"",
+  "valid": true
+ },
+ {
+  "note": "a backslash followed by the text of an escape",
+  "json": "\"\\\\ud83d\"",
+  "repaired": "\"\\\\ud83d\"",
+  "valid": true
+ },
+ {
+  "note": "a backslash followed by half a pair",
+  "json": "\"\\\\\\ud83d\"",
+  "repaired": "\"\\\\\\ufffd\"",
+  "valid": true
+ },
+ {
+  "note": "two backslashes, text, a quote and a half",
+  "json": "\"\\\\\\\\ud83d \\\"\\ud83d\\\"\"",
+  "repaired": "\"\\\\\\\\ud83d \\\"\\ufffd\\\"\"",
+  "valid": true
+ },
+ {
+  "note": "the neighbours of the surrogate range",
+  "json": "\"퟿�\"",
+  "repaired": "\"퟿�\"",
+  "valid": true
+ },
+ {
+  "note": "the first and last surrogates",
+  "json": "\"\\ud800 \\udbff \\udc00 \\udfff\"",
+  "repaired": "\"\\ufffd \\ufffd \\ufffd \\ufffd\"",
+  "valid": true
+ },
+ {
+  "note": "halves as object keys",
+  "json": "{\"\\ude00\":\"\\ud83d\",\"é😀\":[\"𐏿\",\"\\ud83d\"]}",
+  "repaired": "{\"\\ufffd\":\"\\ufffd\",\"é😀\":[\"𐏿\",\"\\ufffd\"]}",
+  "valid": true
+ },
+ {
+  "note": "control characters beside a half",
+  "json": "\"\\u0000\\ud83d\\u001f\"",
+  "repaired": "\"\\u0000\\ufffd\\u001f\"",
+  "valid": true
+ },
+ {
+  "note": "an escaped pair is left alone",
+  "json": "\"\\ud83d\\ude00\"",
+  "repaired": "\"\\ud83d\\ude00\"",
+  "valid": true
+ },
+ {
+  "note": "escaped pairs and halves with capital hex digits",
+  "json": "\"\\uD83D\\uDE00 \\uD83D \\uDe00\"",
+  "repaired": "\"\\uD83D\\uDE00 \\ufffd \\ufffd\"",
+  "valid": true
+ },
+ {
+  "note": "an escaped half before an escaped pair",
+  "json": "\"\\ud83d\\ud83d\\ude00\"",
+  "repaired": "\"\\ufffd\\ud83d\\ude00\"",
+  "valid": true
+ },
+ {
+  "note": "an escaped high half before an ordinary escape",
+  "json": "\"\\ud83d\\u0041\"",
+  "repaired": "\"\\ufffd\\u0041\"",
+  "valid": true
+ },
+ {
+  "note": "an escaped half before an escaped backslash and the text of a low half",
+  "json": "\"\\ud83d\\\\ude00\"",
+  "repaired": "\"\\ufffd\\\\ude00\"",
+  "valid": true
+ },
+ {
+  "note": "a capital U is not an escape (and not JSON)",
+  "json": "\"\\Ud83d\"",
+  "repaired": "\"\\Ud83d\"",
+  "valid": false
+ },
+ {
+  "note": "cut short inside an escape",
+  "json": "\"\\ud83d\\ude0",
+  "repaired": "\"\\ufffd\\ude0",
+  "valid": false
+ },
+ {
+  "note": "cut short after a backslash",
+  "json": "\"abc\\",
+  "repaired": "\"abc\\",
+  "valid": false
+ },
+ {
+  "note": "an escape with a digit that is not hex",
+  "json": "\"\\ud83g\\ud83d\"",
+  "repaired": "\"\\ud83g\\ufffd\"",
+  "valid": false
+ },
+ {
+  "note": "empty",
+  "json": "",
+  "repaired": "",
+  "valid": false
+ }
+]

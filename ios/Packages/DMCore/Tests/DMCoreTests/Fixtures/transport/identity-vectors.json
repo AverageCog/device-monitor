@@ -1,0 +1,1560 @@
+{
+ "digests": [
+  {
+   "token": "TCkBF-1_PjuMrJ0pbCdbkNmLGoyD2QMxZ5WE9Dssvuc",
+   "digest": "30bbbe349a2fc12e58466ae2894f59b5c9c2cc743ddbd28b6a8e6d62892a8840"
+  },
+  {
+   "token": "3QRf1FA_ikyF1VGhrz9MU_RF4Jpz8Th6Pxe5HvqIIpU",
+   "digest": "3baea0890ed624b89672d1ef65f0ef03769985f8562f397128dc9bcc235a6763"
+  },
+  {
+   "token": "mBYU5K_LPnQjNDkNb6Gan428ftE9Q3bnS-TbgbY8lyg",
+   "digest": "c4b8a6d0d2280b19c6dda82fbc954a979ae12f6c6a1e9086d7e1ac1b3b0e3bdc"
+  },
+  {
+   "token": "B7Uy-xmxs8vnwGf5XQ2cqTaH-tNrq-7wIfLomyKQsZo",
+   "digest": "a798c9bbf7fb84d63cba4f290982a80667ce5af707837b9fc6bcb26c017fc278"
+  },
+  {
+   "token": "ueUDGYEZB5a8R-eN7EyYfRMFzqzPqyIoY1ghr_Dg53c",
+   "digest": "d225dcd85d400cad454aef19ce129ca08e38f8a62abec93e7cfadcb3aece8f95"
+  },
+  {
+   "token": "SQixGehZ2E94omlM9Y4XYrDfBRU7XmUefDmnz5bDnPc",
+   "digest": "98e8d03ec5a5ccccec996b31593f7a391cff62bfdf176dbdd71e24f3cf64387a"
+  },
+  {
+   "token": "VlFGT9nj43_WDBnE5daF0aEVerAq8h33ODRWMT2baP0",
+   "digest": "72b7932d778a5e6102ef3c6e8a27504331e856541c0ed9c8fc115c10c07fbaad"
+  },
+  {
+   "token": "k9oEHYyi4dmtwDLFdyL-UnZbndxMY9MyJt7noULYlYk",
+   "digest": "f3d6c2ef5864fecf623e8c7b57cb746d5fa1b0f1c650954f548922e6036ef266"
+  },
+  {
+   "token": "4ERhmLj6bKf-urJ0HjHR5ulZ0NI48Qy1ZMsfsLxmEGk",
+   "digest": "fd6242cdca8e3847bfb36dae0b91c507d372d4336dc33855d5ba6986acdc943d"
+  },
+  {
+   "token": "X185FpcqhJFoHeD9axmRbDfqfegiHQU6DAlF-GLzfeM",
+   "digest": "914be00cc37b92d9f597e1e48883e6f356ea1c77b74b6b832e8972899678b54d"
+  },
+  {
+   "token": "vDmdwXOPxlM7WpG088OUkqFL_xU6BHj5MAlU2MKOaP0",
+   "digest": "584546e40213e7029c38a49f55397ee794b51aab22dba5bbd554079a352753a4"
+  },
+  {
+   "token": "FFejl650D8xSeamjt0PI7heBbUswD0fM6SbRNukZQ4w",
+   "digest": "079b3823f740c0026c616bf410b735de9d437a59f231e56b4d820a76f71209cb"
+  },
+  {
+   "token": "",
+   "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+   "token": "a",
+   "digest": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+  },
+  {
+   "token": "password",
+   "digest": "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"
+  },
+  {
+   "token": "ünïcödé",
+   "digest": "b09ad3e278dfb341468394a32f732467e2245b4b2876c3e15e0aaf1aa5ac242a"
+  },
+  {
+   "token": "漢字かな",
+   "digest": "a089902ea49b69f834b54fafabe6f3a3720547f831cf77521a0b38bfa1e56dac"
+  },
+  {
+   "token": "😀 emoji",
+   "digest": "c5db20e64d86b693d8e312b379cfdd211311f63f3743831e6f4139344b39d762"
+  },
+  {
+   "token": "line\nbreak",
+   "digest": "697affca60d5d0dc96f00aac4b2d833e3adc0708a4efd8b657acc4229f4449ef"
+  },
+  {
+   "token": "nul\u0000byte",
+   "digest": "a9512ba6902d2e41f0ff8e055f2c8ee7041a092a53d27b518cde6a91ea0facd5"
+  },
+  {
+   "token": " leading and trailing ",
+   "digest": "81b14516b5d1331335d162196dd07afa36d1d8c801c561e590c3dedb95c3cc59"
+  }
+ ],
+ "keys": [
+  {
+   "agent": "2eb5cc378a67045cec79376321d412006c006715f34163f705d8a1766d5c17ee",
+   "client": "4dbf1c9fd31ecd14e71c3a33f7592503b30a6d7ef4845e9cf991b0c5a5e7ceb3",
+   "key": "9171d2df1abd194a80e0b18f2ec86ae8ab025505c430a8b15bf66f2a065294fc"
+  },
+  {
+   "agent": "af8d954db005422c52efb13e71b593942c47ce9e60e6c7f78be61ed4a1b9421c",
+   "client": "bc55fb8662e8a2e4096a6fd91510cc4f567b88fc99262804bb177c9a9437e894",
+   "key": "22e63ffad6f54ef3a5be72c7c4bbaf219e6393e28757fd7bb382881125634e5e"
+  },
+  {
+   "agent": "e35187206f7a280279d4b08dd9dd8783eabf843589b7b9a19906b70b56b74a3e",
+   "client": "9482f7203b2e544b22b1f8fc120572f8950d2fc577e8c0557c513959498d5c8b",
+   "key": "d37e2d9f97b0cbe030d29587b0dcb21340529028a102fdf0c41231c4bc2a5f8e"
+  },
+  {
+   "agent": "01b11157921c5f1903f9e76addc6895b58f23ed91c612fa747742b70049cfc9b",
+   "client": "ef35475786e8d233d1b5d9aa5a8340597a8eb2284ffe4637419a4edcf8d5663b",
+   "key": "af85d2093ca2a1f866d822039b60c345f392fc226988742f88a56d640aa2d13f"
+  },
+  {
+   "agent": "2f6a1213c8541e9b3848d6f04d6a0dc3f909482dd4cc4c26c70ccab06b7d9de2",
+   "client": "7fc1dcb734825e6a64924cd51021c681d0d4b46e63800ff26218db5e7df483a3",
+   "key": "f1f71e7d6fb8ddd28f3c3137232bd44bc95918ccc1131cdd478befabc6a9b0c5"
+  },
+  {
+   "agent": "016c4cb8e3273857322f4a323e05bde00fadbeb22687331c1248e8e44e3d48e1",
+   "client": "757292810f9a625b8217c6c691c5baea5229dc55231c0c49da36376395e53b61",
+   "key": "be658de901d7a05ab873a5ed7d984e3a4e595fa1c5ae8881cc8fda59f2f72338"
+  },
+  {
+   "agent": "1c726766c69ec5cc48b7e69c1235426caa5b82bef2ccf7cc8e5e6ac89541955f",
+   "client": "0ca142fe719b7a5c1d6dc34a2aac718829b44f40c32682501fc6e51489a93291",
+   "key": "81ecad87ae932bb1e29648dfe4508800be4737dc2c2bb7c061a47655ea00f555"
+  },
+  {
+   "agent": "745846f012c1849bd244af35a7d4339fa53983d02e1a222603de931ffac77981",
+   "client": "7f42f54880ddc076b17acb40f009dbb113e07942fa43602375ecd261afaa9622",
+   "key": "f904557b0c605bd1d357e4c1286babb1272177648a865d5c17e3a1a02c1c78fe"
+  },
+  {
+   "agent": "b2571b198f847b85634b0f9d24004e5fd76b7148edc7b8fa6d9ba7647fec2a94",
+   "client": "6ce2f6fbde367dfc0b7e24cc379d947dec8180ab5e41f3fc82375d54976524a2",
+   "key": "7cfe17c79975ede11695f51130f7487aa040031cdfef3ab9f9e82dc5cd31bec4"
+  },
+  {
+   "agent": "8fbedd1824aa4390ecd27380e3c46999b35867b5cf978c721ecbf56f132fff9d",
+   "client": "7fb90a3d62ffe5289223c5ff5cd381741a694f8072b8bc8c0e2e96b3a80dc328",
+   "key": "c1ce323385bd93d91373d7ebd55272a0480c7cb02fbb095b5768ec68a44e028c"
+  },
+  {
+   "agent": "c4b528628fdfa744afad7cffe75445098b4c4ec4a029d1927c6de9758590f335",
+   "client": "7b6bef129f69a28760a6207c8331f3c1eb59e01760422e0621445ce7147e2a22",
+   "key": "52d12d6f6941326fad1530ea895af0f3a56089c3158d8fcb04c440cf65b33eb1"
+  },
+  {
+   "agent": "ce1358700565f077b66ccfdaf84d65b7f32064ba2bc89c40614f317b8411f956",
+   "client": "ce44394290563f2c7ecd11ca97605777af9349fbb61226b10cecd4e1af7f0afb",
+   "key": "c2985b71458c6319c4cfc80b23cf46734dd3850866e397ce7e548d877c5ad4b6"
+  },
+  {
+   "agent": "2d45e1b1c05b7f69def1a8f612bac026d51dc721547a12cf301b5aa418006f8e",
+   "client": "505746a052871727f997df2ae20497cbe3b3eab222e067126f8830ab5f3d3208",
+   "key": "2d448a2930b21868d9255a22f7d79292138e6b3f815618cf4820cfd64b2149f7",
+   "proofSecret": "ginzKCcLUoyiIsSBFtG501jgeOvsDb51bwlPxO0XSbc",
+   "clientSecret": "JX6kFIebnmULWh-JJcEpuFHAJX8s-XSIqTXVLuZhrGg"
+  },
+  {
+   "agent": "0d2804291a5fb535951261834aced2c42af1bcdb31ff5679468a99d93fc6c6d8",
+   "client": "f0c828b5e638a61330440289649b552c8b8fa4b3e4df9c5acd4601907d48537d",
+   "key": "c8216241ce8e92354d6ef56ab5551493771a33a91ffc7e70cff6bfa59278221f",
+   "proofSecret": "VZmJosQKccNBcq01XWhmXEKJJYpmwqZACYuZUMhHlck",
+   "clientSecret": "Q8LraX2rSjGLhVqTKzHKlhXXN8BPA8WoOqsLegEuaIQ"
+  },
+  {
+   "agent": "0ac6fbb822cf57db8bab67b7fb2bfa1262abce9553def4b639ec1e8f71ca0852",
+   "client": "f964bef07c782e679d33e2b50e6120cf99a857a07868bdef22ac139d54bfe065",
+   "key": "b13b0b94bec91c4ab6ae8fb5704619484f967608ceea6f0f46f903b7f0ac3762",
+   "proofSecret": "GP8cGj2YYcoAdxiQ6jOrK_zRJ03CgilU3o7yqQWPVUM",
+   "clientSecret": "k5NzNizOJSFJRjwKvmXzHzIRRweL6ZiwMHvn32hjv8c"
+  },
+  {
+   "agent": "0fdbb16941188bf021a83e1077357a03648ed1e73d42fd18618359f8c2d50023",
+   "client": "4438969d22d04cd15397aa998514594707ddbb27554d9ec0a1200ce4159a3944",
+   "key": "df63953f7b6d1770718899dae2eedba625c06bd65d59199bce101f010b389861",
+   "proofSecret": "3oJHfMHnatzrQ-z7BFrRy05vLbbfEFYyZJ599MDsUOI",
+   "clientSecret": "AtEaTGr_CqAP43_SEhuxlqGVnBBeQMoCF2niRzRarrE"
+  },
+  {
+   "agent": "4cf962374924274f9a9dbef1d0364feee6988022e41b88430c6ebb706db7ca22",
+   "client": "b3897aedb8ca203138c2c4501d48311ed898f2816c6a4b00df6c5f1a3f427e9f",
+   "key": "39159fad9aae570b1c649e638299abe012b1299c29ede27f1529c936f398fa47",
+   "proofSecret": "ie2SArEZkZ1oI8drD6eB19VvaUHq6DWrQIWgeJxczxU",
+   "clientSecret": "K9k1QAVZaePakgknL3BJyUhhn6gJbeA-K173InEuNMg"
+  },
+  {
+   "agent": "7f8c0fbeeb7c0131a88e03b122fabcdbd9da86d1d82b4b733794f103b5edcacc",
+   "client": "68d64984333b3ea709be2a351fdeec283486ab72ff94d7415f0f74fd1670340e",
+   "key": "e0c2e39300ed28802c801a411cfbe58c746643ecee2bcd99f67e1237f67e95c4",
+   "proofSecret": "nmzQOmtT17-l_oYZStS6S0hGbU7KmwzhIG0OmhNxDXk",
+   "clientSecret": "CJoP1Av4PIhhoqV0peWJdFs977_lLDUhhJn365b6Czg"
+  },
+  {
+   "agent": "645B7AFFEF15CA2C26BB76F7B2152630882FE1D6D6696741B1F99080717BDD8D",
+   "client": "645b7affef15ca2c26bb76f7b2152630882fe1d6d6696741b1f99080717bdd8d",
+   "key": null
+  },
+  {
+   "agent": "645b7affef15ca2c26bb76f7b2152630882fe1d6d6696741b1f99080717bdd8d",
+   "client": "645B7AFFEF15CA2C26BB76F7B2152630882FE1D6D6696741B1F99080717BDD8D",
+   "key": null
+  },
+  {
+   "agent": "45b7affef15ca2c26bb76f7b2152630882fe1d6d6696741b1f99080717bdd8d",
+   "client": "645b7affef15ca2c26bb76f7b2152630882fe1d6d6696741b1f99080717bdd8d",
+   "key": null
+  },
+  {
+   "agent": "645b7affef15ca2c26bb76f7b2152630882fe1d6d6696741b1f99080717bdd8d",
+   "client": "645b7affef15ca2c26bb76f7b2152630882fe1d6d6696741b1f99080717bdd8d0",
+   "key": null
+  },
+  {
+   "agent": "",
+   "client": "645b7affef15ca2c26bb76f7b2152630882fe1d6d6696741b1f99080717bdd8d",
+   "key": null
+  },
+  {
+   "agent": "645b7affef15ca2c26bb76f7b2152630882fe1d6d6696741b1f99080717bdd8d",
+   "client": "",
+   "key": null
+  },
+  {
+   "agent": "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+   "client": "645b7affef15ca2c26bb76f7b2152630882fe1d6d6696741b1f99080717bdd8d",
+   "key": null
+  },
+  {
+   "agent": "645b7affef15ca2c26bb76f7b2152630882fe1d6d6696741b1f99080717bdd8d",
+   "client": " 45b7affef15ca2c26bb76f7b2152630882fe1d6d6696741b1f99080717bdd8d",
+   "key": null
+  },
+  {
+   "agent": "645b7affef15ca2c26bb76f7b2152630882fe1d6d6696741b1f99080717bdd8\n",
+   "client": "645b7affef15ca2c26bb76f7b2152630882fe1d6d6696741b1f99080717bdd8d",
+   "key": null
+  }
+ ],
+ "macs": [
+  {
+   "key": "3298c5e6f63a5a86b223c8e4a52b4abfc4cb3587f94d72d89913b6eefb82719e",
+   "role": "lookup",
+   "fields": [],
+   "json": "[\"lookup\"]",
+   "mac": "NG8vDLef4XO8ykEXXQpkH2m334qOxPNQta66HNY38Fs"
+  },
+  {
+   "key": "3298c5e6f63a5a86b223c8e4a52b4abfc4cb3587f94d72d89913b6eefb82719e",
+   "role": "desktop",
+   "fields": [
+    "https://hub.example",
+    "ck9fiLQuQrqe5VUEp7ixaqXt2CpREyiqlRtdxTecfwY"
+   ],
+   "json": "[\"desktop\",\"https://hub.example\",\"ck9fiLQuQrqe5VUEp7ixaqXt2CpREyiqlRtdxTecfwY\"]",
+   "mac": "FOEZeBFsoCEEinFgPYLz2gEge7BVi48yjHPaoUhedKk"
+  },
+  {
+   "key": "3298c5e6f63a5a86b223c8e4a52b4abfc4cb3587f94d72d89913b6eefb82719e",
+   "role": "hub",
+   "fields": [
+    "https://hub.example",
+    "ck9fiLQuQrqe5VUEp7ixaqXt2CpREyiqlRtdxTecfwY",
+    "ygAOJ7JcL3EOTWMWip0Jx7AyWr1GCzTEnBg4NEFfUkM="
+   ],
+   "json": "[\"hub\",\"https://hub.example\",\"ck9fiLQuQrqe5VUEp7ixaqXt2CpREyiqlRtdxTecfwY\",\"ygAOJ7JcL3EOTWMWip0Jx7AyWr1GCzTEnBg4NEFfUkM=\"]",
+   "mac": "YQtDB8LugZCelz3scJUedb-uBTXZkj97ixYTNYN8naM"
+  },
+  {
+   "key": "0008580361115418bb95cfc6b82c9d5d58ed1754239128e92279dfa586932091",
+   "role": "lookup",
+   "fields": [],
+   "json": "[\"lookup\"]",
+   "mac": "fnzUwKzXuKGvIt0_7IVoPv7je2_bzzQ0-97PMWvbETE"
+  },
+  {
+   "key": "0008580361115418bb95cfc6b82c9d5d58ed1754239128e92279dfa586932091",
+   "role": "desktop",
+   "fields": [
+    "https://127.0.0.1:8443",
+    "VLCH3oWcdemcfYsR6qCVzoH5hZSp15BEaCLqDs6CSWE"
+   ],
+   "json": "[\"desktop\",\"https://127.0.0.1:8443\",\"VLCH3oWcdemcfYsR6qCVzoH5hZSp15BEaCLqDs6CSWE\"]",
+   "mac": "qg_vKwknE0agNTauT2PiKHDfvWKYBedtNqAz_ky-e8g"
+  },
+  {
+   "key": "0008580361115418bb95cfc6b82c9d5d58ed1754239128e92279dfa586932091",
+   "role": "hub",
+   "fields": [
+    "https://127.0.0.1:8443",
+    "VLCH3oWcdemcfYsR6qCVzoH5hZSp15BEaCLqDs6CSWE",
+    "cdz5tManS26bijdnmlF/WswtrEsdbXRYaBFil4tLLgU="
+   ],
+   "json": "[\"hub\",\"https://127.0.0.1:8443\",\"VLCH3oWcdemcfYsR6qCVzoH5hZSp15BEaCLqDs6CSWE\",\"cdz5tManS26bijdnmlF/WswtrEsdbXRYaBFil4tLLgU=\"]",
+   "mac": "WScI2mWnvbzklZJ5ZDUl2_wb3vsYE7cM0Evlo_YpmB8"
+  },
+  {
+   "key": "e13bd6a6e92c9647fe37903c0aec323846d9fcdeff827986224e19a205e653dc",
+   "role": "lookup",
+   "fields": [],
+   "json": "[\"lookup\"]",
+   "mac": "QG08Zm88Sg3-NCnLncmOdHqy55LTD-XPNMaheYStx6k"
+  },
+  {
+   "key": "e13bd6a6e92c9647fe37903c0aec323846d9fcdeff827986224e19a205e653dc",
+   "role": "desktop",
+   "fields": [
+    "https://[::1]:7443",
+    "m3z7CeErXKSxcnZEmm-ThVc2uXuCN1C3gTLT5WV4rys"
+   ],
+   "json": "[\"desktop\",\"https://[::1]:7443\",\"m3z7CeErXKSxcnZEmm-ThVc2uXuCN1C3gTLT5WV4rys\"]",
+   "mac": "DNKSoMs_yYM-LCBdclFnZtHcpac_TI3O7bzMVbxxiXk"
+  },
+  {
+   "key": "e13bd6a6e92c9647fe37903c0aec323846d9fcdeff827986224e19a205e653dc",
+   "role": "hub",
+   "fields": [
+    "https://[::1]:7443",
+    "m3z7CeErXKSxcnZEmm-ThVc2uXuCN1C3gTLT5WV4rys",
+    "WXwe+uM/1rzjCuQ9FS0MIFvR7nxh92SLGopUHtTOuqc="
+   ],
+   "json": "[\"hub\",\"https://[::1]:7443\",\"m3z7CeErXKSxcnZEmm-ThVc2uXuCN1C3gTLT5WV4rys\",\"WXwe+uM/1rzjCuQ9FS0MIFvR7nxh92SLGopUHtTOuqc=\"]",
+   "mac": "fRLVD9jkgcZhMLUkc6i2CzgKy-yfW95UfE5rRtOOMmE"
+  },
+  {
+   "key": "b2c47891b843d9980709d1a9e4482f0593ed43a1b2db31d7fc6ec8eae91e25d1",
+   "role": "lookup",
+   "fields": [],
+   "json": "[\"lookup\"]",
+   "mac": "rjPF47o260Fm6LpYR0MaLejeNvLY8zvppKxMqidj2YE"
+  },
+  {
+   "key": "b2c47891b843d9980709d1a9e4482f0593ed43a1b2db31d7fc6ec8eae91e25d1",
+   "role": "desktop",
+   "fields": [
+    "https://my-pc.tailnet-1234.ts.net",
+    "ITRMDX2ehTjL-GyCxVlSOJZAPNNlybq3KC3abGeCQ3Q"
+   ],
+   "json": "[\"desktop\",\"https://my-pc.tailnet-1234.ts.net\",\"ITRMDX2ehTjL-GyCxVlSOJZAPNNlybq3KC3abGeCQ3Q\"]",
+   "mac": "n2pM9nWFKweYyBs8BN63W9OpILToHVeHeNXLZCIdXQ4"
+  },
+  {
+   "key": "b2c47891b843d9980709d1a9e4482f0593ed43a1b2db31d7fc6ec8eae91e25d1",
+   "role": "hub",
+   "fields": [
+    "https://my-pc.tailnet-1234.ts.net",
+    "ITRMDX2ehTjL-GyCxVlSOJZAPNNlybq3KC3abGeCQ3Q",
+    "9FOIBRfUgWRt6NL7R6KpiB1AQsqf0dI2u6oDjzV/kX8="
+   ],
+   "json": "[\"hub\",\"https://my-pc.tailnet-1234.ts.net\",\"ITRMDX2ehTjL-GyCxVlSOJZAPNNlybq3KC3abGeCQ3Q\",\"9FOIBRfUgWRt6NL7R6KpiB1AQsqf0dI2u6oDjzV/kX8=\"]",
+   "mac": "a9i0Qrstci90ICS6Gdd0Ecl2kT-c7bktHU7ArwUT02E"
+  },
+  {
+   "key": "3a68500e5bf53be6ac2381243f59077617b3380ed4cc2d4a6bbb33f8aa7014b8",
+   "role": "lookup",
+   "fields": [],
+   "json": "[\"lookup\"]",
+   "mac": "YxooyTPhwa3tLGZ6-bEx42zs4Wm4Iz-JoGWKSECZCQc"
+  },
+  {
+   "key": "3a68500e5bf53be6ac2381243f59077617b3380ed4cc2d4a6bbb33f8aa7014b8",
+   "role": "desktop",
+   "fields": [
+    "https://xn--bcher-kva.example:444",
+    "cLF09rI4gpf3L_il4k5_xXjeLMZpUQA6LQCE3BrW8Co"
+   ],
+   "json": "[\"desktop\",\"https://xn--bcher-kva.example:444\",\"cLF09rI4gpf3L_il4k5_xXjeLMZpUQA6LQCE3BrW8Co\"]",
+   "mac": "B-8h3PpLD8TNwUMsC4pW2zkUks2wqVcW8VmJ8uSzVO8"
+  },
+  {
+   "key": "3a68500e5bf53be6ac2381243f59077617b3380ed4cc2d4a6bbb33f8aa7014b8",
+   "role": "hub",
+   "fields": [
+    "https://xn--bcher-kva.example:444",
+    "cLF09rI4gpf3L_il4k5_xXjeLMZpUQA6LQCE3BrW8Co",
+    "6yaa/QuzT1fkloKzJqD5ms6fgTrOkWXf/61z3Tu7N1k="
+   ],
+   "json": "[\"hub\",\"https://xn--bcher-kva.example:444\",\"cLF09rI4gpf3L_il4k5_xXjeLMZpUQA6LQCE3BrW8Co\",\"6yaa/QuzT1fkloKzJqD5ms6fgTrOkWXf/61z3Tu7N1k=\"]",
+   "mac": "Chjaz7l3cHogd9vUYVjG9_zZ55Tm-VRNy8GLEenqzWM"
+  },
+  {
+   "key": "6a8a6573e425441e57d6c1b284aca5e20a62a1d4095cc3d45e4994cf8885f758",
+   "role": "lookup",
+   "fields": [],
+   "json": "[\"lookup\"]",
+   "mac": "xJ3_j4mHn9pqHwGe5cCrp1bzfJuZxqw9voNvcO-DU_c"
+  },
+  {
+   "key": "6a8a6573e425441e57d6c1b284aca5e20a62a1d4095cc3d45e4994cf8885f758",
+   "role": "desktop",
+   "fields": [
+    "https://hub.example",
+    "aQ1h_DUnEOp33y9YzeXF4V-zDMK-pBJCQC4YncQaE2s"
+   ],
+   "json": "[\"desktop\",\"https://hub.example\",\"aQ1h_DUnEOp33y9YzeXF4V-zDMK-pBJCQC4YncQaE2s\"]",
+   "mac": "Azy0eMFAWFhflFAk3kZZXSOs8TJ8FidM-kAPxXsd2VM"
+  },
+  {
+   "key": "6a8a6573e425441e57d6c1b284aca5e20a62a1d4095cc3d45e4994cf8885f758",
+   "role": "hub",
+   "fields": [
+    "https://hub.example",
+    "aQ1h_DUnEOp33y9YzeXF4V-zDMK-pBJCQC4YncQaE2s",
+    "J/TX4S8hBxIzmbNOPJCzpym0SqQT9PLAvdI27PE9hEk="
+   ],
+   "json": "[\"hub\",\"https://hub.example\",\"aQ1h_DUnEOp33y9YzeXF4V-zDMK-pBJCQC4YncQaE2s\",\"J/TX4S8hBxIzmbNOPJCzpym0SqQT9PLAvdI27PE9hEk=\"]",
+   "mac": "ibfAft8WAC2F9DSGUHxFAMBg34XfaSVejVYOESPpM6g"
+  },
+  {
+   "key": "ec02073f0bcc859caa3fc3e723a59f2ae5c1857f6104beb860bdc3157031660c",
+   "role": "lookup",
+   "fields": [],
+   "json": "[\"lookup\"]",
+   "mac": "4DEEs3JQB03BOsx4I7g5pYU-LxiDZ5tLNjbpXsYyjkc"
+  },
+  {
+   "key": "ec02073f0bcc859caa3fc3e723a59f2ae5c1857f6104beb860bdc3157031660c",
+   "role": "desktop",
+   "fields": [
+    "https://127.0.0.1:8443",
+    "a6MUp6pvka1S6-wjsRqmTQx1XJlA-I-Ag5xy6k9kNT0"
+   ],
+   "json": "[\"desktop\",\"https://127.0.0.1:8443\",\"a6MUp6pvka1S6-wjsRqmTQx1XJlA-I-Ag5xy6k9kNT0\"]",
+   "mac": "x-tjLM3w6sMwRcLBxaLnKylrRbjuzg-44bakqqKjCQ4"
+  },
+  {
+   "key": "ec02073f0bcc859caa3fc3e723a59f2ae5c1857f6104beb860bdc3157031660c",
+   "role": "hub",
+   "fields": [
+    "https://127.0.0.1:8443",
+    "a6MUp6pvka1S6-wjsRqmTQx1XJlA-I-Ag5xy6k9kNT0",
+    "oh5XGXJcyNFgvLek4JJu8ytyfBEDQSNK3f/NcHMCNII="
+   ],
+   "json": "[\"hub\",\"https://127.0.0.1:8443\",\"a6MUp6pvka1S6-wjsRqmTQx1XJlA-I-Ag5xy6k9kNT0\",\"oh5XGXJcyNFgvLek4JJu8ytyfBEDQSNK3f/NcHMCNII=\"]",
+   "mac": "NREJrCaw1woUaJCxRZPMO5TV7-lv5lCE8o1AatgDUHQ"
+  },
+  {
+   "key": "eb72bee4d45bddb8f270a8c37477d59401fb824a752f6f7e94516413e036b0f8",
+   "role": "lookup",
+   "fields": [],
+   "json": "[\"lookup\"]",
+   "mac": "TFckxrvpxhrfe0xGIOhotogcEJ5flwBfxM8pNaEwyGQ"
+  },
+  {
+   "key": "eb72bee4d45bddb8f270a8c37477d59401fb824a752f6f7e94516413e036b0f8",
+   "role": "desktop",
+   "fields": [
+    "https://[::1]:7443",
+    "UgPFDUTAj4VuzZZYEfavRYoWoBshZpx5AklTN6wdAgk"
+   ],
+   "json": "[\"desktop\",\"https://[::1]:7443\",\"UgPFDUTAj4VuzZZYEfavRYoWoBshZpx5AklTN6wdAgk\"]",
+   "mac": "m6sQJDNn2-dLHpnIgRWiMQ3XFFp0JrY1vOU9kDMy4PY"
+  },
+  {
+   "key": "eb72bee4d45bddb8f270a8c37477d59401fb824a752f6f7e94516413e036b0f8",
+   "role": "hub",
+   "fields": [
+    "https://[::1]:7443",
+    "UgPFDUTAj4VuzZZYEfavRYoWoBshZpx5AklTN6wdAgk",
+    "a1JsrT3bIRj9I2rasb2L0yImFt7tYWsaVhXhfIGXETQ="
+   ],
+   "json": "[\"hub\",\"https://[::1]:7443\",\"UgPFDUTAj4VuzZZYEfavRYoWoBshZpx5AklTN6wdAgk\",\"a1JsrT3bIRj9I2rasb2L0yImFt7tYWsaVhXhfIGXETQ=\"]",
+   "mac": "XmAZvI1JNxb0IoiUfGsFGqHO7YPvBqtrah_87O4tLkg"
+  },
+  {
+   "key": "bd06bed3277538a091a34596ae0a4dfb172939df18ba0d283b3a4578409de9fa",
+   "role": "lookup",
+   "fields": [],
+   "json": "[\"lookup\"]",
+   "mac": "tVWgVBxUV-utfbB7bk6SN5lU5cSHgw5VPzgs3pXHRG0"
+  },
+  {
+   "key": "bd06bed3277538a091a34596ae0a4dfb172939df18ba0d283b3a4578409de9fa",
+   "role": "desktop",
+   "fields": [
+    "https://my-pc.tailnet-1234.ts.net",
+    "etOSWNw96YslylmLFzrWtE0mwcEIDfSZUHhameUiSzQ"
+   ],
+   "json": "[\"desktop\",\"https://my-pc.tailnet-1234.ts.net\",\"etOSWNw96YslylmLFzrWtE0mwcEIDfSZUHhameUiSzQ\"]",
+   "mac": "_2c3ocxtXoGYevMbkwPzgNyERD6OZu7NWaJtuAkCIko"
+  },
+  {
+   "key": "bd06bed3277538a091a34596ae0a4dfb172939df18ba0d283b3a4578409de9fa",
+   "role": "hub",
+   "fields": [
+    "https://my-pc.tailnet-1234.ts.net",
+    "etOSWNw96YslylmLFzrWtE0mwcEIDfSZUHhameUiSzQ",
+    "iJ5NsWMcNH1PzR5JZdDwwvjO/az9gyfiQVoAapQb2ak="
+   ],
+   "json": "[\"hub\",\"https://my-pc.tailnet-1234.ts.net\",\"etOSWNw96YslylmLFzrWtE0mwcEIDfSZUHhameUiSzQ\",\"iJ5NsWMcNH1PzR5JZdDwwvjO/az9gyfiQVoAapQb2ak=\"]",
+   "mac": "_Feuv7wWxt0HwSgkTPpBxz2nZpDEfFiaFfd14J66CHw"
+  },
+  {
+   "key": "a551a18331e68eb191f11727da56ec9cfb5c5c58ab2d58c788956e5e35ee7356",
+   "role": "lookup",
+   "fields": [],
+   "json": "[\"lookup\"]",
+   "mac": "X6oVyGoaz-Y1I12Wkpree4LR4aihk-GvLvMf0YkM-AU"
+  },
+  {
+   "key": "a551a18331e68eb191f11727da56ec9cfb5c5c58ab2d58c788956e5e35ee7356",
+   "role": "desktop",
+   "fields": [
+    "https://xn--bcher-kva.example:444",
+    "MO2wdsl_XQGiOthyhhK0gZUlCU_jJN2f6tNknJVvr10"
+   ],
+   "json": "[\"desktop\",\"https://xn--bcher-kva.example:444\",\"MO2wdsl_XQGiOthyhhK0gZUlCU_jJN2f6tNknJVvr10\"]",
+   "mac": "fA60NKVCZGDfiD3tfApK2G6vVxN7xkF1jffmiPpdgCY"
+  },
+  {
+   "key": "a551a18331e68eb191f11727da56ec9cfb5c5c58ab2d58c788956e5e35ee7356",
+   "role": "hub",
+   "fields": [
+    "https://xn--bcher-kva.example:444",
+    "MO2wdsl_XQGiOthyhhK0gZUlCU_jJN2f6tNknJVvr10",
+    "vqrjA/csTQ9uK9mzq1gqS1xy5dVjXoFM6sLPIeqk078="
+   ],
+   "json": "[\"hub\",\"https://xn--bcher-kva.example:444\",\"MO2wdsl_XQGiOthyhhK0gZUlCU_jJN2f6tNknJVvr10\",\"vqrjA/csTQ9uK9mzq1gqS1xy5dVjXoFM6sLPIeqk078=\"]",
+   "mac": "pzTqj54c1baZkbUsLIs8dIM2HNgnpxLfDfvPvJF91KI"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "",
+   "fields": [],
+   "json": "[\"\"]",
+   "mac": "rgxQ-CDH4xP2y3S8SeAdOFi-m2Jhx6d03uzD1QYQHwU"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    ""
+   ],
+   "json": "[\"role\",\"\"]",
+   "mac": "I5Utr62zVDohkn9LYXCfrsM0OhLuI1_XPNuX60vxkjk"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "",
+    "",
+    "tail"
+   ],
+   "json": "[\"role\",\"\",\"\",\"tail\"]",
+   "mac": "ROivMDWgMut9c4iN0trIo5LX7e_d2J53XtNqkETGyHs"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": " ",
+   "fields": [],
+   "json": "[\" \"]",
+   "mac": "86UI9G_Bw_FomOg2lbugjxR2RFPIsF_B0ghfHsA9nzE"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    " "
+   ],
+   "json": "[\"role\",\" \"]",
+   "mac": "mavbBebSkC7gx6qI1fseRJxjGzN_MUVcwmlJC-IfnUw"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    " ",
+    " ",
+    "tail"
+   ],
+   "json": "[\"role\",\" \",\" \",\"tail\"]",
+   "mac": "oS4p55v8FgyPZp0fbbqQ9zMquU40d-nhDjNkWxKu41U"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "/",
+   "fields": [],
+   "json": "[\"/\"]",
+   "mac": "U3nNchEWwdXWD2N2TsvYYifyoW-JLyZZYzxpg-E-pU8"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "/"
+   ],
+   "json": "[\"role\",\"/\"]",
+   "mac": "NsQYJ1oW0lwGpRIxfYPgUUE3DEvl53MRLdOAZhJ-QAI"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "/",
+    "/",
+    "tail"
+   ],
+   "json": "[\"role\",\"/\",\"/\",\"tail\"]",
+   "mac": "x4L8oqMKZWJU_4jUn_iW2BFgArDcV1zwLADl08iS8Do"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "https://hub.example/",
+   "fields": [],
+   "json": "[\"https://hub.example/\"]",
+   "mac": "kYPGEdzUkzi8wkmDgqZr5PFs0AKfr3KrvSXfCGbL7Sc"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "https://hub.example/"
+   ],
+   "json": "[\"role\",\"https://hub.example/\"]",
+   "mac": "0m-SU5b551VNu7TXBcbZclKq9nTcp2EIjF37RCnbL1A"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "https://hub.example/",
+    "https://hub.example/",
+    "tail"
+   ],
+   "json": "[\"role\",\"https://hub.example/\",\"https://hub.example/\",\"tail\"]",
+   "mac": "hLt2rfQX_p1e2dr4RM0pymD7H4jtiu7hWw9acmhrpJ4"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "\"",
+   "fields": [],
+   "json": "[\"\\\"\"]",
+   "mac": "5YiyEAHfqo0WynkKgZhLvGYLHiKmnRiEebK9TelxKq0"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "\""
+   ],
+   "json": "[\"role\",\"\\\"\"]",
+   "mac": "6k4vZ-XQDGfVR4a_XToO612gWy1dw0Obhu7YAZ0lexs"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "\"",
+    "\"",
+    "tail"
+   ],
+   "json": "[\"role\",\"\\\"\",\"\\\"\",\"tail\"]",
+   "mac": "Gv5rWL-chboFa3Kh3tq085lP5iwKQmOD_0dzsDfjshE"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "\\",
+   "fields": [],
+   "json": "[\"\\\\\"]",
+   "mac": "obyaPcXwHMDHGgrbpdIt3GEciGcUhUgAkMGaXi1JtC8"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "\\"
+   ],
+   "json": "[\"role\",\"\\\\\"]",
+   "mac": "rwSJB8Ymblwd6W_RqzbadrOSzNyCg79x90JVNRsmzNU"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "\\",
+    "\\",
+    "tail"
+   ],
+   "json": "[\"role\",\"\\\\\",\"\\\\\",\"tail\"]",
+   "mac": "bZ0dBf4wbYTJAFDu-w_5ulL1ldzaKXoDMAo0vgWvT4U"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "\\\"",
+   "fields": [],
+   "json": "[\"\\\\\\\"\"]",
+   "mac": "qoqmBJ2BVzmSqsskt3rm1R63UeQT9T4v850XZkMxtzM"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "\\\""
+   ],
+   "json": "[\"role\",\"\\\\\\\"\"]",
+   "mac": "scn2BwUynBwH48OVNOC8biJi9cESai7-1WmcGaDYtLI"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "\\\"",
+    "\\\"",
+    "tail"
+   ],
+   "json": "[\"role\",\"\\\\\\\"\",\"\\\\\\\"\",\"tail\"]",
+   "mac": "QG5B4Bigx9E4KF351Mtt45mGeWbGd0Ksz9Rk66tKjeQ"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "\"quoted\"",
+   "fields": [],
+   "json": "[\"\\\"quoted\\\"\"]",
+   "mac": "oTRMGuf7wAUhU_QRYkwWzTgqvax20f00BptOMRFyU8Q"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "\"quoted\""
+   ],
+   "json": "[\"role\",\"\\\"quoted\\\"\"]",
+   "mac": "DSi4wlZilYY8sNhhTgBBS2cDRavrNmmHt-cFwQOnsZI"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "\"quoted\"",
+    "\"quoted\"",
+    "tail"
+   ],
+   "json": "[\"role\",\"\\\"quoted\\\"\",\"\\\"quoted\\\"\",\"tail\"]",
+   "mac": "lv7VgrNney-MQ4JAAAIOK2_AQn6oWe7Nx5CfHKJ5vjM"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "back\\slash",
+   "fields": [],
+   "json": "[\"back\\\\slash\"]",
+   "mac": "mSywR-2k-ZouYmR39kS5R7zQ43r5VVK72WnUNzmVFls"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "back\\slash"
+   ],
+   "json": "[\"role\",\"back\\\\slash\"]",
+   "mac": "qOBVjGuG0e6pOQPq_8G-DcV7UDh1FBsUuxlkJvd7Oyg"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "back\\slash",
+    "back\\slash",
+    "tail"
+   ],
+   "json": "[\"role\",\"back\\\\slash\",\"back\\\\slash\",\"tail\"]",
+   "mac": "Bj8OJNZOfvHfOPHmu-CvHZ7ISeyHR4k7vYR4zLI0hGI"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "</script>",
+   "fields": [],
+   "json": "[\"</script>\"]",
+   "mac": "z_cb6PPs2WFILmXvDOxczVbOi89O2b_QHpu6t-Q-5d4"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "</script>"
+   ],
+   "json": "[\"role\",\"</script>\"]",
+   "mac": "9WDB6tC4qrs9M3kx_mOaNhwTP3gsTVz6igkCZ-spUhY"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "</script>",
+    "</script>",
+    "tail"
+   ],
+   "json": "[\"role\",\"</script>\",\"</script>\",\"tail\"]",
+   "mac": "TLfM3DuWOmeBvUESQecf6f0F1XIh7cZEZc4_sBqHIJU"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "\b\f\n\r\t",
+   "fields": [],
+   "json": "[\"\\b\\f\\n\\r\\t\"]",
+   "mac": "6aFPvRlZ-PXfT3991-JJsJrevl17ZP5I6yBF-RdWFsc"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "\b\f\n\r\t"
+   ],
+   "json": "[\"role\",\"\\b\\f\\n\\r\\t\"]",
+   "mac": "5Eq8z1FEf8B0GRUOHvd_gRBpAbAXJ5eq_uZ5cYZ5EBs"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "\b\f\n\r\t",
+    "\b\f\n\r\t",
+    "tail"
+   ],
+   "json": "[\"role\",\"\\b\\f\\n\\r\\t\",\"\\b\\f\\n\\r\\t\",\"tail\"]",
+   "mac": "qsGREZO-pTcrRRqyk4n4y2MNdkpmXEYSoEaB8RAtM-0"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "\u0000",
+   "fields": [],
+   "json": "[\"\\u0000\"]",
+   "mac": "8d9jt0wh9aq-MzZSnUtZztLzwfmF2aUnEYnGUu36lq4"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "\u0000"
+   ],
+   "json": "[\"role\",\"\\u0000\"]",
+   "mac": "eirf_grQk6vMbuYuK5L8heTpe9PerDsiZumzJ1TTpWM"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "\u0000",
+    "\u0000",
+    "tail"
+   ],
+   "json": "[\"role\",\"\\u0000\",\"\\u0000\",\"tail\"]",
+   "mac": "i4eLhZQnP9aslUzaOVsOLKKa2h02s33rXzvpEfiFx0o"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "\u0001\u0002\u0003",
+   "fields": [],
+   "json": "[\"\\u0001\\u0002\\u0003\"]",
+   "mac": "QmtzyoAAvKF51N9fReJGgLSlRSs_eQVoXR4NTYygeTQ"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "\u0001\u0002\u0003"
+   ],
+   "json": "[\"role\",\"\\u0001\\u0002\\u0003\"]",
+   "mac": "k_mX-oiwR1gG72NMFV2QjGOWRzPycQelTz312U4W0vI"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "\u0001\u0002\u0003",
+    "\u0001\u0002\u0003",
+    "tail"
+   ],
+   "json": "[\"role\",\"\\u0001\\u0002\\u0003\",\"\\u0001\\u0002\\u0003\",\"tail\"]",
+   "mac": "Ga_kJPX93gKbitW_XKwzM1oaBx6BfjJuux2tl7ER6v8"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "\u000b",
+   "fields": [],
+   "json": "[\"\\u000b\"]",
+   "mac": "b_g3V6fqqegVLdDnhbU_JbAiUrp0GqxalLe1yJH4jjI"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "\u000b"
+   ],
+   "json": "[\"role\",\"\\u000b\"]",
+   "mac": "MCluMUFyaVDVQ-3-smxbGQ-lna_HcJVwMyncgjbwao0"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "\u000b",
+    "\u000b",
+    "tail"
+   ],
+   "json": "[\"role\",\"\\u000b\",\"\\u000b\",\"tail\"]",
+   "mac": "ZCfshD5LlxfX_QtZjNlfKLfcW7Ej-jKcZdHOUKc0NYw"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "\u001f",
+   "fields": [],
+   "json": "[\"\\u001f\"]",
+   "mac": "_F3f81SpUGRaa7oehGit0bmk2xiu1oxLwnm6wLj1Ndg"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "\u001f"
+   ],
+   "json": "[\"role\",\"\\u001f\"]",
+   "mac": "SMPi9aZIwAA9-QObSiMxNYdaWa6UrPBkBboJbrp1NQk"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "\u001f",
+    "\u001f",
+    "tail"
+   ],
+   "json": "[\"role\",\"\\u001f\",\"\\u001f\",\"tail\"]",
+   "mac": "nglOl4xIsULJ1fx879GLADOxfEk_JPDKPKwc0UdTvUo"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "",
+   "fields": [],
+   "json": "[\"\"]",
+   "mac": "JpWByxDey71TdQ7i61EG18iz3vX4PD1yCN3ZzXWGG20"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    ""
+   ],
+   "json": "[\"role\",\"\"]",
+   "mac": "AHImGibGCfe8pvKvrh9-Q9GGdqR3mpf1brDpbnkAXx4"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "",
+    "",
+    "tail"
+   ],
+   "json": "[\"role\",\"\",\"\",\"tail\"]",
+   "mac": "QBFm_Hjs3Y79bK4nYJg2_c8H_jDS4b8YDbibTuelt60"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "",
+   "fields": [],
+   "json": "[\"\"]",
+   "mac": "PaeBeKGKafzN53MsZH5c3kG3bV1SFep_pMEoexEoKbs"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    ""
+   ],
+   "json": "[\"role\",\"\"]",
+   "mac": "OSVALXxPm4fzG7u4kZc-QbwF0G0si2olnlcXKV5JQ70"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "",
+    "",
+    "tail"
+   ],
+   "json": "[\"role\",\"\",\"\",\"tail\"]",
+   "mac": "6P2GZVym-A2RNLwap_glXAvUpf7b_YSD5VT45ahlvkg"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "ÿ",
+   "fields": [],
+   "json": "[\"ÿ\"]",
+   "mac": "dcbw7MXk54ev6cPii7XeIP_hXUH7Ox868DVoh0784uk"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "ÿ"
+   ],
+   "json": "[\"role\",\"ÿ\"]",
+   "mac": "HhGko5QW5NV3s8QihFavzq5JAmGkoljwm4jkp_QP50w"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "ÿ",
+    "ÿ",
+    "tail"
+   ],
+   "json": "[\"role\",\"ÿ\",\"ÿ\",\"tail\"]",
+   "mac": "-EN0q-D8cirHfEV0zgq0ME4kT1VxmLinAH0Wa7yNW70"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b\t\n\u000b\f\r\u000e\u000f\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u001e\u001f",
+   "fields": [],
+   "json": "[\"\\u0000\\u0001\\u0002\\u0003\\u0004\\u0005\\u0006\\u0007\\b\\t\\n\\u000b\\f\\r\\u000e\\u000f\\u0010\\u0011\\u0012\\u0013\\u0014\\u0015\\u0016\\u0017\\u0018\\u0019\\u001a\\u001b\\u001c\\u001d\\u001e\\u001f\"]",
+   "mac": "ezyhQ3THmuKg6pJ4hcf3CjaS7-KFObJkypAsjJ4ZcCQ"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b\t\n\u000b\f\r\u000e\u000f\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u001e\u001f"
+   ],
+   "json": "[\"role\",\"\\u0000\\u0001\\u0002\\u0003\\u0004\\u0005\\u0006\\u0007\\b\\t\\n\\u000b\\f\\r\\u000e\\u000f\\u0010\\u0011\\u0012\\u0013\\u0014\\u0015\\u0016\\u0017\\u0018\\u0019\\u001a\\u001b\\u001c\\u001d\\u001e\\u001f\"]",
+   "mac": "H1RK5s1j27ouqvaNeBRidY5EOBE0cdRdCd15dIGbOIw"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b\t\n\u000b\f\r\u000e\u000f\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u001e\u001f",
+    "\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b\t\n\u000b\f\r\u000e\u000f\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u001e\u001f",
+    "tail"
+   ],
+   "json": "[\"role\",\"\\u0000\\u0001\\u0002\\u0003\\u0004\\u0005\\u0006\\u0007\\b\\t\\n\\u000b\\f\\r\\u000e\\u000f\\u0010\\u0011\\u0012\\u0013\\u0014\\u0015\\u0016\\u0017\\u0018\\u0019\\u001a\\u001b\\u001c\\u001d\\u001e\\u001f\",\"\\u0000\\u0001\\u0002\\u0003\\u0004\\u0005\\u0006\\u0007\\b\\t\\n\\u000b\\f\\r\\u000e\\u000f\\u0010\\u0011\\u0012\\u0013\\u0014\\u0015\\u0016\\u0017\\u0018\\u0019\\u001a\\u001b\\u001c\\u001d\\u001e\\u001f\",\"tail\"]",
+   "mac": "JlTDpKDtXZI0_W05zhQexWMOgkJfA8ejZNeCR2B1_uU"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "é",
+   "fields": [],
+   "json": "[\"é\"]",
+   "mac": "9vtDwpte6b1B55Ffc93GuHOUiIMBFAoMi0LOVyqLeV4"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "é"
+   ],
+   "json": "[\"role\",\"é\"]",
+   "mac": "M_PYQmiZtmoABF_GtifPEl7vDo44ufdEJ-FQfpZTdAQ"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "é",
+    "é",
+    "tail"
+   ],
+   "json": "[\"role\",\"é\",\"é\",\"tail\"]",
+   "mac": "Ud5Jh322JpZIbqAEC2ZhNfuWUP4N_I91Ew0wqyXS9Vc"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "ünïcödé",
+   "fields": [],
+   "json": "[\"ünïcödé\"]",
+   "mac": "o4XVHF2wNQ0pVC18iltbh7YulBmOdHOnRRTOtZ-HsY0"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "ünïcödé"
+   ],
+   "json": "[\"role\",\"ünïcödé\"]",
+   "mac": "yQ-VcSPkFSrOW2fs5bc14rwndEioxlgdKhGUi4lUZGM"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "ünïcödé",
+    "ünïcödé",
+    "tail"
+   ],
+   "json": "[\"role\",\"ünïcödé\",\"ünïcödé\",\"tail\"]",
+   "mac": "bQdoJf2Rf_VHkcQTm6drzj1G7CVr0E_PFw_vz9ZGL9g"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "漢字",
+   "fields": [],
+   "json": "[\"漢字\"]",
+   "mac": "tbBCl7IoIgDUFCj1QrWcvKgroG55gG5xnvS0gbmHvfA"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "漢字"
+   ],
+   "json": "[\"role\",\"漢字\"]",
+   "mac": "2_uJB5xiFv_xaGqsTX-8kHEfX1enNS3PtoumAQO4xiA"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "漢字",
+    "漢字",
+    "tail"
+   ],
+   "json": "[\"role\",\"漢字\",\"漢字\",\"tail\"]",
+   "mac": "yS_2Eyd5S3iQv4n24ic8xnghUh7MQ5AVVJgYNCe2Eoo"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "😀",
+   "fields": [],
+   "json": "[\"😀\"]",
+   "mac": "iYu1X2-QtrDM5eC_nR5vMlR6odn3VUigvZVb39HQzog"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "😀"
+   ],
+   "json": "[\"role\",\"😀\"]",
+   "mac": "avFnI8jzXvLMGxRC_Hl7fH9zemfaAD3PpTlAp2Stafs"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "😀",
+    "😀",
+    "tail"
+   ],
+   "json": "[\"role\",\"😀\",\"😀\",\"tail\"]",
+   "mac": "laAJV2kPjWzHB9SVYRMyvy-WyiUKtwwGKgNuoJnYXA8"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "a😀b",
+   "fields": [],
+   "json": "[\"a😀b\"]",
+   "mac": "0PFTPQr45AMlMWpyz-b5KgC622lA2rD3ID-LKnY-vWM"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "a😀b"
+   ],
+   "json": "[\"role\",\"a😀b\"]",
+   "mac": "0zTQr6BqaXgiLgV4VJblcQn452pcg2CPW_K5X8fnvr0"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "a😀b",
+    "a😀b",
+    "tail"
+   ],
+   "json": "[\"role\",\"a😀b\",\"a😀b\",\"tail\"]",
+   "mac": "J6zFi4Uru-TJzd-0orOT6Zf2Y7-2k8Mz3AJ3imsP2do"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "  ",
+   "fields": [],
+   "json": "[\"  \"]",
+   "mac": "wa0284fiWLHZKHApp_kfH1C8u5GXJ6jHsAAZK64Wato"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "  "
+   ],
+   "json": "[\"role\",\"  \"]",
+   "mac": "32Q7qCsYe4KxXT7g_ybA_M2n6CJum1FPhYei9odmGHQ"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "  ",
+    "  ",
+    "tail"
+   ],
+   "json": "[\"role\",\"  \",\"  \",\"tail\"]",
+   "mac": "WBTvbvbyyyHUlJA9Y7YzZHmHu4wWFXeXBe0X7Mmgm7c"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "﻿",
+   "fields": [],
+   "json": "[\"﻿\"]",
+   "mac": "zkAFhYEKQ-RFbCilEm8OqxVwer9f-NDs_nF_J78uzUU"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "﻿"
+   ],
+   "json": "[\"role\",\"﻿\"]",
+   "mac": "zqjpqfNm8e4m4WYTbUionfX2jFVuqVCV4xAFDeez3uc"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "﻿",
+    "﻿",
+    "tail"
+   ],
+   "json": "[\"role\",\"﻿\",\"﻿\",\"tail\"]",
+   "mac": "wGNeobho47iJCj-YHs484NTD8TZqthZ_-3IlFRiujUA"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "�",
+   "fields": [],
+   "json": "[\"�\"]",
+   "mac": "RMca2gU4b3ir_kR4nyHn-QProPzio9OwL_0N9IGgA0Y"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "�"
+   ],
+   "json": "[\"role\",\"�\"]",
+   "mac": "7Ax5JufNY0ZuN4W0nMTJgW-zcLbZUmO5BKVNNjSaz4s"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "�",
+    "�",
+    "tail"
+   ],
+   "json": "[\"role\",\"�\",\"�\",\"tail\"]",
+   "mac": "enBdkmWpLK13bQ0zp-hXvI18zaPQxweiiccK05jCAsc"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "é",
+   "fields": [],
+   "json": "[\"é\"]",
+   "mac": "6eSLBaVgjfHhk7pLkq1KI9sdJ5vK5bei-D64cg2y2hk"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "é"
+   ],
+   "json": "[\"role\",\"é\"]",
+   "mac": "zAriQIPWLDeQcL4RarLs8o0Q0mBJMI18hFWgz9j96Zs"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "é",
+    "é",
+    "tail"
+   ],
+   "json": "[\"role\",\"é\",\"é\",\"tail\"]",
+   "mac": "mB2sFvl077nYiwOCVetPfnvEbbXRPE1lxEwTK66-ybI"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "fields": [],
+   "json": "[\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"]",
+   "mac": "CFNleKkfNIC-arJpOsH1Elf85Db6BV0s49Jr6cXwH1A"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+   ],
+   "json": "[\"role\",\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"]",
+   "mac": "Yauizhi-bmemGMpwSsbI0qOw81PjxEFgZYbQLEkn4YY"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "tail"
+   ],
+   "json": "[\"role\",\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"tail\"]",
+   "mac": "aVhDCpLBYFXIPfpCnQCKy11TucxtID6G72npRK8GXOc"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "tab\tand\nnewline",
+   "fields": [],
+   "json": "[\"tab\\tand\\nnewline\"]",
+   "mac": "ZG6JdxiHlhasYBjIyI3b7GcYWRp0k-s4kbFukaPlmqE"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "tab\tand\nnewline"
+   ],
+   "json": "[\"role\",\"tab\\tand\\nnewline\"]",
+   "mac": "KaDugwKvSZX2RlipYN1RQakhxOcT2vPmwL_XFikv0zo"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "tab\tand\nnewline",
+    "tab\tand\nnewline",
+    "tail"
+   ],
+   "json": "[\"role\",\"tab\\tand\\nnewline\",\"tab\\tand\\nnewline\",\"tail\"]",
+   "mac": "kPocEgvSb4p9zIS1NGr3UtvqS_ON9Ph8U1gRtlLRC40"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "{\"json\":true}",
+   "fields": [],
+   "json": "[\"{\\\"json\\\":true}\"]",
+   "mac": "k1fPJp-b0E1YrlpKUDGaNJw-6CLmP_n87Q6U1zZ1BoY"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "{\"json\":true}"
+   ],
+   "json": "[\"role\",\"{\\\"json\\\":true}\"]",
+   "mac": "afh9A4picxc2crMGDVVBF4hPW9hGymI1O8pGIMTNLyU"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "{\"json\":true}",
+    "{\"json\":true}",
+    "tail"
+   ],
+   "json": "[\"role\",\"{\\\"json\\\":true}\",\"{\\\"json\\\":true}\",\"tail\"]",
+   "mac": "OMSzABRJzV1gx-3mF47qujy2IzSvzJgvk_hqQ6IZ4mE"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "[1,2,3]",
+   "fields": [],
+   "json": "[\"[1,2,3]\"]",
+   "mac": "OhkPqCft3cb_x5njUNzDvewUaPFDa7sUUL_5J6Q2cjA"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "[1,2,3]"
+   ],
+   "json": "[\"role\",\"[1,2,3]\"]",
+   "mac": "dqsi96ckv5Kq3x3Ao6R0BhOVVAePXHblqIKkVijZjJ8"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "[1,2,3]",
+    "[1,2,3]",
+    "tail"
+   ],
+   "json": "[\"role\",\"[1,2,3]\",\"[1,2,3]\",\"tail\"]",
+   "mac": "tahTPDUW8Ve1RLPMycTMvMbWog-FxsvRptTUxYqegd4"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "null",
+   "fields": [],
+   "json": "[\"null\"]",
+   "mac": "Sg0sMSv2DKlpMIRfJMitECzU6golipd9c6OUVwBHtTI"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "null"
+   ],
+   "json": "[\"role\",\"null\"]",
+   "mac": "N23IGuPBqakrGw9b6GFtln_DS8VUlxRAMx-3H6FJ__Q"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "null",
+    "null",
+    "tail"
+   ],
+   "json": "[\"role\",\"null\",\"null\",\"tail\"]",
+   "mac": "45_R3rho3bJnEEdN_xqQDL4RdYnCw_RA8YpUcRbM7BQ"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "single'quote",
+   "fields": [],
+   "json": "[\"single'quote\"]",
+   "mac": "5FpD5ua7DRWtzY-12gqc1QykZRhtSvxPxat1YtLJ3LM"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "single'quote"
+   ],
+   "json": "[\"role\",\"single'quote\"]",
+   "mac": "ZYQr7WHLGrQupruTcrwIgxG-pwYXrOsYmA4Iplxy7Zw"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "single'quote",
+    "single'quote",
+    "tail"
+   ],
+   "json": "[\"role\",\"single'quote\",\"single'quote\",\"tail\"]",
+   "mac": "Puo8KkELprK1xkweoIseWUrtHrHcqP6ROjKgd4yDj1I"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "%00%2F",
+   "fields": [],
+   "json": "[\"%00%2F\"]",
+   "mac": "Z2OJ-RGAesWRYtAsmbEbzXwUMU75qC9KVCHkIgPQwPQ"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "%00%2F"
+   ],
+   "json": "[\"role\",\"%00%2F\"]",
+   "mac": "VRvAdqh3z62VV-iaavHLtasbrkIydcEx_XfAs_yY4UQ"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "%00%2F",
+    "%00%2F",
+    "tail"
+   ],
+   "json": "[\"role\",\"%00%2F\",\"%00%2F\",\"tail\"]",
+   "mac": "YWgtLyr5garLvhvOHf3aE0VXGbQ5uKL9cWQn253_MGg"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "+/=",
+   "fields": [],
+   "json": "[\"+/=\"]",
+   "mac": "P2E_9jJ5PTF9UkTaozfWUVvk4pntVxfVzRUZzBERCg0"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "+/="
+   ],
+   "json": "[\"role\",\"+/=\"]",
+   "mac": "3xu7yjjCQy3bmmxXUM16Od2rM-uOFAN014trdwqitRY"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "+/=",
+    "+/=",
+    "tail"
+   ],
+   "json": "[\"role\",\"+/=\",\"+/=\",\"tail\"]",
+   "mac": "DKEjN1kS-F9Kd32BMI0NVzEyaA7qmBuRRMor6tbXZYU"
+  },
+  {
+   "key": "a0eb67df27d0df6f952059fd72e7e650b0f9754eed4f945f05516a7f596445eb",
+   "role": "role",
+   "fields": [
+    "",
+    " ",
+    "/",
+    "https://hub.example/",
+    "\"",
+    "\\",
+    "\\\"",
+    "\"quoted\"",
+    "back\\slash",
+    "</script>",
+    "\b\f\n\r\t",
+    "\u0000",
+    "\u0001\u0002\u0003",
+    "\u000b",
+    "\u001f",
+    "",
+    "",
+    "ÿ",
+    "\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b\t\n\u000b\f\r\u000e\u000f\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u001e\u001f",
+    "é",
+    "ünïcödé",
+    "漢字",
+    "😀",
+    "a😀b",
+    "  ",
+    "﻿",
+    "�",
+    "é",
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "tab\tand\nnewline",
+    "{\"json\":true}",
+    "[1,2,3]",
+    "null",
+    "single'quote",
+    "%00%2F",
+    "+/="
+   ],
+   "json": "[\"role\",\"\",\" \",\"/\",\"https://hub.example/\",\"\\\"\",\"\\\\\",\"\\\\\\\"\",\"\\\"quoted\\\"\",\"back\\\\slash\",\"</script>\",\"\\b\\f\\n\\r\\t\",\"\\u0000\",\"\\u0001\\u0002\\u0003\",\"\\u000b\",\"\\u001f\",\"\",\"\",\"ÿ\",\"\\u0000\\u0001\\u0002\\u0003\\u0004\\u0005\\u0006\\u0007\\b\\t\\n\\u000b\\f\\r\\u000e\\u000f\\u0010\\u0011\\u0012\\u0013\\u0014\\u0015\\u0016\\u0017\\u0018\\u0019\\u001a\\u001b\\u001c\\u001d\\u001e\\u001f\",\"é\",\"ünïcödé\",\"漢字\",\"😀\",\"a😀b\",\"  \",\"﻿\",\"�\",\"é\",\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"tab\\tand\\nnewline\",\"{\\\"json\\\":true}\",\"[1,2,3]\",\"null\",\"single'quote\",\"%00%2F\",\"+/=\"]",
+   "mac": "poA81RZ2kxYNcPek7AojQ7ib87LrckNW8oeCDiPtElI"
+  },
+  {
+   "key": "1d",
+   "role": "lookup",
+   "fields": [],
+   "json": "[\"lookup\"]",
+   "mac": "0iHg6JQDECBpsW5UorN8JcGPTptywrL5g3y5xRZN4wU"
+  },
+  {
+   "key": "f650a824b7ea8bcb13cbc1d8bdedc37ff9f32be4f55cd2059a832f83bf682a305bb205a92d441e9d4d20478f453f74687f31e9206840effa32cb3302b37f3f10",
+   "role": "lookup",
+   "fields": [],
+   "json": "[\"lookup\"]",
+   "mac": "tciHKy-3cwdYwDZ5WOqnF1CCkvVKqWCHs8eL6TyNcIE"
+  },
+  {
+   "key": "f8d92107a93652af45c9e1f8f78eb451a560bce02bc407c79928fa8cb72cf0ae87ae343ae3aa06f7198f7646c23c5dca948e6c04079d5f267fc8097b31a473fa",
+   "role": "hub",
+   "fields": [
+    "a",
+    "b",
+    "c"
+   ],
+   "json": "[\"hub\",\"a\",\"b\",\"c\"]",
+   "mac": "SUjUSWBWaTVZ3mQnqBY4vqM75oddRfn0P9St7OiJOOE"
+  }
+ ]
+}

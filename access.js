@@ -1,14 +1,24 @@
-// The root credential stays on the hub. Persistent client and agent records
+// The root credential stays on the hub. Persistent client, agent and phone records
 // contain only hashes. Invitations and browser sessions expire and die on restart.
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
-const { isValidId, safeEqual } = require('./security');
+const { isValidId, safeEqual, cleanText } = require('./security');
 const { credentialDigest: digest, desktopKey, mac } = require('./desktop-identity');
 const secret = () => crypto.randomBytes(32).toString('base64url');
 const validKey = s => typeof s === 'string' && /^[A-Za-z0-9_-]{43}$/.test(s);
 const bearer = req => /^Bearer ([A-Za-z0-9_-]{43})$/.exec(req.headers.authorization || '')?.[1] || '';
 const INVITE_TTL = 10 * 60e3, SESSION_TTL = 8 * 60 * 60e3;
+// A phone or tablet row is { mobile:{ client, proof, name, created } }: a dashboard credential and a
+// second secret that only ever keys the TLS-rotation proof. It has no agent credential and cannot report.
+// Both digests stay inside `mobile` because hubs from before phones read any top-level client as a paired
+// desktop's, and have no way to list or remove a phone: downgraded to one, a phone must find nothing to use.
+const mobileRow = row => !!row && typeof row === 'object' && !!row.mobile && typeof row.mobile === 'object';
+// The bearer digest, and the digest that stands beside it in the TLS-rotation key (a desktop's agent, a phone's proof).
+const credentials = row => mobileRow(row) ? { client: row.mobile.client, proof: row.mobile.proof } : { client: row.client, proof: row.agent };
+// The label comes from the phone and goes back to it and to dashboards: no control characters, and
+// well-formed text even when sixty UTF-16 units end inside an emoji, so every JSON decoder accepts it.
+const mobileName = v => (cleanText(typeof v === 'string' ? v : null, 60) || '').replace(/[\uD800-\uDBFF]$/, '').toWellFormed().trim() || 'iPhone';
 function privateWrite(file, value) {
   const tmp = file + '.' + crypto.randomUUID() + '.tmp';
   try {
@@ -89,20 +99,32 @@ class Access {
     }
   }
   indexRow(id, row) {
-    if (row.agent) this.index.set(row.agent, { role: 'agent', id });
-    if (row.client) {
-      this.index.set(row.client, { role: 'client', id });
-      const key = desktopKey(row.agent, row.client);
+    const mobile = mobileRow(row), { client, proof } = credentials(row);
+    // A phone's proof digest is deliberately never a bearer, and a phone row never yields an agent.
+    if (row.agent && !mobile) this.index.set(row.agent, { role: 'agent', id });
+    if (client) {
+      this.index.set(client, mobile ? { role: 'client', id, mobile: true } : { role: 'client', id });
+      const key = desktopKey(proof, client);
       if (key) this.desktopKeys.set(mac(key, 'lookup'), key);
     }
   }
   unindexRow(row) {
-    this.index.delete(row.agent);
-    if (row.client) {
-      this.index.delete(row.client);
-      const key = desktopKey(row.agent, row.client);
+    const { client, proof } = credentials(row);
+    if (!mobileRow(row)) this.index.delete(row.agent);
+    if (client) {
+      this.index.delete(client);
+      const key = desktopKey(proof, client);
       if (key) this.desktopKeys.delete(mac(key, 'lookup'));
     }
+  }
+  isMobile(id) {
+    const rows = this.config.identities;
+    return isValidId(id) && Object.hasOwn(rows, id) && mobileRow(rows[id]);
+  }
+  mobiles() {
+    return Object.entries(this.config.identities).filter(([, row]) => mobileRow(row)).map(([id, { mobile }]) => ({
+      id, name: mobileName(mobile.name), created: Number.isFinite(mobile.created) ? mobile.created : null,
+    })).sort((a, b) => a.created - b.created);
   }
   desktopProofKey(body, origin) {
     if (!validKey(body?.lookup) || !validKey(body.nonce) || !validKey(body.challenge)) return null;
@@ -124,14 +146,20 @@ class Access {
   }
   logout(key) { if (validKey(key)) this.sessions.delete(digest(key)); }
   issue(kind, audience, id, owner) {
-    if (!['browser','desktop','agent'].includes(kind) || !audience || (id != null && !isValidId(id))) throw new Error('Invalid enrollment');
+    // A phone always enrols as a fresh identity: it can never be aimed at an existing device id.
+    if (!['browser','desktop','agent','mobile'].includes(kind) || !audience || (id != null && (!isValidId(id) || kind === 'mobile'))) throw new Error('Invalid enrollment');
     for (const [k, v] of this.invites) if (v.until <= Date.now()) this.invites.delete(k);
     if (this.invites.size >= 256) throw new Error('Too many pending invitations');
     const code = secret();
     this.invites.set(digest(code), { kind, audience, owner, id: id || crypto.randomUUID(), until: Date.now() + INVITE_TTL });
     return code;
   }
-  redeem(code, kind, audience) {
+  // True while this exact invitation could still be redeemed. Spends nothing.
+  invited(code, kind, audience) {
+    const item = validKey(code) && this.invites.get(digest(code));
+    return !!item && item.kind === kind && item.audience === audience && item.until > Date.now();
+  }
+  redeem(code, kind, audience, { name } = {}) {
     if (!validKey(code)) return null;
     const hash = digest(code);
     let item = this.invites.get(hash);
@@ -145,16 +173,26 @@ class Access {
       return { token };
     }
     const { id } = item, rows = this.config.identities;
-    if (!Object.hasOwn(rows, id) && Object.keys(rows).length >= 250) throw new Error('Too many enrolled devices');
-    const agent = secret(), client = kind === 'desktop' ? secret() : null;
     const prior = Object.hasOwn(rows, id) ? rows[id] : null;
-    const row = { agent: digest(agent), ...(client ? { client: digest(client) } : {}) };
+    // A phone is always a new identity, and a device invitation can never take a phone's over.
+    if (kind === 'mobile' ? prior : mobileRow(prior)) return null;
+    if (!Object.hasOwn(rows, id) && Object.keys(rows).length >= 250) throw new Error('Too many enrolled devices');
+    let row, member;
+    if (kind === 'mobile') {
+      const client = secret(), proof = secret(), label = mobileName(name);
+      row = { mobile: { client: digest(client), proof: digest(proof), name: label, created: Date.now() } };
+      member = { id, client, proof, name: label };
+    } else {
+      const agent = secret(), client = kind === 'desktop' ? secret() : null;
+      row = { agent: digest(agent), ...(client ? { client: digest(client) } : {}) };
+      member = { id, agent, ...(client ? { client } : {}) };
+    }
     Object.defineProperty(rows, id, { value: row, configurable: true, enumerable: true, writable: true });
     try { this.save(); } catch (e) { if (prior) rows[id] = prior; else delete rows[id]; throw e; }
     if (prior) this.unindexRow(prior);
     this.revokeDerived(id);
     this.indexRow(id, row);
-    return { id, agent, ...(client ? { client } : {}) };
+    return member;
   }
   revoke(id) {
     const rows = this.config.identities, prior = Object.hasOwn(rows, id) && rows[id];

@@ -93,6 +93,24 @@ The app isn't notarized, so the first time you open it, **right-click → Open**
 
 Use **Copy dashboard link** in the tray or the **+** dialog. The one-time link signs in one browser tab for eight hours. Use the same trusted HTTPS address on your LAN or tailnet. A loopback link works only on the hub computer.
 
+## iPhone and iPad
+
+The Device Monitor app for iPhone and iPad shows the dashboard a connected desktop shows, and stays signed in. It views and manages your devices. It never reports the phone itself.
+
+- **Pair it.** On the hub, open **+ → iPhone / iPad app**. In the app, choose **Scan invitation** and point the camera at the QR code, or copy the invitation text and paste it into the app. Each invitation works once, for ten minutes.
+- **It needs the hub's HTTPS address.** Set one up first (see [Security](#security)). Without it the tab shows what to enable instead of a code. A loopback address cannot pair a phone.
+- **Remove a phone.** The same tab lists the paired phones and tablets with when each was last active. **Remove** signs that app out at once. **Disconnect** in the app does the same from the phone.
+
+Only the hub app or the headless hub's local operator can create these invitations and see the list.
+
+<p>
+<img src="docs/screenshots/ios-devices.png" alt="The Devices tab on an iPhone: a device card with Details open" width="240">
+<img src="docs/screenshots/ios-history.png" alt="The History tab on an iPhone: utilization, temperature and GPU power charts" width="240">
+<img src="docs/screenshots/ios-advanced.png" alt="The Advanced tab on an iPhone: electricity use and cost" width="240">
+</p>
+
+The app is built from `ios/` with Xcode. See [ios/README.md](ios/README.md).
+
 ## Temperatures
 
 | Sensor | Source |
@@ -128,7 +146,7 @@ For automatic desktop reconnection behind a reverse proxy, set `DM_TLS_PROXY_CER
 
 **Upgrading an existing fleet.** Upgrade the hub and desktop apps using trusted installers. Old shared keys, cookies, six-digit codes and old report formats are retired. From the hub’s **+** dialog, select **Reconnect** for each existing device before issuing its new invitation or agent command. Redemption rotates that device’s credentials and preserves its registry entry and history. Re-run the new installer command on standalone agents. Stop older agents until they are re-enrolled, since old binaries can still send their previous telemetry to their saved address. Browser users need a fresh dashboard invitation. Only the hub app or the headless hub’s local operator can enroll or reconnect devices. A paired desktop can share a temporary browser invitation. Ordinary browser sessions cannot issue credentials.
 
-**Access.** Standalone agents receive a reporting credential bound to one device ID. Desktop Connect also receives a separate dashboard credential. When the HTTPS key changes, an updated desktop checks the certificate chain and hostname, then asks the updated hub to prove the new key with a fresh challenge bound to the original origin and the existing desktop enrollment. Only after verifying that proof does it save the new pin and resume dashboard requests and reports. Existing 1.2.30 enrollments, including desktops that were offline during renewal, use the same device ID, credentials and history. Replacing the hub's enrollment database or revoking the device still requires a fresh invitation. Browser sessions last eight hours and stay in origin-specific tab storage. Use **Sign out of this tab**, **Revoke browser access** on the host, or remove/re-enroll a device to revoke its access.
+**Access.** Standalone agents receive a reporting credential bound to one device ID. Desktop Connect also receives a separate dashboard credential. When the HTTPS key changes, an updated desktop checks the certificate chain and hostname, then asks the updated hub to prove the new key with a fresh challenge bound to the original origin and the existing desktop enrollment. Only after verifying that proof does it save the new pin and resume dashboard requests and reports. Existing 1.2.30 enrollments, including desktops that were offline during renewal, use the same device ID, credentials and history. Replacing the hub's enrollment database or revoking the device still requires a fresh invitation. The iPhone and iPad app receives a dashboard credential like a paired desktop's and no reporting credential. It also receives a second secret that is never sent as a credential and is used only for that same proof when the HTTPS key changes. The hub stores only hashes of both. Browser sessions last eight hours and stay in origin-specific tab storage. Use **Sign out of this tab**, **Revoke browser access** on the host, **Remove** under **+ → iPhone / iPad app**, or remove/re-enroll a device to revoke its access. Removing a phone also ends the browser sessions it shared.
 
 **Installation and updates.** Generated install and uninstall commands require HTTPS. Each installer checks the agent digest before replacing its program. Desktop updates verify the signed release manifest and downloaded bytes, including manual Windows updates. The Windows helper holds the verified file against writes while launching it.
 
@@ -158,8 +176,10 @@ npm run hub        # headless hub only (e.g. on a home server), dashboard at :77
 | `power.js` | Power estimates (watts at the wall) used for electricity use and cost |
 | `agent-runner.js`, `agent/` | Metric agents (Windows PowerShell, macOS and Linux bash) and their one-line installers |
 | `build/screenshots.js` | Regenerates the README screenshots in `docs/screenshots/` from a demo hub |
-| `build/test/` | Test fixtures: seeded test hub, macOS command mocks for the Mac agent |
+| `build/test/` | Tests (`npm test`) and fixtures: seeded test hub, macOS command mocks for the Mac agent, `mobile-hub.js` (HTTPS hub on localhost for testing the iOS app in the Simulator) |
 | `public/index.html` | Dashboard UI |
+| `public/qr.js` | QR code encoder for the iPhone / iPad invitation (no dependencies) |
+| `ios/` | iPhone and iPad app (Swift, built with Xcode on a Mac) |
 | `build/make-icon.js` | Generates the app and tray icons |
 
 App data is stored in `%APPDATA%\Device Monitor`: `settings.json`, plus `hub\` with the device list and access records. The installer isn't code-signed, so Windows SmartScreen may show "Windows protected your PC". Click **More info → Run anyway**.
